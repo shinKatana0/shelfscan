@@ -1050,3 +1050,167 @@ to prove it.
 (T-0009); this one has resolution and export and stops there. Until
 somebody runs the import, "verified end to end" belongs to the photographs
 alone.
+
+## The 7B's density ceiling, and the loop past it (T-0278, 2026-08-23)
+
+The task was filed on a dense shelf photograph the owner supplied: the local
+model did not answer inside the shipped 120 s bound, and with
+`SHELFSCAN_VISION_TIMEOUT=900` it answered HTTP 200 with a decodable JSON
+document that was **not this one** — `unreadable[372]` a string where the
+parse shapes an object — so the scan declined it whole and the photograph
+yielded nothing.
+
+**Everything counted below was measured on synthetic shelf frames generated
+for the task** — invented titles, invented platform bands, a density and a
+resolution chosen deliberately — for the reason the disk-sources section above
+gives: the photograph that started it is private, and no figure taken on it is
+recorded anywhere. The synthetic frames reproduce the failure, which is what
+lets the numbers be stated at all.
+
+Rig: `qwen2.5vl:7b`, Ollama 0.32.14, `num_ctx` 32768, 100% GPU,
+`OLLAMA_NUM_PARALLEL` 1, the shipped `detectionPrompt` unaltered,
+`format: 'json'`, `temperature: 0`, `seed: 20260814` — the request
+`OllamaVisionProvider.analyze` builds. Frames are 3060×2040, spines in a grid,
+titles unique within a frame; `prompt_eval_count` is **4932 on every one of
+them**, so nothing here is a resolution effect.
+
+### The ladder
+
+| spines | output tokens | items returned | titles correct | invented |
+|---|---|---|---|---|
+| 6 | 298 | 6 | 6 / 6 | 0 |
+| 12 | 579 | 12 | 12 / 12 | 0 |
+| 24 | 1149 | 24 | 24 / 24 | 0 |
+| 40 | 1929 | 40 | 40 / 40 | 0 |
+| 60 | 2401 | 50 | 50 / 60 | 0 |
+| 84 | 3023 | 63 | 63 / 84 | 0 |
+| 120, ¾ of them in small type | 5504 | 114 | 108 / 120 | 0 |
+| 176, ⅚ of them in small type | 27836 | — | the loop | — |
+
+**Output is linear in spines** at ~48 tokens a row, right up to the loop.
+
+**The model starts dropping spines between 40 and 60 and says nothing.**
+`unreadable` is `[]` on every honest run in that table, so at 84 spines a
+fifth of the frame is missing from an answer that parses cleanly and reports
+no omission. Not one invented title at any density — the anti-invention
+guarantee holds the whole way up — which makes this the decision 0012 class
+rather than the T-0007 class: a quiet loss, not a wrong answer.
+
+**It is not legibility.** At 120 spines three quarters of the titles were
+rendered in small type and 108 of 120 came back correct. What the ceiling
+bounds is how much of one frame the model can hold, which is the same sentence
+T-0074 reached from the Switch 2 band.
+
+### The loop
+
+At 176 spines the run does not answer. It generates **27,836 tokens** —
+`4932 + 27836 = 32768`, the context window exactly — returns
+`done_reason: length`, and breaks off mid-string, so it is not JSON.
+Counted without reading it:
+
+    "raw_title" keys                              580
+    distinct values                                20
+    last index at which a new value appeared       19
+
+It read the first row and wrote that row out twenty-nine times. `temperature:
+0` is why nothing escapes: greedy decoding has no draw to break a repetition
+fixed point with. T-0053 pinned it for reproducibility and that is still
+right; this is the bill.
+
+**The same loop has a second site.** On the frame the ceiling was first found
+on it runs away in **`unreadable`** instead — the array is 99% of the answer
+and every `reason` string in it is byte-identical to every other, as is every
+`script` value. That is T-0028's phantom entry, which `detectionPromptRules`
+forbids in as many words ("The entries are not copies of each other"),
+running away rather than appearing two or three times.
+
+### Two sentences, one cause — the defect that was worth fixing
+
+Which failure the user meets is decided by whether the model closes its
+document before the context fills, and nothing else:
+
+| the loop ends by | the code | what the user was told, before T-0278 |
+|---|---|---|
+| filling the context | `done_reason: length` → `visionTruncatedFailure` | "there was more on that shelf than one answer can hold. Photograph it in two or three sections" — correct |
+| closing the document | HTTP 200 → `visionWrongShapeFailure` | "the model is the thing to change **rather than the shelf or the photograph**" — wrong for this cause |
+
+`visionWrongShapeMessage` now names the shelf first and the model id second.
+
+### The timeout, measured and left alone
+
+**Past the ceiling a raised bound buys nothing**: the answer is complete after
+the first twenty titles and the remaining minutes are copies, and it is
+declined at the end regardless. `SHELFSCAN_VISION_TIMEOUT=900` buys four and a
+half minutes of progress bar over 120 s and the same zero rows.
+
+**Below the ceiling the bound is not about the shelf.** Seventeen passes on
+one machine, one model, one server process, inside thirty-one minutes:
+generation ran **24.0 to 104.6 tokens/s**, median **102** over the thirteen
+uncontended ones. The four slow passes (24.0, 27.9, 46.9, 54.0) fall inside
+another agent's app-test-suite window; four later passes inside that same
+window ran at full rate, so the contention was bursty and the window is where
+the slow block sits rather than a per-run tax that can be predicted. The
+spread is the finding either way: a 120 s bound admits ~3,000 output tokens or
+~12,000 depending on nothing but what else the machine is doing — roughly 60
+spines against 250. No single number tunes that, so the default stays at 120 s
+and the guide tells the user about the frame instead.
+
+The pairs that show it directly, same frame, same tokens, different clock:
+40 spines took 92.5 s in the slow block and 22.5 s outside it; 120 spines took
+61.6 s and 56.7 s; 176 spines 304.9 s and 300.4 s.
+
+### The bound on `unreadable`, rejected
+
+Cutting the `unreadable` array off in the request schema was the cheapest
+option on paper and does not survive the measurement:
+
+1. **It does not cover the case.** The synthetic reproduction loops in
+   `items`; a cap on `unreadable` leaves that run untouched.
+2. **A legitimate `unreadable` list is bounded only by the frame.** The prompt
+   asks for one entry per item left out, and decision 0012 records that one
+   entry may cover several spines — so the count is a lower bound on spines
+   and never a count of them. A cap low enough to stop a loop early is low
+   enough to truncate an honest report.
+3. **The prompt schema is not enforcement.** `detectionJsonSchema` is example
+   text; the request sends `format: 'json'`. Editing that constant is a prompt
+   edit (decision 0002), and `control_set_test.dart` pins a fingerprint of
+   `detectionPrompt`, so it fails `dart test` everywhere until both control
+   sets are re-measured — paid to add a rule the model already ignores once it
+   is looping.
+4. **The enforced version is not incomplete, it is worse — and that was
+   measured, not reasoned.** Ollama's `format` will take a JSON Schema and it
+   does honour `maxItems`. The 176-spine frame under a schema capping both
+   arrays at 120 came back in 58 s, `done_reason: stop`, **valid JSON that
+   parses cleanly** — and holding 120 rows of which **35 are distinct**, three
+   of them repeated 30, 29 and 29 times, 55 of the 176 titles correct. So the
+   bound converts a loud failure into a quiet one: today the loop is declined
+   whole and the user is told; with the cap the same loop is accepted, and
+   dozens of copied rows land in the review list looking exactly like titles
+   read off spines. That is T-0007's rule and decision 0012's class in one
+   answer, which is the strongest argument against this option rather than the
+   weakest. Anyone returning to it has to bound the loop *and* detect it, and
+   a cap alone does only the first.
+
+### What sectioning buys, on the frame that fails
+
+The remedy both failure texts name, measured on the same 176-spine frame cut
+into two halves of 88 at **identical pixel scale** (3060×1020 each, so nothing
+about legibility changed):
+
+| | titles correct |
+|---|---|
+| one frame, 176 spines | **0** — the loop, nothing returned at all |
+| top half, 88 spines | 71 / 88 |
+| bottom half, 88 spines | 59 / 88 |
+| the two together | **130 / 176** |
+
+Two vision calls instead of one, and the sections meet at one dedupe, so a
+spine caught in both overlapping frames is still one row.
+
+### Reproducibility
+
+Every figure above is a temperature-0 greedy draw and repeats to the token.
+Second passes: 40 spines 1929 tokens both times, 40/40 both times; 120 spines
+5504 tokens both times, 114 items and 108/120 both times; 176 spines **27,836
+tokens both times**, `done_reason: length` both times. What does *not* repeat
+is the clock — see the tokens/s spread above, measured on the same two frames.
