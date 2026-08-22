@@ -35,9 +35,12 @@ import 'package:shelfscan_core/shelfscan_core.dart';
 
 import 'control_capture.dart'
     show
+        blockMissing,
+        figuresNotHere,
         findRepoRoot,
         hiRes,
         lowRes,
+        notHereExit,
         promptFingerprint,
         readControlPhotos,
         readManifestWithSizes,
@@ -134,7 +137,8 @@ Future<Map<String, Object?>> probePhoto(
   };
 }
 
-Future<int> runProbe(List<String> args, Map<String, String> env) async {
+Future<int> runProbe(List<String> args, Map<String, String> env,
+    {Directory? from}) async {
   if (args.length != 3) {
     stderr.writeln(_usage);
     return 2;
@@ -147,12 +151,31 @@ Future<int> runProbe(List<String> args, Map<String, String> env) async {
     return 2;
   }
 
-  final root = findRepoRoot(Directory.current);
+  final root = findRepoRoot(from ?? Directory.current);
   if (root == null) {
     stderr.writeln('Not inside the repository.');
     return 2;
   }
   final manifest = readManifestWithSizes(root);
+
+  // The same two conditions control_capture answers, in the same words: this
+  // tool reads the photographs by name and byte size out of the same blocks,
+  // and took `manifest[set]!` and a missing figure the same way (T-0232,
+  // T-0261). Before the endpoint check, so a checkout that cannot run this at
+  // all is told that rather than told to set three variables first.
+  for (final set in sets) {
+    final missing = blockMissing(manifest, set);
+    if (missing != null) {
+      stderr.writeln(missing);
+      return 2;
+    }
+  }
+  final notHere = figuresNotHere(root);
+  if (notHere != null) {
+    stderr.writeln('This probe reads the control photographs by name and byte '
+        'size before it spends anything, and $notHere.');
+    return notHereExit;
+  }
 
   final photoRoot = env['SHELFSCAN_PHOTOS'];
   if (photoRoot == null || !Directory(photoRoot).existsSync()) {
@@ -376,6 +399,9 @@ cloud_probe -- a control set through a cloud endpoint, repeated (T-0112)
 
 `run` needs SHELFSCAN_PHOTOS and SHELFSCAN_OPENAI_API_KEY / _BASE_URL /
 _MODEL, and costs money. `rows` and `tally` are offline and free.
+
+Exit codes: 0 done, 4 the working record `run` reads is not on this machine,
+2 misuse.
 ''';
 
 Future<int> run(List<String> args) async {
