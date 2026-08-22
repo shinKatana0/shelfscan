@@ -181,7 +181,7 @@ extension TitleMatchingLabel on TitleMatching {
 const keylessConsequence =
     'No IGDB lookup: every row keeps the title the model read. No cover art '
     'and no platform id, and the Tonkatsu .xcoll export carries none of '
-    'these rows -- CSV carries them all. Reading the photos still needs a '
+    'these rows -- CSV carries them all. Reading the photos still takes a '
     'vision backend.';
 
 const igdbConsequence =

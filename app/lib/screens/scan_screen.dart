@@ -1169,10 +1169,6 @@ class _ScanScreenState extends State<ScanScreen> {
   /// screen and a screen with inputs show the same panels, and a second copy
   /// is a second thing to forget.
   List<Widget> _runPanels() => [
-        // Not while a run is in flight: its mode was fixed when it started,
-        // and a live control over a settled fact invites a tap that cannot
-        // do anything.
-        if (!_running) _matchingPanel(),
         if (_converting.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -1216,6 +1212,18 @@ class _ScanScreenState extends State<ScanScreen> {
               ],
             ),
           ),
+        // Last, so it sits directly above the Scan button it governs -- and
+        // so that nothing already on this list moves when it appears. This
+        // screen has three measured overflows behind it (T-0161, T-0179 and
+        // the empty-state one below), and a panel inserted above the others
+        // pushed the resume-review button and the status line's own shortcut
+        // out of an 800x600 viewport: still built, still found, no longer
+        // tappable (measured 2026-08-22, `flutter test`).
+        //
+        // Not while a run is in flight: its mode was fixed when it started,
+        // and a live control over a settled fact invites a tap that cannot
+        // do anything.
+        if (!_running) _matchingPanel(),
       ];
 
   @override
@@ -1299,7 +1307,20 @@ class _ScanScreenState extends State<ScanScreen> {
                           ),
                         ),
                       ),
-                      ..._runPanels(),
+                      // Flexible and scrolled, where this was a plain spread
+                      // until T-0230: the empty screen had ~4 px of slack
+                      // left over an 800x600 window (measured 2026-08-22,
+                      // `flutter test`), so the mode panel overflowed it the
+                      // moment it arrived -- the striped bar over the Scan
+                      // button this file has now measured three times. The
+                      // centred hint keeps its Expanded, the panels take what
+                      // they need up to the half they are flexed for, and
+                      // anything past that scrolls instead of being clipped.
+                      Flexible(
+                        child: SingleChildScrollView(
+                          child: Column(children: _runPanels()),
+                        ),
+                      ),
                     ],
                   )
                 // Scrolled, not clipped, and a Column inside a

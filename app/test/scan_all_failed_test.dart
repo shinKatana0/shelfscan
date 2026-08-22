@@ -288,6 +288,11 @@ void main() {
     // to Settings for a scan that mostly worked.
     expect(find.byKey(const Key('failed-photos-banner')), findsOneWidget);
     expect(find.text('READ shelf2.jpg'), findsOneWidget);
+    // Scrolled to since T-0230: this run has no IGDB stage, so the review
+    // screen leads with the keyless banner, and at 800x600 the third group
+    // was the last thing that fit. The property is that the row is there,
+    // not that three groups fit one viewport.
+    await tester.scrollUntilVisible(find.text('READ shelf3.jpg'), 100);
     expect(find.text('READ shelf3.jpg'), findsOneWidget);
     expect(_route, findsNothing);
     expect(find.byKey(const Key('scan-status')), findsNothing);

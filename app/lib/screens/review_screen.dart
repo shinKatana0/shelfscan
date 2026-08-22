@@ -607,15 +607,21 @@ class _ReviewScreenState extends State<ReviewScreen> {
   ///
   /// Nothing here re-derives `canExport`. Which rows csv carries is the
   /// exporter's rule and stays there; this says which lookup did not happen.
+  ///
+  /// Dense, and two lines rather than three. This screen has no spare
+  /// height: at 800x600 the third photo group is the last thing that fits,
+  /// and a full-size banner pushed it past the fold (measured 2026-08-22,
+  /// `flutter test`). The clause it replaces cost every unmatched row part
+  /// of a subtitle, so the trade is a fixed 64 px against a per-row one.
   Widget _keylessBanner() => _runBanner(
         key: const Key('keyless-run-banner'),
         background: Theme.of(context).colorScheme.secondaryContainer,
         foreground: Theme.of(context).colorScheme.onSecondaryContainer,
         icon: Icons.link_off,
+        dense: true,
         title: 'Keyless run -- nothing was looked up',
-        subtitle: 'Every row is the title as it was read, so there are no '
-            'covers and no platform ids, and the .xcoll export has nothing '
-            'to carry. Export CSV: it takes the rows as they are.',
+        subtitle: 'Every row is the title as it was read. Export CSV; '
+            '.xcoll has no ids to carry.',
       );
 
   Widget _runBanner({
@@ -625,11 +631,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
     required IconData icon,
     required String title,
     required String subtitle,
+    bool dense = false,
   }) =>
       Material(
         key: key,
         color: background,
         child: ListTile(
+          dense: dense,
           iconColor: foreground,
           textColor: foreground,
           leading: Icon(icon),
