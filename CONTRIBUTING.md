@@ -22,6 +22,16 @@ keep its runtime dependencies at `http` alone. CI runs these same four
 commands as two jobs, each `test` with `--reporter expanded` so a failing
 test is named in the log.
 
+Before publishing anything, run both suites through `tool/check-suites.sh`
+instead. Neither runner can be trusted to say what happened to itself: when a
+suite file's test host process dies, every test in that file — including tests
+that never started — is reported `did not complete` with no cause attached, and
+a test that hangs rather than dies produces no timeout and no further output at
+all. The script bounds each run in wall clock, kills the process tree if the
+bound trips, and then reads its own log: any file named `did not complete` is
+re-run on its own, because a file whose host died comes back green and a real
+defect does not.
+
 ## What a change must not break
 
 - **The platform boundary.** Photos travel as bytes (`PhotoInput`), never
