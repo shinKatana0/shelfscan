@@ -1,0 +1,14 @@
+name: shelfscan_core
+description: Core pipeline turning shelf photos into an importable game collection.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.4.0
+
+dependencies:
+  http: ^1.2.0
+
+# Runtime deps stay at "http only" (ARCHITECTURE.md); test tooling is dev-only.
+dev_dependencies:
+  test: ^1.25.0

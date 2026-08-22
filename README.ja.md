@@ -1,0 +1,900 @@
+<!-- Translated from 60d6cf1 (2026-08-22). The rule, and how to check
+     whether this is still true: README.md, "Translations". -->
+
+[English](README.md) · [Русский](README.ru.md) · **日本語**
+
+# shelfscan
+
+**shelfscan は、すでに手元にあるゲームコレクションを、別のアプリが取り込める
+ファイルに変える。** 棚を撮影すれば、ビジョンモデルが背表紙を読む。PC に
+インストール済みのゲームのフォルダや、マシン上の GOG Galaxy ライブラリを
+指定すれば、モデルも費用も一切使わずにそれらを読む。一度の実行で得たものは
+すべて一つのレビューファイルに集まり、それを手で確認したうえで、Tonkatsu Box
+向けの `.xcoll`（中の ID からカバー画像とメタデータを Tonkatsu Box 自身が
+取得する）か、CLZ Games をはじめ大半のコレクション管理アプリが読む汎用 CSV が
+出てくる。
+
+このツールは**カタログ UI もデータベースも持たない**。認識と書き出しだけで、
+それ以外は何もしない。四つの入力源が一つの重複排除を通るので、ディスクで所有
+していて*かつ*インストールもしてあるゲームは、二行ではなく一行になる。コマンド
+ライン版と Flutter アプリがあり、どちらも同じパイプラインを動かす。
+
+このプロジェクトは、データを渡す先のどのアプリとも無関係である
+（[免責](#disclaimer)）。
+
+<a id="what-it-cannot-do"></a>
+
+## できないこと
+
+正直なほうの半分を先に置く。ここの各行は実測であり、リンク先にその数値がある。
+
+- **現時点では Windows のみ。** アプリをビルドして動かしたのは Windows だけで、
+  Android は一度もビルドも実行もしていない。対応済みではなく未検証として扱う
+  こと。構造上 Windows 限定のものが二つある。スマートフォンの HEIC 写真の変換は Windows
+  Imaging Component を使い、GOG Galaxy ライブラリは Galaxy 自身のデータベース
+  から読むが、Galaxy は Windows 用プログラムである。インストーラも配布バイナリ
+  もなく、ソースからビルドする（[セットアップ](#setup)）。
+- **品質は与えたビジョンモデルの品質そのままであり、無料のものには既知の上限が
+  ある。** 既定のローカルモデル `qwen2.5vl:7b` はラテン文字の背表紙をよく読む
+  が、印刷された *Switch 2* の帯はまったく読まない。Switch 2 のケースは
+  `PS2` というヒントを付けて返ってくる。一方で日本語の文字は最大解像度では
+  *読める*。低解像度では日本語の背表紙を落とすが、そこではそれが正しい答え
+  である。外国語だから落ちたのではなく、判読できないからである。クラウドモデル
+  なら自動的に良いというわけでもない。`gpt-4.1-mini` はその日本語背表紙を
+  一つも読まないが、ローカルモデルは読む。文字と帯の両方を読むのは `gpt-5.5`
+  だけで、それには金がかかる（[実測した差](#which-model-and-what-it-changes)）。
+- **人間による確認は省略できない。モデルの確信度が代わりを務めることもない。**
+  ローカルモデルは部分的にしか読めていない行を含め、すべてに `1.0` を返す。
+  すべての項目が書き出し前にあなたの目を通る。残りの五分の一はそこで直る
+  （[何を期待できるか](#what-to-expect)）。
+- **まったく読まれない背表紙もある。** ロゴだけで文字のない背表紙と、暗すぎるか
+  画面内で小さすぎて解像できない背表紙である。それらは推測されず、数えて名前を
+  挙げられ、あなたが[手で追加する](#adding-one-by-hand)。
+- **プラットフォームは空欄になることが多い。** ディスクのケースにはモデルが読む
+  帯があるが、Switch のカートリッジを積んだものにはない。そういう行は
+  プラットフォームなしで届くので、確認の場で指定する。
+- **Tonkatsu の `.xcoll` 書き出しには IGDB の ID が要る**ので、IGDB の資格情報が
+  要る。なくても実行はでき、CSV は書き出せる（[経路 A](#path-a--keyless)）。
+- **端から端まで検証できている経路は一つだけ。** 写真 → `.xcoll` → Tonkatsu Box
+  への取り込み。承認した項目はすべて届き、カバー画像とメタデータは取り込み側が
+  取得、プラットフォーム ID はすべて正しく、Nintendo Switch 2 も含む
+  （T-0009）。
+  ディスク系の入力源はより新しく、はるかに実地の量が少ない。実在のフォルダに
+  対しては実行済みで、インストール済みの GOG ゲーム一本はストア ID だけで解決
+  され（`externalId`、検索文字列なし）、ダウンロードを溜めたフォルダからは
+  三行と、理由を明示した拒否が一件出た。ただしその実行は書き出しで止まっている。
+  **ディスク系入力源から出た `.xcoll` をカタログアプリに取り込んだことはない**
+  ので、「端から端まで検証済み」は依然として写真だけのものである。CSV をここで
+  CLZ Games に取り込んだこともない。形式は汎用でテストもあるが、取り込みは未検証
+  である。
+- **インストーラの置き場はゲームフォルダではない。** 名前だけでは
+  `NoteWellSetup.exe` と `setup_moor_1.9.exe` を区別できない。実在の `Downloads`
+  フォルダで計測したところ、名前解析が出したタイトルはすべてゲームではなく
+  アプリケーションだった。そのためこのコマンドは、よく知られた個人用・システム用
+  ディレクトリを正面から拒否する。そのフォルダは私的なものであり、中身は
+  公開しない。
+- **「ローカル」は「オフライン」を意味しない。** ローカル実行はすべての写真を
+  あなたの Ollama サーバへ POST し、そのアドレスを決めるのはあなたである。LAN 上
+  の別のマシンを指していれば、写真は平文の HTTP でそこへ送られる
+  （[写真がどこへ行くか](#where-your-photos-go)）。
+
+## アカウントなしで試す
+
+鍵も登録も不要で、申し込むものは何もない。必要なのは Dart SDK（コマンドライン版
+だけなら Flutter は不要）、[Ollama](https://ollama.com)、約 6 GB のモデル
+ダウンロードである。
+
+```
+ollama pull qwen2.5vl:7b
+
+cd packages/shelfscan_core
+dart pub get
+dart run shelfscan_core:shelfscan scan ../../photos -o collection.review.json
+```
+
+`collection.review.json` を開き、各ゲームの `"status"` を `approved` か
+`rejected` にしてから:
+
+```
+dart run shelfscan_core:shelfscan export collection.review.json --target csv -o shelf.csv
+```
+
+これが鍵なし経路のすべてであり、Windows での既定でもある。実行が何を印字し、何を
+飛ばし、写真ではなくディスクを読む二つのコマンドが何かという詳しい形は、
+[セットアップ](#setup)と[コマンド](#commands)にある。
+
+## 費用と、マシンから出ていくもの
+
+| | |
+|---|---|
+| 写真、ローカルモデル | **$0。** あなた自身の Ollama サーバ、アカウント不要。 |
+| 写真、クラウドモデル | **あなたの鍵、あなたの請求。** 2026-08-16 時点の提供元の公表料金で `gpt-5.5` を実測: 4000×3000 の写真三枚による棚のスキャンは 1 回あたり約 **$0.45**（$0.38〜$0.46。1200×900 の写真二枚のスキャンなら $0.20〜$0.27）。 |
+| インストール済みゲーム、GOG Galaxy ライブラリ | **$0。** モデルも鍵も使わない。Galaxy のライブラリはあなたのマシン上のファイルから読み、どのストアからも何も取得しない。 |
+| IGDB の ID（およびそれに伴う `.xcoll`） | **$0**。ただし自分で登録する無料の Twitch アプリケーションが要る（[経路 B](#path-b--bring-your-own-keys)）。 |
+
+**鍵は各自で用意する。** このプロジェクトは資格情報を同梱せず、プロキシも運用
+しない。バイナリに隠された共通の鍵はなく、使うために登録するものもない。鍵は
+環境変数（コマンドライン版）か OS のキーチェーン（アプリ）に置かれ、リポジトリ内
+のファイルには決して置かれない。
+
+**テレメトリは一切ない。** 解析も、クラッシュレポートも、このプロジェクト自身の
+サーバも、キャッシュもない。どこかへ送られるのは、あなたがスキャンする写真——
+*あなたが*設定したビジョンモデルへ、それ以外へは送らない——と、解決段階が IGDB
+へ送るタイトル文字列だけであり、後者は画像ではない。何がどこへ行くかは
+[写真がどこへ行くか](#where-your-photos-go)にあり、クラウドのエンドポイントを
+選ぶ前に読む価値がある。
+
+## 次に読むもの
+
+| | |
+|---|---|
+| [doc/guide.ja.md](doc/guide.ja.md) | 一回の実行を最初から取り込み完了まで通しで。棚の撮り方から始まる |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | パイプライン、プラットフォーム境界、新しい入力源の差し込み口（英語） |
+| [doc/decisions/](doc/decisions/) | 自明でない決定と、それを決めた実測（英語） |
+| [doc/measurements.md](doc/measurements.md) | すべての数値。測ったうえで*やらないと決めた*ものも含む（英語） |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | テスト群の走らせ方と、変更が黙って壊してはいけないもの（英語） |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | ここでの振る舞いについて（英語） |
+| [SECURITY.md](SECURITY.md) | 鍵、写真、問題の報告方法（英語） |
+| [CHANGELOG.md](CHANGELOG.md) | バージョン間の変更点（英語） |
+
+以降はリファレンスである。実行が何を生むか、セットアップの全体、全コマンド、
+書き出し形式、そして写真がどこへ行くか。
+
+<a id="what-to-expect"></a>
+
+## 何を期待できるか
+
+実在の棚の写真二枚を、既定のローカルモデル（`qwen2.5vl:7b`）で計測:
+
+- **項目の約 80〜83% が端から端まで正しく出る。** ラテン文字のタイトルなら
+  約 93%。すべての項目が書き出し前に人間の確認を通るが、これは形式ではない。
+  残りの五分の一が直るのはそこである。
+- **この写真上の日本語の背表紙は読まれない。** モデルはもうそれらを推測しない
+  （以前はもっともらしいタイトルを捏造していた）。読めなかったものとして数えられ
+  報告されるので、あなたが手で追加する。これはこの写真について
+  の話であり、文字体系についての規則ではない。最大解像度の対照セットでは、同じ
+  モデルがそれらを書き起こす
+  （[下の表](#which-model-and-what-it-changes)）。
+- **ロゴだけで文字のない背表紙**（この注記のきっかけになった例は、表に
+  タイトルが印刷されていないケースである）は検出されない。答えは同じで、手で追加する。
+- **プラットフォームは空欄になることが多い。** ディスクのケースにはモデルが読む
+  プラットフォームの帯があるが、Switch のカートリッジを積んだものにはない。
+  そういう項目はプラットフォームなしで届くので、確認の場で指定する。
+- **ここではモデルの確信度は役に立たない。** ローカルモデルは部分的にしか読めて
+  いない行を含め、すべてに `1.0` を返す。これで絞り込んではいけない。
+
+上の二枚に対する実行は、読めなかったものをそのまま印字する。
+*これは説明用の出力です。ブロック内のファイル名と数値は作り物であり、実際の棚
+を測ったものではありません。*
+
+```
+Scanned 2 photo(s): 18 game(s) detected, 18 unresolved.
+Unread-spine reports: 6 -- one report can describe several spines, so this is not a count of spines.
+  by photo: photo_a.jpg: 3 report(s), photo_b.jpg: 3 report(s)
+  by script: japanese: 3, unknown: 3
+  photo_a.jpg: characters too small to resolve
+  ...
+```
+
+背表紙の数ではなく報告の数である。クラウドモデルは複数本をまとめて一件で答える
+ことがある（「真ん中の二、三本はぼやけていて読めない」）ので、この数はモデルが
+言ったことの数であり、その下にモデル自身の文言が印字される。
+
+<a id="which-model-and-what-it-changes"></a>
+
+### どのモデルを選ぶと何が変わるか
+
+モデルはあなたが選ぶものであり、結果に効く単独の梃子としては最大のものである。
+同じ対照写真で三つを計測した。完全な数値とその実行内容は
+[`doc/measurements.md`](doc/measurements.md) の「The second lever works」および
+「A bigger local model, measured and rejected」にある（英語）。
+
+| | `qwen2.5vl:7b`（ローカル、既定） | `gpt-4.1-mini` | `gpt-5.5` |
+|---|---|---|---|
+| 費用 | **$0** | あなたの鍵 | あなたの鍵 — 写真三枚の棚スキャンで約 **$0.45** |
+| ラテン文字の背表紙 | 約 93% 正しい | 検出数は写真ごとに同程度 | 同程度かやや上。`gpt-4.1-mini` が読み違える、光の反射したタイトルを読む |
+| 日本語の背表紙 | 最大解像度では**読む**。ただしプラットフォームは誤り。低解像度では落とすが、そこでは判読不能である | **読まない** — 一本も | **読む**。すべて、五回中五回、プラットフォームも正しい |
+| 印刷された *Switch 2* の帯 | **読まない** — それらのケースは `PS2` というヒントで返る | 読まない | **背表紙ごとに読む** — 最大解像度の写真三枚、各五回ずつで `SWITCH 2` のヒントはすべて正しく、帯に数字のないケースへの誤検出もない。三枚目は一件も出さない。フレームが端で列を切っており、その切り口のケースには帯が印刷されているのに読まれないからで、この集計は返されたヒントの数であって棚にある帯の数ではない。1200×900 では帯を写真一枚で確認しており、五回ともそこのケースはすべて正しく読まれる。これは別の測定である |
+| 捏造 | どちらの対照セットでもなし | 低解像度の五回中三回、例の反射したタイトルを読み違える | 捏造タイトルが一件、五回中二回 — 同じ背表紙が二度で、最大解像度の写真三枚から読まれた全体に対しての話である。1200×900 では一件もない |
+
+この表が**そうではない**ものが二つある。これは**「クラウドのほうが良い」では
+ない**。無料のローカルモデルはその日本語の背表紙を読み、有料の二つのうち一つは
+読まない。つまりこれはクラウドについての主張ではなくモデルについての主張であり、
+有料であること自体が何かを買ってくれるわけではない。
+そしてこれは、より大きな*ローカル*モデルに手を伸ばす理由にも**ならない**。32B は
+計測のうえ却下された。その数値は計測アーカイブにある。
+
+これら全部を上回った梃子は無料である。**棚をもっと高い解像度で撮ること。** 同じ
+棚が 4000×3000 では 1200×900 の二倍以上の検出になる。同じモデル、同じ
+プロンプトである。モデルに金を払う前に棚を撮り直すこと。それが実際に何を意味
+するかは[手引き](doc/guide.ja.md#手順-1--棚を撮影する)にある。
+
+<a id="adding-one-by-hand"></a>
+
+### 手で一件追加する
+
+上に出てくる「手で追加する」は、肩をすくめる言い訳ではなく、支援された手順で
+ある。レビューファイルは設計として手で編集できる。`games` にブロックを追記し、
+`resolve`（下記）を再実行して IGDB と突き合わせる:
+
+```json
+{
+  "detection": {
+    "raw_title": "<the title as you read it off the spine>",
+    "platform_hint": "PS4",
+    "media_type": "disc",
+    "origin": "manual"
+  }
+}
+```
+
+```
+dart run shelfscan_core:shelfscan resolve collection.review.json
+```
+
+必須なのは `raw_title` だけ。`platform_hint` は IGDB の検索を絞るので書く価値が
+ある。`media_type` は `cartridge`、`disc`、`unknown` のいずれか。
+`origin: "manual"` は、その行が写真から読まれたのではなく入力されたものだと示す。
+`added_from_photo` は、手入力の行が持てる唯一の写真関連フィールドで、入力時に
+見ていた写真の名前である。アプリのレビュー画面でその行をその写真のグループに
+入れるのがこれである。それ以外（`source_photo`、`confidence`、`notes`、`best`、
+`candidates`、`status`）は省略してよい。手入力の行はどの写真からも読まれておらず、
+`resolve` が候補を与えるまで候補を持たない。
+
+手書きの項目も、読み取られた項目とまったく同じように解決される。IGDB の資格情報が
+なければ `resolve` は実行を拒否し、その項目は未解決のまま残る。CSV の書き出しは
+それも運ぶが、`.xcoll` は運ばない。
+
+<a id="setup"></a>
+
+## セットアップ
+
+コマンドライン版に必要なのは Dart SDK（3.4 以上）だけである。アプリには Flutter
+SDK が要り、そちらには Dart が含まれる。ビルドして動かしたホストは Windows だけ
+である。
+
+リファレンスではなく一回の実行の通しの解説は
+[doc/guide.ja.md](doc/guide.ja.md) にある。
+
+**shelfscan は資格情報を同梱せず、プロキシも運用しない。** このプロジェクトを
+使うために登録するものは何もなく、バイナリに隠された共通の鍵もない。以下はすべて、
+鍵が要らないか、あなた自身が登録したアカウントを使うかのどちらかである。どちらが
+要るか:
+
+| | 経路 A — 鍵なし | 経路 B — 自分の鍵 |
+|---|---|---|
+| 画像認識 | ローカルの Ollama、あなたのマシン上 | ローカルの Ollama、または自分の鍵でクラウドモデル |
+| IGDB の ID | なし | あり |
+| CSV 書き出し | 可 | 可 |
+| `.xcoll` 書き出し | 不可（IGDB の ID が要る） | 可 |
+| 登録 | 不要 | Twitch アプリケーション（無料） |
+| 写真がマシンを出るか | あなた自身の Ollama サーバより先へは出ない | クラウドモデルを選んだ場合のみ。クラウドの `--fallback` を使えば全枚数が送られる |
+
+<a id="path-a--keyless"></a>
+
+### 経路 A — 鍵なし
+
+アカウントも鍵も要らず、設定するものもない。Windows での既定はこれである。
+
+1. [Ollama](https://ollama.com) を入れ、既定のビジョンモデル（約 6 GB）を取得
+   する:
+
+   ```
+   ollama pull qwen2.5vl:7b
+   ```
+
+2. 棚の写真をフォルダに入れ、そのフォルダをスキャンする:
+
+   ```
+   cd packages/shelfscan_core
+   dart pub get
+   dart run shelfscan_core:shelfscan scan ../../photos -o collection.review.json
+   ```
+
+   実行は自らの選択を二つとも宣言する。`Vision: local Ollama (qwen2.5vl:7b)` と
+   `IGDB credentials not set -- resolve stage will be skipped, games stay
+   unresolved` である。後者はエラーではない。
+
+   **スマートフォンから出したままのフォルダで動く。** JPEG、PNG、WebP はその
+   まま読む。**HEIC/HEIF/HIF——スマートフォンのカメラの既定——は Windows では
+   読める。** スキャン前に一時ディレクトリで JPEG へ変換され、元のファイルの隣
+   には何も書かれない。判断するのは拡張子ではなくファイルの中身なので、
+   スマートフォンやメッセージアプリが `.jpg` に改名した HEIC も変換されるし、
+   `.jpg` という名前の表計算ファイルは送信されずに飛ばされる。実行は、何を変換
+   したか（4000×3000 の写真三枚。画像認識のほうは一枚あたり約 25 秒である）を
+   述べ、除外するファイルをすべて名指ししてから始まる:
+
+   ```
+   CONVERTED: shelf-1.HEIC -> jpeg in 652 ms
+   CONVERTED: shelf-2.HEIC -> jpeg in 361 ms
+   CONVERTED: shelf-3.HEIC -> jpeg in 369 ms
+   HEIC: 3 file(s) converted to a temp directory in 1907 ms total (process start included). Nothing was written next to the originals.
+   SKIPPED: notes.jpg (.jpg) -- named .jpg but the bytes are not a photo this tool reads; the contents decide here, not the name
+   ```
+
+   HEIC も含め、黙って捨てられるものは何もない。変換できない場合——Windows 以外
+   のホスト、*HEIF Image Extensions* コーデックのない Windows（Microsoft Store
+   から入れる）、コーデックが失敗したファイル——その写真は変換器自身の理由と
+   ともに飛ばされ、実行は残りで続く:
+
+   ```
+   SKIPPED: shelf-1.HEIC (.heic) -- HEIC conversion failed -- HEIC decoding here is Windows-only (it uses the Windows Imaging Component) and this host is linux; convert it to .jpg or .png first
+   ```
+
+   写真が一枚も得られなかったフォルダは、「0 枚」の成功ではなくエラー終了である。
+
+3. `collection.review.json` を開き、各ゲームの `"status"` を `approved` か
+   `rejected` にする。
+
+4. CSV を書き出す。*これは説明用の出力で、以下の数値は作り物であり、実際の棚
+   を測ったものではありません。*
+
+   ```
+   dart run shelfscan_core:shelfscan export collection.review.json --target csv -o shelf.csv
+   Exported 18 of 18 approved game(s) -> shelf.csv
+   ```
+
+**この経路の限界:** IGDB の ID がなく、したがって `.xcoll` もない。Tonkatsu Box
+の取り込み形式は IGDB の ID の一覧そのものなので（[対応する書き出し
+先](#supported-targets)を参照）、解決段階がなければ運ぶものが何もない。だから、
+中身を黙って落としたファイルを書くのではなく、そう言う。
+*これは説明用の出力です。ブロック内のファイル名と数値は作り物であり、実際の棚
+を測ったものではありません。*
+
+```
+dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu -o shelf.xcoll
+Exported 0 of 18 approved game(s) -> shelf.xcoll
+  18 left out: the tonkatsu target carries only items with a resolved IGDB match.
+```
+
+CSV にはその要件がない。ビジョンモデルが読んだタイトルとプラットフォームを、
+`igdb_id` 列を空にしたまま保持する。
+
+<a id="path-b--bring-your-own-keys"></a>
+
+### 経路 B — 自分の鍵を使う
+
+二つの資格情報はどちらも任意で、互いに独立している。片方でも、両方でも、どちらも
+なしでもよい。スキャンを実行するのに必須のものはここには何もない。
+
+**IGDB（ゲームの ID、およびそれに伴う `.xcoll`）。** IGDB の認証は Twitch 経由
+なので、資格情報は Twitch のアプリケーションから得る:
+
+1. https://dev.twitch.tv/console/apps で登録する。二要素認証を有効にした Twitch
+   アカウントが要る。有効でなければコンソールはアプリケーションの作成を拒む。
+2. リダイレクト URL はこのプロジェクトでは使わない（client credentials フローを
+   使う）ので、`http://localhost` のような妥当な値なら何でもよい。
+3. client id を控え、client secret を生成する。
+
+**クラウドの画像認識（任意、難しい写真向け）。**
+https://console.anthropic.com で取得した自分の Anthropic API キーか、OpenAI の
+`/chat/completions` API を話す任意のエンドポイント（Groq、OpenRouter、Mistral、
+GitHub Models、Cerebras、Gemini の互換エンドポイント）向けの自分の鍵。既定は
+ローカルモデルで、クラウドのエンドポイントはどれも明示的に選ぶものであり、黙って
+切り替わることはない。
+
+**鍵の置き場所。** コマンドライン版では環境変数であり、それ以外は読まない:
+
+| 変数 | 用途 |
+|---|---|
+| `IGDB_CLIENT_ID`、`IGDB_CLIENT_SECRET` | 解決段階（なければその段階を飛ばす） |
+| `ANTHROPIC_API_KEY` | `--provider anthropic` または `--fallback anthropic` |
+| `SHELFSCAN_ANTHROPIC_MODEL` | 任意。空なら組み込みの既定を使う。モデルを指定すると shelfscan は temperature を指定しなくなる（新しい Claude 系はそれを拒むため）ので、数値を取ったときはどのモデルだったかを記録すること |
+| `SHELFSCAN_OPENAI_BASE_URL`、`SHELFSCAN_OPENAI_MODEL`、`SHELFSCAN_OPENAI_API_KEY` | `--provider openai` または `--fallback openai`。三つとも必須で、既定値は一つもない |
+| `SHELFSCAN_OLLAMA_MODEL`、`SHELFSCAN_OLLAMA_URL` | ローカルの既定値を上書きする |
+| `SHELFSCAN_OLLAMA_FALLBACK_MODEL` | すべての写真を読み直す二つ目の**ローカル**モデル（`--fallback`）。クラウドのものを選ぶことは決してできない |
+| `SHELFSCAN_VISION_TIMEOUT` | 画像認識の一回の呼び出しに与える秒数（整数）、1〜1800。空なら 120 秒。上げるのは、マシンに対して大きすぎて一枚に数分かかるモデルのときだけ。範囲外の値は既定値に置き換えられるのではなく拒否される |
+
+```
+# PowerShell
+$env:IGDB_CLIENT_ID = '...'
+$env:IGDB_CLIENT_SECRET = '...'
+
+# bash
+export IGDB_CLIENT_ID=...
+export IGDB_CLIENT_SECRET=...
+```
+
+[`.env.example`](.env.example) は**変数名の参照一覧にすぎない**。このコードベース
+には `.env` ファイルを解釈するものがないので、`.env` にコピーして書き込んでも
+効果はなく、エラーも出ない。シェルで変数を設定すること。
+
+アプリでは鍵は設定画面に入れ、OS のキーチェーンに保存される。リポジトリ内の
+ファイルには保存されない。
+
+### アプリ
+
+**ビルドして動かしたターゲットは Windows だけである。** 以下のコマンドの Android
+側も書いてあり、プロバイダの方針も入っているが、一度もビルドも実行もされていな
+い。対応済みではなく未検証として扱うこと。
+
+プラットフォーム用フォルダは生成物であり、リポジトリには入っていない:
+
+```
+cd app
+flutter create --platforms=windows,android .
+rm test/widget_test.dart README.md
+flutter pub get
+flutter run -d windows   # or: flutter run -d <android-device>
+```
+
+`flutter create` はプラットフォーム用フォルダと一緒に、既定のカウンタ
+テンプレートから、このプロジェクトの一部ではないファイルを二つ書く。三行目の
+削除はそのためであり、片づけではなく手順の一部である。`test/widget_test.dart`
+はここに存在しない `MyApp` を起動するので（このアプリは `ShelfscanApp`）、
+残しておくと `flutter test` は誰も書いていないファイルで落ちる:
+
+```
+test/widget_test.dart:16:35: Error: Couldn't find constructor 'MyApp'.
+```
+
+どちらのファイルも意図的に `.gitignore` に入れていない。後で `flutter create`
+を走らせれば戻ってくるし、`git status` がそれらを挙げることが唯一の警告だから
+である。
+
+#### Windows: `flutter doctor` が教えてくれない二つの前提
+
+**`flutter doctor` が緑でも、Windows ビルドが通るとは限らない。** その Visual
+Studio のチェックが見るのは `Desktop development with C++` ワークロードと、
+ちょうど二つのコンポーネント（`VC.Tools.x86.x64` と `VC.CMake.Project`）だけで、
+Windows の開発者モードのチェックはそもそも存在しない。だから下の二つがどちらも
+欠けていても `[✓] Visual Studio - develop Windows apps` と表示する。このアプリの
+最初のビルドは、この順で両方に当たった。
+
+**1. Windows の開発者モードを有効にする。** これがないと `flutter create` と
+プラグインを含むすべてのビルドが次で中断する:
+
+```
+Building with plugins requires symlink support.
+
+Please enable Developer Mode in your system settings. Run
+  start ms-settings:developers
+to open settings.
+```
+
+Flutter はプラグインのソースをシンボリックリンクでビルドに繋ぎ込むが、Windows
+は開発者モードが有効になるまで管理者にしかシンボリックリンクの作成を許さない。
+その `start ms-settings:developers` を実行してスイッチを入れる。新品のマシンでは
+無効である。これが書き込むレジストリ値
+`HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock\AllowDevelopmentWithoutDevLicense`
+は、開発者モードを一度も有効にしていないうちはそもそも存在せず、有効にした後は
+`1` になる。
+
+**2. Visual Studio に C++ ATL コンポーネントを追加する。**
+`Desktop development with C++` ワークロードに ATL は含まれない。*Individual
+components* の下の別項目である。これがないと、ビルドはツールチェーン全体を回し
+きったうえで、たった一つのプラグインで死ぬ:
+
+```
+flutter_secure_storage_windows_plugin.cpp(6): fatal error C1083: Cannot open include file: 'atlstr.h': No such file or directory
+```
+
+Visual Studio Installer → Modify → **Individual components** → `ATL` を検索 →
+**C++ ATL for x64/x86 (Latest MSVC)** にチェック。これは Build Tools 2026 での
+名前で、文言はツールセットに追随するため、VS 2022 では同じものが
+`C++ ATL for latest v143 build tools (x86 & x64)` と表示される。名前はローカライズ
+された installer では翻訳もされるので、常に効く手がかりはコンポーネント ID の
+`Microsoft.VisualStudio.Component.VC.ATL` である。
+
+コンパイラのエラー文言も同じように翻訳される。ロシア語環境ではその C1083 の行は
+`Не удается открыть файл включение: atlstr.h` と出る。翻訳を生き延びるトークンは
+`C1083` と `atlstr.h` である。英語の文ではなくそれらでコンソール出力を検索する
+こと。
+
+ATL への依存は Flutter のものではなくこちらのものである。BYOK の資格情報を OS の
+キーチェーンに保持する `flutter_secure_storage` が、このプロジェクトで
+`<atlstr.h>` を include している唯一のものである。
+
+#### 最初に成功したビルドがどう見えるか
+
+Flutter 3.47.0 stable、Visual Studio Build Tools 2026 18.9.12105.275、MSVC
+14.51.36231、Windows 11 25H2 で計測:
+
+| コマンド | コールドビルド | 生成物 |
+|---|---|---|
+| `flutter build windows --debug` — `flutter run -d windows` がコンパイルするもの | 124 秒 | `app\build\windows\x64\runner\Debug\shelfscan_app.exe` |
+| `flutter build windows` | 164 秒 | `app\build\windows\x64\runner\Release\shelfscan_app.exe` |
+
+コールドとは、何もキャッシュされていない状態を指す。`build\` も `.dart_tool\`
+もない。数分かかると見込み、固まったと判断しないこと。
+
+リリースの exe はわずか 90 KB で、単体では動かない。`flutter_windows.dll`、
+`data\`、そしてプラグインごとに一つの DLL が隣に置かれる。配布するのはフォルダで
+ある。
+
+#### `app\build\` を手で消さないこと — `flutter clean` を使う
+
+`app\.dart_tool\` を残したままビルド出力を手で消すのは自然な反射だが、それは
+以後のビルドを debug も release も残らず壊す。ビルドは全部のコンパイルに成功した
+うえで INSTALL プロジェクトで死ぬ:
+
+```
+error MSB3073: "...\cmake.exe" -DBUILD_TYPE=Debug -P cmake_install.cmake [...\app\build\windows\x64\INSTALL.vcxproj]
+```
+
+この中に原因を名指しするものは何もない。原因が見えるのは、`app\build\windows\x64`
+から同じ cmake の行を手で実行したときだけである:
+
+```
+CMake Error at cmake_install.cmake:231 (file):
+  file INSTALL cannot find
+  ".../app/build/native_assets/windows": No error.
+```
+
+**原因は、`.dart_tool\flutter_build` にある増分キャッシュが、それが記述している
+`build\` 内のディレクトリより長生きしたことである。** そこの
+`install_code_assets` のスタンプが依然として有効と判定されるため、
+`build\native_assets\windows` を作る手順が飛ばされる一方、CMake の install 手順
+はそのディレクトリの存在を要求し続ける。`flutter pub get` はスタンプを消さず、
+助けにもならない。
+
+直し方:
+
+```
+cd app
+flutter clean
+flutter pub get
+flutter build windows --debug
+```
+
+`flutter clean` は `build\` と `.dart_tool\` をまとめて消す。`build\` だけを
+消しても直らないのに、これで直るのはそのためである。
+
+これは**新規クローンの問題ではない**。本当に何もない木は問題なくビルドできる
+（上の表）ので、クローン後に `flutter clean` を走らせる理由はない。
+
+上の ATL のエラーと同じく、MSBuild のラッパーの文言もローカライズされる。翻訳を
+生き延びるトークンは `MSB3073`、`cmake_install.cmake`、`INSTALL.vcxproj`、
+`native_assets` である。
+
+プロバイダの方針はプラットフォームごとに異なり、一つのファイル
+（`app/lib/provider_config.dart`）にだけ置かれている。Windows ではローカル
+（既定）、Anthropic、あなたが指定する任意の OpenAI 互換エンドポイントを選べる。
+**Android はクラウド専用**である。端末上のモデルは棚の背表紙には力不足なので、
+Android アプリにはあなた自身の画像認識用の鍵が要る。クラウドの選択肢はどちらも、
+選ぶその場で、写真が丸ごと送信されることを警告する。エンドポイント指定のほうには
+無料プランの学習利用についての一文が加わるが、有料の Anthropic アカウントには
+それは不要である。アプリは一枚の写真を一つのモデルでだけ読む。コマンドライン版の
+`--fallback`（二人目の読み手）に相当するものはアプリにはない。
+
+**写真について。アプリはコマンドライン版と同じものを受け取る。**
+`shelfscan_core` の同じ表に基づき、同じように名前ではなくファイルの中身で判断
+する。アプリのファイルダイアログは HEIC を提示する——Windows 自身の「画像」
+フィルタは提示しないので、スマートフォンの写真は以前は読めないどころか見えな
+かった——し、Windows ではプロセス内で一枚ずつ、4000×3000 の写真あたり 340〜610
+ミリ秒、UI スレッドの外で変換する。スキャンしないものは、数分後のプロバイダ
+呼び出しの時点ではなく、あなたが選んだその瞬間に、却下された写真のパネルで名指し
+される。**Android では何も変換しない。** 使っている HEIC コーデックは Windows の
+一部なので、そこで選ばれた HEIC はその理由とともに却下され、あなたが先に変換する
+ことになる。
+
+<a id="commands"></a>
+
+## コマンド
+
+```
+shelfscan scan <photos_dir> [-o review.json]
+                            [--provider anthropic|ollama|openai]
+                            [--fallback anthropic|ollama|openai|none]
+                            [--aliases data/title_aliases.json]
+                            [--installs <games_dir>] [--library]
+                            [--galaxy-db <path>]
+shelfscan scan-installs <games_dir> [-o review.json] [--aliases <file>]
+                                    [--library] [--galaxy-db <path>]
+                                                # no vision call, no cost
+shelfscan scan-library [-o review.json] [--aliases <file>]
+                       [--galaxy-db <path>]
+                                                # the whole GOG library,
+                                                # installed or not
+shelfscan resolve <review.json> [-o out.json] [--aliases <file>]
+                                                # IGDB stage only, no vision
+shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
+```
+
+- **`scan`** — 写真を入れ、レビューファイルを出す。`--provider ollama` が既定
+  なので、このフラグが意味を持つのはクラウドを明示的に選ぶときだけである:
+  `--provider anthropic`（`ANTHROPIC_API_KEY` が要る）または
+  `--provider openai`（任意の OpenAI 互換エンドポイント。三つの
+  `SHELFSCAN_OPENAI_*` が要る）。`--fallback` は**すべての**写真を読み直す
+  二つ目のモデルを足し、二つの読みを統合する。画像認識の呼び出しは倍になり、
+  二人目がクラウドなら写真は全枚数が送信される。それが何をもたらしたかは
+  [写真がどこへ行くか](#where-your-photos-go)を参照。`--fallback none` は
+  `SHELFSCAN_OLLAMA_FALLBACK_MODEL` が設定されていても無効にする。
+  `--aliases` は下記とは別の地域別タイトル表を指定する。
+- **`scan-installs`** — PC ゲームのディレクトリを入れ、同じレビューファイルを
+  出す。**画像認識の呼び出しは一切ない。** インストールに GoG 自身の
+  `goggame-*.info` があればそれを読み、なければファイル名やフォルダ名を解析する。
+  無料で、即座に終わり、繰り返してもバイト単位で同じ結果になる。モデルが何も
+  推測しないからである。向ける先はゲームのフォルダであって `Downloads` ではない。
+  実在の `Downloads` フォルダで計測したところ、名前解析が出した
+  タイトルはすべてゲームではなくアプリケーションだった（T-0158）。ファイル名の
+  中に `NoteWellSetup.exe` と `setup_moor_1.9.exe` を区別できるものはない。
+  計測したフォルダは私的なものであり、その一覧も、中身の件数も公開しない。この
+  コマンドはよく知られた個人用・システム用ディレクトリを正面から拒否し、毎回その
+  旨を述べる。
+- **`scan-library`** — GOG Galaxy 自身のローカルデータベースを入れ、同じレビュー
+  ファイルを出す。だから所有しているがインストール**していない**ゲームも一覧に
+  入る。写真も、画像認識の呼び出しも、費用もなく、`gog.com` からは何も取らない。
+  読むのはこのマシン上の一つのファイルであり、ログインも OAuth もなく、保存する
+  資格情報も必要な資格情報もない。**Windows のみ** — Galaxy が動くのがそこだから
+  である。読むのはアカウントではなく最後の同期のキャッシュなので、Galaxy を最後に
+  動かした後に買ったゲームは入っておらず、実行はキャッシュの古さを印字する。DLC、
+  Galaxy 自身が隠している版、Galaxy に接続された他ストアの版は、黙って落とすので
+  はなく**名前を挙げて除外される** — 実行は除外した行の種類を
+  それぞれ名で挙げる。
+- **一度の実行、複数の入力源。** ディスクで所有していて*かつ*インストールもして
+  あるゲームは一つのゲームであり、その両方を一つの重複排除に通すのは一度の実行だけ
+  である。`--installs` と `--library` は、写真のスキャンにそれらの入力源を足し、
+  そのゲームが一行になっている一つのレビューファイルを書く。コマンドを別々に
+  実行すれば、誰にも突き合わせられない二つのファイルができ、しかも二つ目の `-o`
+  が一つ目を上書きする。
+
+  ```
+  shelfscan scan D:\photos --installs "C:\GOG Games" --library
+  ```
+
+  コマンドは自分より安い入力源を足せるが、高いものは決して足せない。
+  `scan-installs` は `--library` を取り、`scan-library` はどちらも取らず、写真を
+  持たない実行に写真を足すものはない。それをやる実行が `scan` であり、画像認識の
+  オプションはすべてそこにある。
+- **`resolve`** — 既存のレビューファイルに対して IGDB の段階だけを再実行する。
+  写真にもビジョンモデルにも触れない。鍵なしのスキャンの後に資格情報を追加した
+  とき、エイリアス表を編集したとき、突き合わせ精度を測るときに役立つ。IGDB の
+  資格情報を要求し、なければ実行を拒む。解決こそがこのコマンドの全目的だから
+  である。レビューの状態は pending に戻る。新しい突き合わせは、前の結果に与えた
+  承認を無効にするからである。出力の既定は入力名に `.resolved.json` を付けた
+  ものなので、入力が上書きされることはなく、前後の比較が可能なまま残る。
+- **`export`** — 承認された項目から、選んだ形式を書く。
+
+<a id="regional-titles-the-alias-table"></a>
+
+### 地域別タイトル: エイリアス表
+
+日本市場の背表紙には *Biohazard* と書かれているが、IGDB はそのゲームを
+*Resident Evil* として知っており、読んだままのタイトルで検索しても何も返さない。
+*Rockman* と *Mega Man* も同じである。`data/title_aliases.json` は検索の前に
+タイトルを書き換えるもので、意図的に手で編集できるようにしてある。外れを当たりに
+変える手段のうち、コードの変更が要らない唯一のものだからである。
+
+同梱されている状態のファイル、全文:
+
+```json
+{
+  "biohazard": "resident evil",
+  "rockman": "mega man",
+  "seiken densetsu": "mana"
+}
+```
+
+- 平坦な JSON オブジェクトで、`"背表紙にある表記": "IGDB での呼び名"`。読み込み時
+  に両側とも小文字化されるので、読みやすいように書けばよい。
+- キーは、タイトル全体がそれと等しいときだけでなく、**タイトルの中に現れれば
+  どこでも**置き換えられる。`biohazard re:4` は `resident evil re:4` として検索
+  される。だからキーは特徴的なものにしておくこと。短いキーは意図しないタイトルまで
+  書き換える。
+- 検索には書き換え後のタイトルを使うが、その後のスコアリングは IGDB の各行を
+  背表紙の生テキストとも比較する。したがってエイリアスは、IGDB にそのゲームを
+  返させさえすればよく、正確な名前である必要はない。
+- `--aliases <file>` は別のファイルを使う。フラグがなければ、作業ディレクトリから
+  上へ辿って `data/title_aliases.json` を探す。同じコマンドがリポジトリのルート
+  からでも `packages/shelfscan_core` からでも動くのはそのためである。
+- ファイルは実行のたびに先頭で読まれる。編集し、保存し、再実行する。ビルドし直す
+  ものも再起動するものもない。ファイルを編集して既存のレビューファイルに `resolve`
+  を再実行するのは画像認識の呼び出しをまったく使わないので、新しいエイリアスを
+  試す安い方法である。
+- ファイルがない、または壊れている場合、実行は組み込みの三つのエイリアスで続行し、
+  そう述べる。エイリアス表が悪いことは、失敗した実行ではなく、質の落ちたスキャン
+  である:
+
+  ```
+  WARN: No alias file at data/title_aliases.json -- falling back to 3 built-in aliases.
+  ```
+
+- この表を使うのは解決段階だけなので、鍵なしの実行（IGDB の資格情報がなく、解決
+  段階もない）では誰も読まず、編集しても何も変わらない。
+
+**ファイルを編集しても、アプリを再ビルドするまで実行中のアプリは変わらない。**
+アプリは自前のコピーではなく同じファイルを使うが、それを Flutter のバンドル
+アセットとして取り込んでおり（`app/pubspec.yaml` → `../data/title_aliases.json`）、
+アセットはビルド時に焼き込まれる。だから編集はコマンドライン版には次の実行で
+届き、アプリには次の `flutter run` / `flutter build` で届く。インストール済みの
+アプリはあなたの編集したファイルを決して読まない。Android にはそもそもそんな
+ファイルがない。
+
+<a id="supported-targets"></a>
+
+## 対応する書き出し先
+
+| 書き出し先 | 形式 | 取り込み方 | IGDB の ID が要るか |
+|------------|--------------|--------------------------------------------|--------------|
+| `tonkatsu` | `.xcoll` light | Tonkatsu Box → Import → Import Collection | 要る |
+| `csv`      | 汎用 CSV | 大半のコレクション管理アプリの取り込みダイアログ | 要らない |
+
+`.xcoll` の light 形式が運ぶのは IGDB の ID とプラットフォーム ID だけである。
+タイトルとカバー画像は Tonkatsu Box が取り込み時に自分で取得する。解決済みの
+突き合わせがない項目には入れるものがないので、`export --target tonkatsu` は
+そういう項目を除外し、何件除外したかを報告する。CSV はテキストを運ぶので、
+どちらにせよ受け取る。
+
+### CSV の列
+
+```
+title,platform,media_type,igdb_id,source_photo
+```
+
+`source_photo` は、そのタイトルが読み取られた*元の*写真であり、どの写真からも
+読まれていない場合——確認時に入力した行や、インストール済みゲームから取った行
+——は空になる。
+
+写真以外のものを読んだスキャン（`scan-installs`、`scan-library`、アプリのゲーム
+フォルダ）は、行の出所を述べられるように、さらに三列を足す:
+
+```
+title,platform,media_type,igdb_id,source_photo,source_entry,origin,source_id
+```
+
+| 列 | 意味 |
+|--------|------------|
+| `source_entry` | その行を読み取った元のファイルまたはフォルダ。`goggame-1100000008.info`、`setup_harbour_lantern_1.0.exe` |
+| `origin` | `vision`（写真から読んだ）、`manual`（確認時に入力した）、`metadata`（インストーラがこのタイトルを書いた）、`filename`（名前から推定した） |
+| `source_id` | ストアでのそのゲームの呼び名、`catalogue:id` — `gog:1100000008`。存在しなければ空 |
+
+入れるものがない書き出しではこの三列は現れないので、写真だけの CSV は従来どおり
+ちょうど五列である。両方を同じスクリプトに流し込むなら、位置ではなく列名で対応
+づけること。最初の五列は動かない。
+
+#### CSV を表計算ソフトで開く
+
+このファイルは取り込みダイアログのために書かれており、そこでこそ意図どおりに
+振る舞う。表計算ソフトは別種の読み手である。**Excel、LibreOffice、Google Sheets
+は、文字列が `=`、`+`、`-`、`@` で始まるセルを数式として評価する。** あなたの
+`-Tactics` という名前のフォルダは `source_entry` にその綴りのまま入り、Excel では
+`#NAME?` のようなエラーとして現れる。これはセルの中身の問題でありファイルの
+構文の問題ではないので、フィールドを引用符で囲んでも変わらないし、CSV 形式の側で
+できることは何もない。
+
+**shelfscan はあなたの名前をそのまま書き出す。** よくある防御策は先頭に `'` を
+足すことだが、ここでは使っていない。アポストロフィは Excel 自身の構文なので、
+表計算ソフト以外のすべての取り込み側——つまりこのファイルが想定している読み手
+すべて——はそれをタイトルの一部として受け取ってしまう。表計算ソフトを無害化すれば
+取り込みダイアログを壊すことになる。
+
+だから表計算ソフトで中身を見たいなら、ダブルクリックではなく取り込みを使い、列の
+型を「テキスト」にすること。Excel なら *データ → テキストまたは CSV から*、
+LibreOffice ならテキストインポートのダイアログ（*数式を評価する*のチェックは
+外したまま）。テキストエディタならその配慮は要らない。
+
+**これを覚えておく必要はない。** そういうセルを書いた書き出しはそれを名指しする
+——コマンドライン版は `Exported N of M` の後に、アプリは保存したファイルを報せる
+メッセージ上に——し、一つも書かなかった書き出しは余計なことを言わない。
+
+<a id="where-your-photos-go"></a>
+
+## 写真がどこへ行くか
+
+これはあなたの家の写真なので、正確に書く価値がある。すべての写真は、その実行が
+設定しているすべてのビジョンモデルへ、丸ごと送られる。写真一枚につきモデル一つ
+あたり一回の呼び出しである。縮小も切り抜きも間引きもされず、このプロジェクトには
+テレメトリもキャッシュも自前のサーバもない。HEIC は呼び出し前に元の寸法のまま
+JPEG へ変換される。ここで写真に加えられる変更はそれだけであり、その JPEG は一時
+ディレクトリに置かれ、あなたの元ファイルの隣には置かれない。
+
+- **ローカルのプロバイダ（`--provider ollama`、アプリの Local バックエンド。
+  デスクトップでの既定）:** 各写真はあなた自身の Ollama サーバへ POST され、
+  それ以外のどこへも行かない。そのサーバは、`SHELFSCAN_OLLAMA_URL`（コマンド
+  ライン版）や設定の Ollama URL（アプリ）で別を指していない限り
+  `http://localhost:11434` である。つまり「マシンから出ない」が成り立つのは、
+  そのアドレスがあなたのマシンである限りにおいてである。LAN 上の別のマシンを
+  指していれば、写真は平文の HTTP でそこへ送られる。
+- **Anthropic（`--provider anthropic`、アプリの Cloud バックエンド）:** すべての
+  写真が丸ごと Anthropic へ送信される。
+- **OpenAI 互換エンドポイント（`--provider openai`、アプリの Endpoint
+  バックエンド）:** すべての写真が丸ごと、`SHELFSCAN_OPENAI_BASE_URL` か設定で
+  あなたが指定した先へ送信される。ここは先に利用規約を読むべき場合である。無料
+  プランは、送られたもので学習することで賄われていることが多い。ここでどの
+  エンドポイントも既定にしていないのはそのためである。このプロジェクトがあなたの
+  代わりに選んだベース URL は、あなたが選んでいないサービスになってしまう。
+- **`--fallback` — 上のどれかに重ねる二つ目のモデル:** これは一つ目のモデルが
+  手こずった写真ではなく、**すべての**写真を読み直し、二つの読みを統合する。
+  つまり実行の画像認識呼び出しは倍になり、二人目がクラウドなら**すべての写真が
+  送信される**。一つ目がローカルで、そのためローカルに見える実行であってもで
+  ある。だからクラウドの二人目はコマンドラインに打った
+  `--fallback anthropic` か `--fallback openai` を要求する。ローカルの実行を
+  クラウドの実行に変えられる環境変数は存在せず、
+  `SHELFSCAN_OLLAMA_FALLBACK_MODEL` が選ぶのは二つ目の*ローカル*モデルであって
+  それ以外ではない。どれになったか、追加の呼び出しが何回分かは、実行が始まる前に
+  述べられる。
+- **IGDB（解決段階）:** ビジョンモデルが読んだタイトル文字列を受け取るのであって、
+  画像は決して受け取らない。またあなた自身の Twitch の client id と secret が
+  アクセストークンのために `id.twitch.tv` へ行く。この資格情報がなければこの段階
+  は飛ばされ、どちらのサービスにも一切接続しない。
+
+### `--fallback` が実際に何をもたらしたか
+
+有効にする前に測ること。ここで計測した唯一の二人目——`qwen2.5vl:7b` の後ろに
+`gemma3:12b`、4000×3000 の対照写真三枚——は、15 行を増やし、実行を
+70 秒から 146 秒へ動かした。増えた行はすべて写真と突き合わせて確認し、**すべてが
+誤りだった**:
+
+- **9 行**は、一つ目のモデルが*すでに正しく読んでいた*背表紙の二度目の読みで、
+  たった一文字の違いで別の行として残っていた（基本のタイトルと、それに続編の
+  副題が付いた同じタイトルが並ぶ形）。
+- **6 行**は捏造または誤読で、別々の背表紙の文字を溶接して作られたタイトル二件
+  と、まさにそのモデルが直前に読めないと報告した日本語の背表紙のある写真での、
+  捏造された日本語タイトル一件を含む。
+- **0 行**が、一つ目のモデルが見落とした項目だった。二つ目を走らせる理由はまさに
+  それだけなのに、である。
+
+誤った行は確認時に却下できるが、欠けた行はできないので、これは破滅ではなく取引で
+ある。ただし計測したのは**ローカルの**二人目である。クラウドの二人目はここで一度も
+計測していない。クラウドの鍵は入手できなかった（T-0057）。したがって上に書いた
+ことは、`--fallback anthropic` や `--fallback openai` が何をもたらすかについての
+証拠には一切ならないし、確かめるために有効にすれば写真は全枚数送信される。
+
+T-0061 以降、これは**コマンドライン版のフラグのみ**である。アプリは写真一枚に
+つき読み手が一つで、二人目を求めることは決してないので、設定にその切り替えは
+なく、探すものもない。
+
+## リポジトリの構成
+
+```
+packages/shelfscan_core/   # pure Dart pipeline (no Flutter deps) + CLI
+app/                       # Flutter shell: Windows (built and run), Android (never run here)
+```
+
+## 仕組み
+
+入力源 → 重複排除 → IGDB 解決ワーカー（並列、あいまい一致 +
+[地域別エイリアス](#regional-titles-the-alias-table)）→ レビューファイル →
+書き出し。写真は四つの入力源のうちの一つで、写真だけが自分用の段階を一つ余分に
+持つ。ビジョンワーカーが並列に、写真一枚につきモデル一つあたり一回呼び出す。
+
+図とプラットフォーム境界は [ARCHITECTURE.md](ARCHITECTURE.md)、自明でない部分が
+なぜそうなっているかは [doc/decisions/](doc/decisions/) にある。決定の記録は
+どれも、それを決めた実測を伴っている（いずれも英語）。
+
+## 開発の進め方
+
+参加するなら [CONTRIBUTING.md](CONTRIBUTING.md)（英語）から。二つのテスト群の
+走らせ方と、変更が黙って壊してはいけないものが書いてある。この節の残りは、作業
+そのものがどう組まれているかである。
+
+ここにあるものはほぼすべて、[briefboard](https://github.com/shinKatana0/briefboard)
+によるオーケストレータ／ワーカー方式のエージェントワークフローで書かれた。実装前
+の課題定義が必須で、マージ前にレビューが入る課題ボードである。課題定義、ワーカー
+の報告、そしてボード自体は私的なディスクに残り、**公開されない**。それらは製品
+ではなく開発の副産物であり、会話をそのまま引用しており、分量はおよそ
+25,000 行——ここでそれらに取って代わった約 2,100 行の要約に対して、である。その
+要約とは、どう組まれているかの [ARCHITECTURE.md](ARCHITECTURE.md)、なぜそう組まれ
+たかの [doc/decisions/](doc/decisions/)、そしてそれが何の上に立っているかの
+[doc/measurements.md](doc/measurements.md) である。
+
+**だから課題 ID はリンクではない。** ここでの各ページが `T-0086` のような ID を
+挙げるのは、ID が決定の安定した名前だからであり、出どころを名指しする主張は、その
+記録を持つ者なら誰でも検証できるからである。公開されているもののうち、ID を引く
+必要があるものは一つもない。
+
+ボードは参加者が導入するものでもない。一人の作業道具であり、pull request は
+pull request として扱われる。
+
+### 翻訳について
+
+これらの翻訳を実態から離れさせないための規則は、一箇所にだけ置いてある:
+[`README.md` の「Translations」](README.md#translations)。要点は、英語が出どころ
+であり、翻訳はそれに従うのであって先行しないこと。各翻訳ファイルは、その英語版が
+どのコミットの状態だったかを冒頭に記していること（README の翻訳では HTML コメント
+として、`doc/` の二つのガイドでは見えるかたちで）。そして英語を編集したら、同じ
+コミットの中で翻訳を更新するか、`STALE` と印を付けるかのどちらかが要ること。
+コードブロック、プログラムの出力、技術記録は翻訳しない。
+
+**この日本語訳は機械翻訳ではないが、母語話者の校閲を受けていない。**
+数値・主張は英語原文と突き合わせて確認済みだが、語感の保証はない。
+誤りを見つけたら課題として登録してほしい。
+
+<a id="disclaimer"></a>
+
+## 免責
+
+このプロジェクトは Tonkatsu Box、CLZ、GAMEYE と提携しておらず、これらから承認も
+されておらず、関係もない。すべての製品名および商標は、それぞれの権利者に帰属する。
+ゲームのメタデータは IGDB が提供している。

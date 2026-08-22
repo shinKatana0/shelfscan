@@ -1,0 +1,45 @@
+name: shelfscan_app
+description: Turn shelf photos into an importable game collection (Windows + Android).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.4.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shelfscan_core:
+    path: ../packages/shelfscan_core
+  file_picker: ^8.0.0
+  # HEIC decoding calls the Windows Imaging Component over dart:ffi, and
+  # dart:ffi ships no allocator (see heic_wic.dart for the alternatives).
+  ffi: ^2.1.0
+  # Export saving lives in the shell (ARCHITECTURE.md platform boundary):
+  # file_selector = Windows save dialog, share_plus = Android share sheet.
+  file_selector: ^1.0.3
+  share_plus: ^10.0.0
+  path_provider: ^2.1.0 # temp file for the Android share sheet
+  # Settings persistence, split by sensitivity (BYOK, decision 0011):
+  # secrets go to the OS keychain, plain preferences to shared_preferences.
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
+  # TODO: image_picker (camera capture)
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  # Lets the save-dialog tests swap FileSelectorPlatform for a fake.
+  file_selector_platform_interface: ^2.7.0
+  # No new package in the graph -- shelfscan_core's only runtime dependency,
+  # declared here so a test can build the real VisionUnreachableException,
+  # whose constructor takes an http.ClientException (T-0102).
+  http: ^1.2.0
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    # Repository-level data file, shared with the CLI: one alias table, not
+    # an app copy that drifts from it.
+    - ../data/title_aliases.json

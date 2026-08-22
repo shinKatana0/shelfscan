@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest something this tool should do
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check `doc/decisions/` and `doc/measurements.md` first —
+        several popular ideas were built, measured and rejected here, and
+        the numbers are written down.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you were trying to do, and where the tool got in the way.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Does it fit the scope?
+      description: >
+        This is a recognition-and-export companion — it owns no catalog UI
+        and no database (`ARCHITECTURE.md`). Say how the idea sits with
+        that, or argue that it should change.

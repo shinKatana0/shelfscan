@@ -1,0 +1,88 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+pubspec.lock
+
+# Flutter platform folders are COMMITTED -- app/windows/ and, when they are
+# generated, app/android/ and the rest. `flutter create` scaffolds them once;
+# after that they are hand-edited source carrying the release identity
+# (Runner.rc, AndroidManifest, entitlements, icons) and are reviewed like any
+# other file. A clone that regenerates them gets `com.example` back (T-0194).
+# What is genuinely generated inside one is ignored by the .gitignore
+# `flutter create` writes into that folder -- app/windows/.gitignore excludes
+# flutter/ephemeral/, measured at 261.6 MiB in 47 files here. Build output is
+# a different path and stays ignored by `build/` above.
+#
+# Still ignored: .metadata is a tool-state file, not identity. Flutter's own
+# convention commits it; see doc/reports/T-0194.md before changing that.
+app/.metadata
+
+# Local working files
+collection.review.json
+*.xcoll
+
+# Real shelf photos. Never committed: they are pictures of a
+# private home, and nothing in the pipeline needs them in git.
+photos/
+
+# Secrets. Credentials live in environment variables (CLI) or the OS
+# keychain (app) and must never reach a file inside the repo -- see the
+# BYOK decision in PROJECT.md.
+.env
+.env.*
+*.env
+# ...except the committed reference list of variable NAMES (no values).
+!.env.example
+secrets.json
+# Android release signing
+key.properties
+*.jks
+*.keystore
+
+# briefboard (deployed locally via `npx briefboard init`, not part of this repo)
+server/
+tools/
+ui/
+agents/
+AGENTS.md
+CLAUDE.md
+.claude/
+.githooks/
+
+# Working record of how this was built: task briefs, worker reports, the live
+# board and its archive. Kept on disk, never published -- they quote conversations
+# verbatim and run to ~25,000 lines against ~2,100 lines of distilled record.
+# What survives publication is the distillate and its evidence:
+#   ARCHITECTURE.md      how it is put together
+#   doc/decisions/       why it is put together that way
+#   doc/measurements.md  what that rests on
+# tools/task.mjs reads doc/backlog.md from disk, not from git, so untracking it
+# costs the briefboard nothing.
+doc/brief/
+doc/reports/
+doc/archive/
+doc/backlog.md
+
+# The agent working rules and the internal state document go with them, and
+# for the same reason rather than a different one: 49 lines of conventions.md
+# and most of PROJECT.md's process half describe the board above. A document
+# explaining how to work a board nobody can see is worse than its absence.
+# Their durable content is already published -- the decisions in doc/decisions/,
+# the numbers in doc/measurements.md, the shape in ARCHITECTURE.md, and what a
+# human contributor needs in CONTRIBUTING.md.
+doc/conventions.md
+PROJECT.md
+
+# The control set is the same: it defines two named sets of private shelf photographs and the recipe for regenerating them. The photographs are
+# not published (they are pictures of someone's home), so a document about
+# reproducing runs over them is development rather than product. The figures it
+# yields are quoted where they are used, in doc/measurements.md.
+doc/control-set.md
+
+# And the one decision record whose whole subject is the working record above.
+# It says the agent rules are committed and each kind of writing has one
+# destination -- true of the development repository, false of the published one
+# the moment those files stop being published. A record that describes files a
+# reader cannot see is the defect it was written to prevent.
+doc/decisions/0013-the-rules-the-agents-follow-are-committed.md

@@ -1,0 +1,343 @@
+# The corpus T-0158's filename parser is measured against.
+#
+# Seven tab-separated columns, one entry per line:
+#
+#   origin  group  container  name  expected  year  hint
+#
+#   origin    synthetic -- written here, from the conventions the brief names
+#             synthetic-stem -- such a name with its outer `.torrent` removed:
+#                          the file the descriptor is for, as it would be named
+#   container the directory the entry was found in, `-` for none
+#   expected  the title the parser must emit, or DECLINE
+#   year      the release year the parser must emit, or `-`
+#   hint      the `platformIds` key the row must carry, `-` for a DECLINE
+#             (T-0168). Every value here is a key of that table and the test
+#             pins it, because a hint the gate cannot honour is `mismatch` on
+#             every candidate the row has and is worse than no row (T-0156).
+#
+# EVERY ROW IN THIS FILE IS INVENTED. There is no `real` origin any more.
+#
+# The owner ruled on 2026-08-17 that no folder of their machine may be published
+# in any form -- not its contents, not a count of its contents, not a row
+# derived from it. The rows T-0158 and T-0183 read off real folders are gone.
+# What replaced them is written here to exercise the same parser paths, and it
+# stands in for those rows WITHOUT standing in for what they measured.
+#
+# NO SENTENCE IN THIS FILE COUNTS ITS OWN ROWS (T-0254). That is the rule, and
+# the two kinds of statement it leaves are these:
+#
+#   A FINDING was measured on a real folder during development, on the date its
+#   section header gives. Those folders are private and are not published, and
+#   a figure measured on one is a count of its contents -- which the rule above
+#   forbids exactly as plainly as it forbids a listing. So a finding is stated
+#   QUALITATIVELY, in prose, in its section header, and carries no figure at
+#   all. It says what the parser did, never how much of anything there was.
+#
+#   A COUNT OVER THE ROWS BELOW is an assertion in `filename_source_test.dart`
+#   and lives nowhere else. An assertion is read back against these rows every
+#   time the suite runs and fails when they move; a count written into this
+#   file is checked by nobody and stays true only while somebody remembers it.
+#   Both earlier versions of this header counted rows in prose, and both were
+#   false about the file they were written in.
+#
+#   The one number this file prints about its own rows is the index down
+#   section 1's list, which is not a total: it is what pairs each shape with
+#   the row that carries it, and reading the two against each other is the
+#   check that a prose count can never be.
+#
+# AND NO GROUP HERE IS SIZED TO ANYTHING OUTSIDE THIS FILE. A group holds one
+# row per shape it exercises; a row whose only job is to bring a group to a
+# size does not belong in it, and neither does a proportion borrowed from
+# something that was measured. Section 1 lists its shapes one per row, so its
+# size is checked by counting the list against the rows; the other sections
+# name a class, and the check there is that every row in them answers to it.
+#
+# The naming CONVENTIONS are preserved byte for byte -- the bracket markers, the
+# title id, the region, the mod note, the double extension, the scene suffix,
+# the version, the `x64` suffix, the `-` vs `_`, the extension and the spaces --
+# because those are what the parser is measured against, and a convention is
+# nobody's property.
+#
+# What the parser must NOT do is as much of this file as what it must: a
+# DECLINE in the `expected` column is a row that passed rather than one that
+# failed, and whole sections below hold nothing else.
+#
+# ---------------------------------------------------------------------------
+# 1. An ordinary Windows Downloads folder, which is the kind of folder a source
+#    will be pointed at by mistake. Almost none of it is a game, and the parser
+#    cannot tell an application installer from a game installer by name: every
+#    EMIT below is a false positive.
+#
+#    THE FINDING, measured 2026-08-16 on a real Downloads folder: part of it
+#    declined, the parser emitted a title for the rest, and every one of those
+#    titles was an application rather than a game -- not one true positive, the
+#    worst result in this file. Nothing in a name separates an application
+#    installer from a game installer, and no list of known applications is
+#    bounded, so the input contract has to be a games folder. That is T-0160
+#    and T-0161's to enforce and is the most useful thing this measurement
+#    says. The folder is private: it is not published, and neither is any count
+#    of what was in it.
+#
+#    THE ROWS BELOW ARE NOT THAT FOLDER, and how many of them there are is not
+#    that folder's number either. One shape per row, in row order; for a
+#    DECLINE the shape is the extension that decided it, each one a different
+#    member of a list nothing else in the suite pins:
+#
+#      1  a digit run fused into the name, kept; an `x64` tag cut
+#      2  underscores, a four-part version, `windows` and `x64` cut
+#      3  a `Setup` fused to the last word, so nothing comes off
+#      4  a ` Setup` written as its own word, so it is cut
+#      5  a fused `Setup` and a version in one name
+#      6  the plain case: dashes, a version, a `win64` tag
+#      7  `.msi`
+#      8  `x86_64`, a release tag carrying an underscore of its own
+#      9  `.iso`; `desktop` is no release tag and stays in the title
+#     10  a `v`-prefixed version, and `25H2` kept as title
+#     11  an ` Installer` written as its own word
+#     12  `.zip`, and dashes as separators in an unspaced name
+#     13  a bare `64` that is no tag and stays in the title
+#     14  a trailing `Setup` behind underscores
+#     15  a spaced name whose version follows the cut
+#     16  a build number kept as title, a `Win` tag cut
+#     17  `.7z`, and `portable` cutting everything after it
+#     18  `.img`, no separator anywhere, so nothing comes off
+#     19  a dot inside the name, which becomes a space
+#     20  a one-word name with a dotted version behind it
+#     21  an underscore and nothing else
+#     22  `.rar`, and a year as the last word, where it is title
+#     23  a directory entry, spaced, no extension
+#     24  a directory entry with an underscore and digits
+#     25  a directory entry that is one plain word
+#     26  `.torrent`: a descriptor and not a copy, with a bracketed tracker id
+#     27  `.nfo`: the release note that sits beside a download under its name
+#     28  `.png`: a screenshot-shaped name
+#     29  `.vbox-extpack`: an extension with a dash in it, on a name that would
+#         otherwise title
+#     30  `.winmd`: dots as separators, on a name that would otherwise title
+#     31  `.safetensors`
+#     32  `.csv`
+#     33  a runnable extension whose whole stem names no game
+#     34  `.crdownload`: a partial download
+#     35  `.ini`
+#     36  `.md`
+# ---------------------------------------------------------------------------
+synthetic	downloads	Downloads	zipper2602-x64.exe	zipper2602	-	PC
+synthetic	downloads	Downloads	TunnelKitVPN_5.0.0.5_windows_x64.exe	TunnelKitVPN	-	PC
+synthetic	downloads	Downloads	NoteWellSetup.exe	NoteWellSetup	-	PC
+synthetic	downloads	Downloads	Assist Setup.exe	Assist	-	PC
+synthetic	downloads	Downloads	CodePadUserSetup-x64-1.126.0.exe	CodePadUserSetup	-	PC
+synthetic	downloads	Downloads	mediaplay-3.0.23-win64.exe	mediaplay	-	PC
+synthetic	downloads	Downloads	torrentine-4.1.2-x64.msi	torrentine	-	PC
+synthetic	downloads	Downloads	dualpane-1.1.32.x86_64-win64.exe	dualpane	-	PC
+synthetic	downloads	Downloads	freenix-26.04-desktop-amd64.iso	freenix desktop	-	PC
+synthetic	downloads	Downloads	DeskOS_25H2_x64_v2.iso	DeskOS 25H2	-	PC
+synthetic	downloads	Downloads	ChatBoard Installer.exe	ChatBoard	-	PC
+synthetic	downloads	Downloads	pixel-crate-v0.42.0-windows.zip	pixel crate	-	PC
+synthetic	downloads	Downloads	PagePeek-3.6.1-64-install.exe	PagePeek 64	-	PC
+synthetic	downloads	Downloads	SyncTwin_14.10_Windows_Setup.exe	SyncTwin	-	PC
+synthetic	downloads	Downloads	Birdmail Setup 153.0.exe	Birdmail	-	PC
+synthetic	downloads	Downloads	BoxRunner-7.2.14-174565-Win.exe	BoxRunner 174565	-	PC
+synthetic	downloads	Downloads	NodeFlow_windows_portable_nvidia.7z	NodeFlow	-	PC
+synthetic	downloads	Downloads	HomeSuite2021Retail.img	HomeSuite2021Retail	-	PC
+synthetic	downloads	Downloads	KeyPack.NET-v22.5.0.zip	KeyPack NET	-	PC
+synthetic	downloads	Downloads	Firmware.22.5.0.zip	Firmware	-	PC
+synthetic	downloads	Downloads	mk_BuildTools.exe	mk BuildTools	-	PC
+synthetic	downloads	Downloads	Sample_Holiday_2019.rar	Sample Holiday 2019	-	PC
+synthetic	downloads	Downloads	Chatterbox Desktop	Chatterbox Desktop	-	PC
+synthetic	downloads	Downloads	Fieldtrip_november2026	Fieldtrip november2026	-	PC
+synthetic	downloads	Downloads	consoles	consoles	-	PC
+synthetic	downloads	Downloads	Toolkit Bundle v75 [tracker-4410295].torrent	DECLINE	-	-
+synthetic	downloads	Downloads	Ashfall.2.GOG.nfo	DECLINE	-	-
+synthetic	downloads	Downloads	Screenshot 2019-01-02 101112.png	DECLINE	-	-
+synthetic	downloads	Downloads	BoxRunner_Extension_Pack-7.2.14.vbox-extpack	DECLINE	-	-
+synthetic	downloads	Downloads	Vendor.Management.Deployment.winmd	DECLINE	-	-
+synthetic	downloads	Downloads	modelx-quick-fp8.safetensors	DECLINE	-	-
+synthetic	downloads	Downloads	records-export.csv	DECLINE	-	-
+synthetic	downloads	Downloads	launcher.exe	DECLINE	-	-
+synthetic	downloads	Downloads	Unconfirmed 102804.crdownload	DECLINE	-	-
+synthetic	downloads	Downloads	desktop.ini	DECLINE	-	-
+synthetic	downloads	Downloads	README.md	DECLINE	-	-
+# ---------------------------------------------------------------------------
+# 2. A console-game subfolder, of the kind that sits inside a downloads
+#    directory. Invented rows carrying the conventions such a name prints --
+#    and a convention is nobody's property, as the header above says. No real
+#    folder is described here, none is counted, and none is sized here. One
+#    convention per row, in row order: an `[NSP]` container marker; an
+#    eight-byte Switch title id in brackets; a parenthesised region beside an
+#    `[NSZ]` marker; a parenthesised mod note; a `.rar.torrent` double
+#    extension; an underscored name with a region tag; a scene name whose
+#    platform is a bare word; a bare acronym at the character floor; and a
+#    `.nsp.torrent`, the double extension whose inner half is itself a console
+#    container.
+#
+#    Every one of them is a `.torrent` -- a descriptor, not a copy -- so they
+#    all decline before parsing, and T-0168 does not move one of them: a
+#    descriptor names a copy that is not here, whatever console it is for.
+# ---------------------------------------------------------------------------
+synthetic	console	consoles	Sample Game A [NSP].torrent	DECLINE	-	-
+synthetic	console	consoles	Sample Game B [0100000000000001].torrent	DECLINE	-	-
+synthetic	console	consoles	Sample Game C - Complete Edition (RU) [NSZ].torrent	DECLINE	-	-
+synthetic	console	consoles	Sample Game D (Russian Voice mod) [NSP].torrent	DECLINE	-	-
+synthetic	console	consoles	Sample Game E.rar.torrent	DECLINE	-	-
+synthetic	console	consoles	Sample_Game_F_Second_EUR.torrent	DECLINE	-	-
+synthetic	console	consoles	Sample Game G NSW-BigBlueBox-cut.torrent	DECLINE	-	-
+synthetic	console	consoles	SGHIJ.torrent	DECLINE	-	-
+synthetic	console	consoles	Sample Game AA.nsp.torrent	DECLINE	-	-
+# The same names as the files they describe. This is where the title parsing of
+# a name of this shape is actually measured, and where the hint is decided: a
+# stem printing a Switch container or title id carries SWITCH (T-0168). The
+# rest print no console mark of any kind and leave with PC, which for a console
+# file is wrong -- and is the honest limit of a reader that has only the name.
+# Nothing in `Sample Game E` says Switch.
+synthetic-stem	console	consoles	Sample Game A [NSP]	Sample Game A	-	SWITCH
+synthetic-stem	console	consoles	Sample Game B [0100000000000001]	Sample Game B	-	SWITCH
+synthetic-stem	console	consoles	Sample Game C - Complete Edition (RU) [NSZ]	Sample Game C - Complete Edition	-	SWITCH
+synthetic-stem	console	consoles	Sample Game D (Russian Voice mod) [NSP]	Sample Game D	-	SWITCH
+synthetic-stem	console	consoles	Sample Game E.rar	Sample Game E	-	PC
+synthetic-stem	console	consoles	Sample_Game_F_Second_EUR	Sample Game F Second	-	PC
+synthetic-stem	console	consoles	Sample Game G NSW-BigBlueBox-cut	Sample Game G	-	SWITCH
+synthetic-stem	console	consoles	SGHIJ	SGHIJ	-	PC
+synthetic-stem	console	consoles	Sample Game AA.nsp	Sample Game AA	-	SWITCH
+# 2b. SYNTHETIC, the containers a name can print that name no ONE platform.
+#    Written from the extension tables rather than sampled: no such file was
+#    available to read, and what is measured is the decision, not a title.
+#    Every one of these is a DECLINE on purpose -- a hint the gate cannot
+#    honour is `mismatch` on every candidate the row has (T-0156), which is
+#    worse than no row.
+#
+#    One row per null-valued key of `consolePlatformHints` -- `.pkg`, `.chd`,
+#    `.cso`, `.rvz`, `.vpk`, each spanning systems -- and one more for a name
+#    printing two consoles at once. This group's size is that table's, and the
+#    test walks the table rather than these rows.
+synthetic	unnameable	consoles	Sample Game H.pkg	DECLINE	-	-
+synthetic	unnameable	consoles	Sample Game I.chd	DECLINE	-	-
+synthetic	unnameable	consoles	Sample Game J.cso	DECLINE	-	-
+synthetic	unnameable	consoles	Sample Game K.rvz	DECLINE	-	-
+synthetic	unnameable	consoles	Sample Game L.vpk	DECLINE	-	-
+# One name, two consoles: nothing here can choose, so it declines like the
+# containers above rather than picking the first mark it read.
+synthetic	unnameable	consoles	Sample Game R NSW.wbfs	DECLINE	-	-
+# 2c. SYNTHETIC, the containers that DO name one platform and one IGDB knows.
+#     Every value is a `platformIds` key, which `filename_source_test.dart`
+#     pins over the whole table rather than over these rows.
+#
+#     `.3ds`, `.cia`, `.nds`, `.wux` and the bracketed `[3DS]` moved here from
+#     2b on 2026-08-16: they always parsed to these titles and declined only
+#     because `platformIds` had no id for the console, which T-0190 read off
+#     the live `platforms` endpoint. The last of them is the bracketed marker
+#     rather than the extension, and it moved because the two hint tables are
+#     asserted to agree.
+synthetic	nameable	consoles	Sample Game S.xci	Sample Game S	-	SWITCH
+synthetic	nameable	consoles	Sample Game T.nsz	Sample Game T	-	SWITCH
+synthetic	nameable	consoles	Sample Game U.gba	Sample Game U	-	GBA
+synthetic	nameable	consoles	Sample Game V.smc	Sample Game V	-	SNES
+synthetic	nameable	consoles	Sample Game W.z64	Sample Game W	-	N64
+synthetic	nameable	consoles	Sample Game X.wbfs	Sample Game X	-	WII
+synthetic	nameable	consoles	Sample Game Y.gcm	Sample Game Y	-	GAMECUBE
+synthetic	nameable	consoles	Sample Game Z.nes	Sample Game Z	-	NES
+synthetic	nameable	consoles	Sample Game M.3ds	Sample Game M	-	3DS
+synthetic	nameable	consoles	Sample Game N.cia	Sample Game N	-	3DS
+synthetic	nameable	consoles	Sample Game O.nds	Sample Game O	-	DS
+synthetic	nameable	consoles	Sample Game P.wux	Sample Game P	-	WIIU
+synthetic	nameable	consoles	Sample Game Q [3DS]	Sample Game Q	-	3DS
+# ---------------------------------------------------------------------------
+# 3. SYNTHETIC, GoG's own installer convention:
+#    setup_<slug>_<version>_(<arch>)_(<build id>).exe. Not one real GoG
+#    installer was available to read, so every row here is written from the
+#    shape the brief names.
+#    Every version here is the shape T-0156 measured as fatal to the match.
+# ---------------------------------------------------------------------------
+synthetic	gog	-	setup_marlows_gate_3_2.0.0.7_(64bit)_(38584).exe	marlows gate 3	-	PC
+synthetic	gog	-	setup_the_warlock_3_moon_rite_goty_4.0.0.15_(19752).exe	the warlock 3 moon rite goty	-	PC
+synthetic	gog	-	setup_ashfall_2_1.02.exe	ashfall 2	-	PC
+synthetic	gog	-	setup_harbour_lantern_1.6.15_(46424).exe	harbour lantern	-	PC
+synthetic	gog	-	setup_herald_of_frost_and_flame_3_complete_4.0_(28740).exe	herald of frost and flame 3 complete	-	PC
+synthetic	gog	-	setup_sundrop_hollow_1.6.15_(64bit)_(46424).exe	sundrop hollow	-	PC
+synthetic	gog	-	setup_moor_1.9_(21474).exe	moor	-	PC
+synthetic	gog	-	setup_mire_2_the_founding_of_a_kingdom_2.1.0.7.exe	mire 2 the founding of a kingdom	-	PC
+synthetic	gog	-	setup_regent_of_aurex_1_2_1.31_(45683).exe	regent of aurex 1 2	-	PC
+synthetic	gog	Marlow's Gate 3	setup.exe	Marlow's Gate 3	-	PC
+synthetic	gog	Neonwatch 2077	unins000.exe	DECLINE	-	-
+synthetic	gog	Downloads	setup.exe	DECLINE	-	-
+# ---------------------------------------------------------------------------
+# 4. SYNTHETIC, scene releases: Title.Words.YEAR.TAG-GROUP and its relatives.
+#    The year rule and the version rule are both decided here.
+# ---------------------------------------------------------------------------
+synthetic	scene	-	Game.Name.2019.RePack-GROUP	Game Name	2019	PC
+synthetic	scene	-	Neonwatch.2077.v2.1.CODEX.iso	Neonwatch 2077	-	PC
+synthetic	scene	-	Ashfall.2.A.Post.Collapse.Role.Playing.Game.GOG.rar	Ashfall 2 A Post Collapse Role Playing Game	-	PC
+synthetic	scene	-	Moor.Eternal.2020.MULTi9-ElAmigos.iso	Moor Eternal	2020	PC
+synthetic	scene	-	Harbour.Lantern.The.Amber.Cut.v1.6.15.GOG.zip	Harbour Lantern The Amber Cut	-	PC
+synthetic	scene	-	Dusk-Rail.2.Update.5.FitGirl.Repack.rar	Dusk Rail 2	-	PC
+synthetic	scene	-	The.Warlock.3.Moon.Rite.Complete.Edition.v4.04.MULTi15-ElAmigos.iso	The Warlock 3 Moon Rite Complete Edition	-	PC
+synthetic	scene	-	Marlows.Gate.3.Patch.9.v4.1.1.4479329.GOG-Razor1911.rar	Marlows Gate 3	-	PC
+synthetic	scene	-	Sundrop.Hollow.v1.6.15.Portable.7z	Sundrop Hollow	-	PC
+synthetic	scene	-	Regent.of.Aurex.1993.DOSBox.GOG.zip	Regent of Aurex	1993	PC
+synthetic	scene	-	Cabalists.1993.GOG-Razor1911.iso	Cabalists	1993	PC
+synthetic	scene	-	Tulip.Hospital.(1997).GOG.zip	Tulip Hospital	1997	PC
+synthetic	scene	-	MOOR.2016.iso	MOOR 2016	-	PC
+synthetic	scene	-	Volo 2004	Volo 2004	-	PC
+synthetic	scene	-	Punter PFL 2005	Punter PFL 2005	-	PC
+synthetic	scene	-	Z-CON.ORB.Defense.1994.GOG-CODEX.rar	Z CON ORB Defense	1994	PC
+# ---------------------------------------------------------------------------
+# 5. SYNTHETIC, what else sits in an installed game's folder. T-0155's own
+#    argument for `SourceReading.declined`: a source pointed at a games
+#    directory declines more than it accepts.
+# ---------------------------------------------------------------------------
+synthetic	inside	Ashfall 2	unins000.exe	DECLINE	-	-
+synthetic	inside	Ashfall 2	vcredist_x64.exe	DECLINE	-	-
+synthetic	inside	Ashfall 2	DXSETUP.exe	DECLINE	-	-
+synthetic	inside	Ashfall 2	UnityCrashHandler64.exe	DECLINE	-	-
+synthetic	inside	Ashfall 2	savegame01.sav	DECLINE	-	-
+synthetic	inside	Ashfall 2	readme.txt	DECLINE	-	-
+synthetic	inside	Ashfall 2	Manual.pdf	DECLINE	-	-
+synthetic	inside	Ashfall 2	goggame-1100000001.info	DECLINE	-	-
+synthetic	inside	Ashfall 2	Ashfall2.exe	Ashfall2	-	PC
+synthetic	inside	Ashfall 2	data	Ashfall 2	-	PC
+synthetic	inside	The Warlock 3 Moon Rite	launcher.exe	The Warlock 3 Moon Rite	-	PC
+synthetic	inside	Harbour Lantern	Harbour Lantern.exe	Harbour Lantern	-	PC
+# ---------------------------------------------------------------------------
+# 6. SYNTHETIC, archives and images of older titles: plain names, multi-volume
+#    archives, a parenthesised year, an ampersand, roman numerals.
+# ---------------------------------------------------------------------------
+synthetic	archive	-	Regent of Aurex II Battle at Kestrel.iso	Regent of Aurex II Battle at Kestrel	-	PC
+synthetic	archive	-	Z-CON ORB Defense.zip	Z-CON ORB Defense	-	PC
+synthetic	archive	-	Hal Meridas Civitas.part01.rar	Hal Meridas Civitas	-	PC
+synthetic	archive	-	Tulip Hospital.r00	Tulip Hospital	-	PC
+synthetic	archive	-	Mire II The Founding of a Kingdom (1992).iso	Mire II The Founding of a Kingdom	1992	PC
+synthetic	archive	-	Marshal & Legions Ash Siren 2.iso	Marshal & Legions Ash Siren 2	-	PC
+synthetic	archive	-	Cabalists	Cabalists	-	PC
+synthetic	archive	Mire II The Founding of a Kingdom	setup.exe	Mire II The Founding of a Kingdom	-	PC
+synthetic	archive	-	Blaze II RTX.iso	Blaze II RTX	-	PC
+synthetic	archive	-	Solar Pilgrim VII.iso	Solar Pilgrim VII	-	PC
+# ---------------------------------------------------------------------------
+# 7. Directory names handed over as entries (T-0183). The first rows of this
+#    corpus that are directories rather than files.
+#
+#    THE FINDING, measured 2026-08-16 on a real folder of downloaded
+#    installers: a directory handed over as an entry is a different population
+#    from an installer file name, which is why T-0174 refused to invent any at
+#    the time. That folder is private and is not published, and no name of
+#    anything inside it appears here or anywhere in this repository.
+#
+#    The rows below are not that folder. They survive the removal because
+#    they are Windows' own vocabulary rather than anybody's data: `Новая папка`
+#    is what Windows itself names a new folder in Russian and `(2)` is its own
+#    duplication mark, identical on every Russian-locale machine. The installer
+#    that drives the first one is in `installer_naming_test.dart` and is
+#    deliberately not a row.
+#
+#    T-0183 wrote them all as titles, because that is what the parser emitted
+#    and what a name parser can honestly say about a Russian word; T-0189
+#    moved the numbered ones to DECLINE, and the reason they could move is
+#    not the language.
+#    The numbered folder carries Windows' duplication mark and nothing else --
+#    no extension, no version, no separator of its own -- so the mark is read
+#    as evidence about how the name was made, in any locale. The unnumbered
+#    one stays a title and is the residue: an UNNUMBERED locale-generated name
+#    carries no such evidence, and this corpus is where that is admitted
+#    rather than implied.
+# ---------------------------------------------------------------------------
+synthetic	folder	-	Новая папка	Новая папка	-	PC
+synthetic	folder	-	Новая папка (2)	DECLINE	-	-
+synthetic	folder	Новая папка (2)	setup.exe	DECLINE	-	-

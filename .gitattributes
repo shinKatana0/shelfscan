@@ -1,0 +1,19 @@
+# Store text as LF; check out native. Without this, core.autocrlf decides per
+# machine and the three files Flutter regenerates under app/windows/ come back
+# modified with an empty content diff on every `flutter pub get` (T-0221).
+* text=auto eol=lf
+
+# Windows shells only run these with CRLF.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.heic binary
+*.ico  binary
+
+# Generated: keep them out of diffs and language stats, but still versioned.
+app/windows/flutter/generated_plugin_registrant.* linguist-generated=true
+app/windows/flutter/generated_plugins.cmake       linguist-generated=true

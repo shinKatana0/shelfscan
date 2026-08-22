@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push to the same branch cancels the first: the suites are the
+# slow part and a superseded run proves nothing.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Two jobs because the core package is pure Dart and must stay that way
+  # (ARCHITECTURE.md, "Platform boundary rules": shelfscan_core has no Flutter
+  # dependency). Installing Flutter for it would hide a regression in exactly
+  # that property.
+  core:
+    name: core (dart)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: packages/shelfscan_core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - run: dart pub get
+      - run: dart analyze
+      - run: dart test --reporter expanded
+
+  app:
+    name: app (flutter)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      # Since T-0194 app/windows/ is committed, so the runner checks it out.
+      # Nothing below needs it -- `flutter test` runs on the flutter_tester --
+      # and nothing below builds it, which is why there is still no
+      # `flutter create` step. A `flutter build windows` job is possible now
+      # and is deliberately not here: CI runs the four commands CONTRIBUTING.md
+      # names and a build is not one of them.
+      #
+      # The reporter is pinned in both jobs. package:test picks `github` on
+      # GITHUB_ACTIONS=true, and run 32048093422 printed 318 passes, summarised
+      # "315 tests passed, 2 skipped" and exited 1 while naming nothing in 669
+      # lines: that reporter prints a pass from liveTest.onComplete, which
+      # closing a killed suite also completes, and takes its summary from the
+      # engine, which never counted those three. `expanded` named them at once
+      # and repeats every failure under "Failing tests:". Not `compact`: it
+      # rewrites one status line with a carriage return, which a GitHub log
+      # renders as a page of near-identical lines.
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test --reporter expanded
+
+# No `env:` block, and deliberately: no key, no token, no network. Both
+# suites were run with IGDB_CLIENT_ID/IGDB_CLIENT_SECRET cleared to verify
+# it (T-0197). Anything needing credentials belongs in a manual workflow,
+# never here.
+#
+# windows-latest, not ubuntu: every figure in this repository was measured
+# on Windows, and the WIC/HEIC and GOG Galaxy tests are Platform.isWindows
+# -gated. A Linux job may well be green but has never been run.
