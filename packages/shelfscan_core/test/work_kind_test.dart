@@ -94,20 +94,16 @@ void main() {
   });
 
   group('the kind and the carrier are not the same field', () {
-    test('an anime on a disc exports the kind, not the carrier', () {
-      final item = _items(_document(
-          [_row(workKind: WorkKind.anime, mediaType: MediaType.disc)])).single;
-      expect(item, containsPair('media_type', 'anime'));
-    });
+    test('one row, both targets, two different answers under one wire name',
+        () {
+      final doc = _document(
+          [_row(workKind: WorkKind.anime, mediaType: MediaType.cartridge)]);
 
-    test("the csv column of that name still answers the carrier", () {
-      final csv = CsvExporter()
-          .export(_document(
-              [_row(workKind: WorkKind.anime, mediaType: MediaType.cartridge)]))
-          .split('\r\n');
+      expect(_items(doc).single, containsPair('media_type', 'anime'));
+
+      final csv = CsvExporter().export(doc).split('\r\n');
       final columns = csv[0].split(',');
-      final values = csv[1].split(',');
-      expect(values[columns.indexOf('media_type')], 'cartridge');
+      expect(csv[1].split(',')[columns.indexOf('media_type')], 'cartridge');
     });
 
     test('neither field can be parsed out of the other one', () {
