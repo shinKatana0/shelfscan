@@ -37,6 +37,13 @@
 /// exit 3 and all mean the same thing: regenerate. A capture whose key cannot
 /// be checked is treated as absent rather than as good -- the one case that
 /// bites, since it is indistinguishable from a good one by looking.
+///
+/// A checkout that does not hold the working record cannot reach any of those
+/// four, and until T-0261 it did not try: every command died in
+/// [manifestPhotos] with a stack trace and exit 255, which is what the first
+/// command a contributor is told to run answered everywhere but here. It now
+/// answers [Verdict.unverifiable] and [notHereExit]; [figuresNotHere] is the
+/// condition and [notHereReport] is the wording.
 library;
 
 import 'dart:convert';
@@ -181,6 +188,57 @@ Map<String, int> manifestHints(Map<String, String> section) => {
         if (entry.key.startsWith('hint_'))
           entry.key.substring('hint_'.length): int.parse(entry.value),
     };
+
+// --------------------------------------------------------------------- //
+// What cannot be checked here, and how that is said
+
+/// `status` on a checkout that does not hold the working record.
+///
+/// Not 3, which means regenerate: without the control photographs there is
+/// nothing to regenerate from, and a caller reading 3 here would be sent to
+/// buy a vision pass it cannot buy. Not 0 either -- nothing was checked.
+const notHereExit = 4;
+
+/// Why [name] cannot be looked up in [manifest], or null when it can.
+///
+/// Every reader here took `manifest[name]!` until T-0232, so a manifest whose
+/// block had been hand-edited out died at the null check naming neither the
+/// block nor the file. [manifestPath] is published and a contributor can edit
+/// it, so that arrives from any machine.
+String? blockMissing(Map<String, Map<String, String>> manifest, String name) =>
+    manifest.containsKey(name)
+        ? null
+        : '$manifestPath holds no [$name] block. A control set is a '
+            'control-set fenced block naming its photographs; the two this '
+            'tool knows are [$hiRes] and [$lowRes].';
+
+/// Why the recorded figures cannot be read at [root], or null when they can.
+///
+/// They are in [controlSetPath], the working record kept beside the control
+/// photographs, which is not published -- so this answers on every checkout
+/// but the one holding them. Nothing here can be checked without it: the
+/// capture key carries the photographs' byte sizes and the body is compared
+/// against recorded counts, and both moved to that document (T-0234, T-0246).
+String? figuresNotHere(Directory root) => readPrivateControlSet(root) != null
+    ? null
+    : 'the figures this check needs are in $controlSetPath, the working '
+        'record kept beside the control photographs, and it is not on this '
+        'machine';
+
+/// What `status` answers where [figuresNotHere] does.
+///
+/// A named verdict rather than a throw, because the ladder already has the
+/// word for it and because a stack trace tells a reader nothing to act on --
+/// which is the same defect as a silent failure, from the other end.
+List<String> notHereReport(List<String> sets, String reason) => [
+      for (final name in sets)
+        '$name: ${Verdict.unverifiable.name.toUpperCase()} -- $reason',
+      '',
+      'Nothing to do on this checkout: a capture is made, and checked, where '
+          'the control photographs are. What can be checked without them -- '
+          'that the prompt those figures belong to has not moved -- runs in '
+          '`dart test` on every machine.',
+    ];
 
 // --------------------------------------------------------------------- //
 // Where a capture lives
@@ -604,18 +662,21 @@ control_capture -- the control sets' detections, captured once (T-0131)
 `capture` needs SHELFSCAN_PHOTOS and a running Ollama; it runs `ollama stop`
 itself (T-0106). Everything else is offline and free.
 
-Exit codes: 0 usable, 3 regenerate (absent, stale or unverifiable), 2 misuse.
+Exit codes: 0 usable, 3 regenerate (absent, stale or unverifiable), 4 the
+working record this check reads is not on this machine, 2 misuse.
 ''';
 
-Future<int> run(List<String> args) async {
+Future<int> run(List<String> args,
+    {Directory? from, Map<String, String>? environment}) async {
   if (args.isEmpty) {
     stderr.writeln(_usage);
     return 2;
   }
-  final env = Platform.environment;
-  final root = findRepoRoot(Directory.current);
+  final env = environment ?? Platform.environment;
+  final start = from ?? Directory.current;
+  final root = findRepoRoot(start);
   if (root == null) {
-    stderr.writeln('No $manifestPath at or above ${Directory.current.path}');
+    stderr.writeln('No $manifestPath at or above ${start.path}');
     return 2;
   }
   final manifest = readManifestWithSizes(root);
@@ -633,6 +694,21 @@ Future<int> run(List<String> args) async {
     stderr.writeln('Unknown control set "$target". '
         'The only two are $hiRes and $lowRes ($manifestPath).');
     return 2;
+  }
+
+  // Before any command, because every one of them reads a figure and both
+  // conditions leave the same question unanswerable (T-0232, T-0261).
+  for (final name in sets) {
+    final missing = blockMissing(manifest, name);
+    if (missing != null) {
+      stderr.writeln(missing);
+      return 2;
+    }
+  }
+  final notHere = figuresNotHere(root);
+  if (notHere != null) {
+    notHereReport(sets, notHere).forEach(stdout.writeln);
+    return notHereExit;
   }
 
   CaptureCheck checkOf(String name) {
