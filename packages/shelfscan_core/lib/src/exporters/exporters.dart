@@ -107,7 +107,12 @@ class TonkatsuExporter extends Exporter {
         'items': [
           for (final g in games)
             {
-              'media_type': 'game',
+              // EXTERNAL CONTRACT, and the key collides with this project's
+              // own vocabulary: `media_type` here is Tonkatsu's field for the
+              // KIND of work, not the carrier the CSV column of that name
+              // carries. [WorkKind] is the kind; the two are separate types
+              // because they were one word (decision 0015).
+              'media_type': g.detection.workKind.name,
               'external_id': g.best!.igdbId,
               'platform_id': g.best!.platformId,
             }
