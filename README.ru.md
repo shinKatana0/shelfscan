@@ -1,4 +1,4 @@
-<!-- Translated from b348c05 (2026-08-22). The rule, and how to check
+<!-- Translated from 6bfcf07 (2026-08-22). The rule, and how to check
      whether this is still true: README.md, "Translations". -->
 
 [English](README.md) · **Русский** · [日本語](README.ja.md)
