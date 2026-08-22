@@ -82,6 +82,34 @@ spines. A column the frame cuts off is still read, and the fragments it
 produces are honest partial reads rather than inventions — but they are
 fragments, so it is cheaper to include the whole column.
 
+**But do not put the whole shelf in one frame — that is the other lever, and
+it runs the opposite way.** Resolution is free; spines per frame are not. The
+local `qwen2.5vl:7b` was measured against synthetic shelves of increasing
+density, and there are two thresholds on the way up:
+
+- **Somewhere past forty spines in one frame it starts leaving spines out and
+  telling you nothing about it.** The answer parses, no title is invented, and
+  the missing ones are simply absent. The `unreadable` list stays empty, so
+  there is no banner and no count — this is the one loss in the whole tool
+  that does not announce itself, and the only defence against it is knowing
+  the number of spines you photographed.
+- **Further up it stops answering at all.** Instead of reporting what it
+  cannot read, the model repeats what it already read, over and over, until it
+  runs out of room. That run takes minutes and yields nothing — either an
+  answer that breaks off part-way, or a wall of near-identical entries the
+  scan declines whole rather than putting invented-looking rows in your review
+  list. Both failures name the shelf and tell you to photograph it in
+  sections; this is why.
+
+**So: two or three sections rather than one wide shot.** It costs one extra
+vision call per section and nothing else — the sections go through one dedupe,
+so a spine that appears in both overlapping frames is still one row. A cloud
+model holds far more in one frame than the local 7B does; if you are scanning
+locally, the sections are what buy you the whole shelf.
+
+Numbers, the ladder they came off and the two failure texts:
+[`measurements.md`](measurements.md), "The 7B's density ceiling".
+
 **What is read.** JPEG, PNG and WebP. Each file is identified **by its
 contents, not by its name**, so a HEIC that your phone or a messaging app
 renamed `.jpg` is still recognised as HEIC and converted, rather than being
@@ -239,6 +267,14 @@ photo, for whichever provider is in use. Unset is 120 s. Accepted range is 1
 to 1800; anything else is refused rather than quietly replaced by the default,
 because a raise that did not take looks exactly like the timeout it was meant
 to fix.
+
+**A photo with too many spines on it is NOT that case, and raising the bound
+for one is measured to be a waste of your time.** Past the density ceiling in
+Step 1 the local model repeats itself rather than answering, so the extra
+minutes contain nothing the first few seconds had not already produced, and
+the answer is declined at the end whatever the bound was. If a scan is slow on
+one photo and that photo is a wide shot of a full shelf, photograph it in two
+or three sections instead — the fix is the frame, not the seconds.
 
 **A cloud key is missing.** Nothing is read; the run exits before any photo
 moves:
