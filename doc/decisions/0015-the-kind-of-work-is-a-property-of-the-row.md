@@ -119,6 +119,12 @@ correctly.
   and the kind in its `.xcoll` export. That is a fact about two external
   formats rather than a choice, and it is pinned by a test that puts one row
   through both targets and asserts the two answers differ.
+- **The wire name is spoken for three times, not twice**, and the third is
+  somebody else's too: the Anthropic Messages API calls the MIME type of an
+  uploaded image `media_type`, which is what `providers/vision.dart` sends with
+  every photograph. Nothing in this codebase may take that string as evidence
+  of which concept it is looking at — only the Dart type says that, which is
+  the whole reason there are two of them.
 - **`game` is the only value of the kind that has ever been imported.** T-0009
   round-tripped it into Tonkatsu Box. `anime` is Tonkatsu's own vocabulary for
   a kind it manages, but this *spelling* of it in this field is an assumption
