@@ -1,8 +1,8 @@
 [English](guide.md) · **Русский** · [日本語](guide.ja.md)
 
-> **Перевод `doc/guide.md`.** Translated from `60d6cf1` (2026-08-22).
+> **Перевод `doc/guide.md`.** Translated from `b348c05` (2026-08-22).
 > Ушёл ли английский оригинал вперёд, отвечает одна команда:
-> `git log --oneline 60d6cf1..HEAD -- doc/guide.md` — пустой вывод означает,
+> `git log --oneline b348c05..HEAD -- doc/guide.md` — пустой вывод означает,
 > что перевод актуален. Правило целиком, в одном месте:
 > [`../README.md`, «Translations»](../README.md#translations).
 > **Блоки кода и вывод программы не переводятся**: это то, что печатает сам
