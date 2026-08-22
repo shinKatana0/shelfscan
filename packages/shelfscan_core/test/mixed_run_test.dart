@@ -6,10 +6,10 @@
 /// T-0155's doc comment says the seam exists for: a game owned on a disc AND
 /// installed on the PC comes out of ONE invocation as ONE row.
 ///
-/// The headline test is a real CLI subprocess. It
-/// needs a vision answer, so a loopback HTTP server stands in for Ollama --
-/// the wire, the CLI, the walk, the dedupe and the written file are all real,
-/// and only the model is a fixture. The IGDB variables are blanked, so stage 3
+/// The headline test is a real CLI subprocess. It needs a vision answer, so a
+/// loopback HTTP server stands in for Ollama -- the wire, the CLI, the walk,
+/// the dedupe and the written file are all real, and only the model is a
+/// fixture. The IGDB variables are blanked, so stage 3
 /// provably takes the skip branch and no request leaves the machine.
 @Timeout(Duration(minutes: 3))
 library;

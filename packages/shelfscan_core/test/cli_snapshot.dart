@@ -92,9 +92,10 @@ bool _isFresh(String snapshot) {
 /// can never leave a truncated snapshot that the mtime check then calls fresh.
 void _build(String snapshot) {
   final temp = '$snapshot.${pid}_tmp';
+  final args = ['compile', 'kernel', 'bin/shelfscan.dart', '-o', temp];
   final result = Process.runSync(
     Platform.resolvedExecutable,
-    ['compile', 'kernel', 'bin/shelfscan.dart', '-o', temp],
+    args,
     stdoutEncoding: utf8,
     stderrEncoding: utf8,
   );
@@ -104,9 +105,12 @@ void _build(String snapshot) {
     } on FileSystemException {
       // Nothing to clean up: the compiler wrote no output.
     }
+    // The command is echoed from what actually ran rather than rebuilt from a
+    // string beside it: the two drift, and this message is read exactly once,
+    // by someone who cannot see the call.
     throw StateError(
       'Could not compile the CLI under test.\n'
-      '  ${Platform.resolvedExecutable} compile kernel bin/shelfscan.dart\n'
+      '  ${Platform.resolvedExecutable} ${args.join(' ')}\n'
       '  exit ${result.exitCode}, run in ${Directory.current.path}\n'
       '${result.stdout}${result.stderr}',
     );

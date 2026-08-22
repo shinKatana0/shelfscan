@@ -2,9 +2,9 @@
 ///
 /// Both were measured against a real folder of downloaded games during
 /// development; that folder is not published. Both are reproduced here as a
-/// real CLI subprocess: `scan-installs` makes no
-/// vision call and no IGDB call with the credentials blanked, so the whole
-/// command is exercised with nothing faked and nothing leaving the machine.
+/// real CLI subprocess: `scan-installs` makes no vision call and no IGDB
+/// call with the credentials blanked, so the whole command is exercised with
+/// nothing faked and nothing leaving the machine.
 ///
 /// The first group builds a folder of its own, and no count in it is a count
 /// of anything real. What T-0184 named is that the run stated an entry count

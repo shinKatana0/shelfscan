@@ -8,8 +8,8 @@
 /// say it.
 ///
 /// Three things, in order: the rule on the exporter, the sentence the CLI
-/// builds from it, and a real CLI subprocess running `export` that prints
-/// it -- and, in every group, the silence on an export that has no such cell.
+/// builds from it, and a real CLI subprocess running `export` that prints it
+/// -- and, in every group, the silence on an export that has no such cell.
 /// The silence is the load-bearing half: a warning that fires on every export
 /// is one people learn to ignore.
 @Timeout(Duration(minutes: 3))
