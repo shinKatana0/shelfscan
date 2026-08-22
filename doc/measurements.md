@@ -1168,7 +1168,40 @@ option on paper and does not survive the measurement:
    `detectionPrompt`, so it fails `dart test` everywhere until both control
    sets are re-measured — paid to add a rule the model already ignores once it
    is looping.
-4. A real grammar bound — Ollama's `format` will take a JSON Schema — would
-   constrain both arrays, changes a shipped request contract, is Ollama-only
-   where `detectionPrompt` is deliberately provider-neutral, and wants its own
-   measurement.
+4. **The enforced version is not incomplete, it is worse — and that was
+   measured, not reasoned.** Ollama's `format` will take a JSON Schema and it
+   does honour `maxItems`. The 176-spine frame under a schema capping both
+   arrays at 120 came back in 58 s, `done_reason: stop`, **valid JSON that
+   parses cleanly** — and holding 120 rows of which **35 are distinct**, three
+   of them repeated 30, 29 and 29 times, 55 of the 176 titles correct. So the
+   bound converts a loud failure into a quiet one: today the loop is declined
+   whole and the user is told; with the cap the same loop is accepted, and
+   dozens of copied rows land in the review list looking exactly like titles
+   read off spines. That is T-0007's rule and decision 0012's class in one
+   answer, which is the strongest argument against this option rather than the
+   weakest. Anyone returning to it has to bound the loop *and* detect it, and
+   a cap alone does only the first.
+
+### What sectioning buys, on the frame that fails
+
+The remedy both failure texts name, measured on the same 176-spine frame cut
+into two halves of 88 at **identical pixel scale** (3060×1020 each, so nothing
+about legibility changed):
+
+| | titles correct |
+|---|---|
+| one frame, 176 spines | **0** — the loop, nothing returned at all |
+| top half, 88 spines | 71 / 88 |
+| bottom half, 88 spines | 59 / 88 |
+| the two together | **130 / 176** |
+
+Two vision calls instead of one, and the sections meet at one dedupe, so a
+spine caught in both overlapping frames is still one row.
+
+### Reproducibility
+
+Every figure above is a temperature-0 greedy draw and repeats to the token.
+Second passes: 40 spines 1929 tokens both times, 40/40 both times; 120 spines
+5504 tokens both times, 114 items and 108/120 both times; 176 spines **27,836
+tokens both times**, `done_reason: length` both times. What does *not* repeat
+is the clock — see the tokens/s spread above, measured on the same two frames.
