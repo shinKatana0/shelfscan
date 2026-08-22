@@ -1,4 +1,4 @@
-<!-- Translated from b348c05 (2026-08-22). The rule, and how to check
+<!-- Translated from 6bfcf07 (2026-08-22). The rule, and how to check
      whether this is still true: README.md, "Translations". -->
 
 [English](README.md) · [Русский](README.ru.md) · **日本語**
@@ -131,7 +131,7 @@ dart run shelfscan_core:shelfscan export collection.review.json --target csv -o 
 | [doc/guide.ja.md](doc/guide.ja.md) | 一回の実行を最初から取り込み完了まで通しで。棚の撮り方から始まる |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | パイプライン、プラットフォーム境界、新しい入力源の差し込み口（英語） |
 | [doc/decisions/](doc/decisions/) | 自明でない決定と、それを決めた実測（英語） |
-| [doc/measurements.md](doc/measurements.md) | すべての数値。測ったうえで*やらないと決めた*ものも含む（英語） |
+| [doc/measurements.md](doc/measurements.md) | 判断の根拠となった測定。測ったうえで*やらないと決めた*ものも含む。ただし全ての数値ではない — プロンプトの測定値は、それが決めた規則のそばの doc コメントにあることが多い（英語） |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | テスト群の走らせ方と、変更が黙って壊してはいけないもの（英語） |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | ここでの振る舞いについて（英語） |
 | [SECURITY.md](SECURITY.md) | 鍵、写真、問題の報告方法（英語） |

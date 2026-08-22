@@ -1,4 +1,4 @@
-<!-- Translated from b348c05 (2026-08-22). The rule, and how to check
+<!-- Translated from 6bfcf07 (2026-08-22). The rule, and how to check
      whether this is still true: README.md, "Translations". -->
 
 [English](README.md) · **Русский** · [日本語](README.ja.md)
@@ -139,7 +139,7 @@ IGDB, — а это никогда не изображение. Что имен�
 | [doc/guide.ru.md](doc/guide.ru.md) | один полный запуск, от нуля до импортированной коллекции — начиная с того, как снимать полку |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | конвейер, граница платформ, куда подключается новый источник (англ.) |
 | [doc/decisions/](doc/decisions/) | неочевидные решения, каждое с измерением, которое его решило (англ.) |
-| [doc/measurements.md](doc/measurements.md) | все числа — включая то, что измерили и решили *не* делать (англ.) |
+| [doc/measurements.md](doc/measurements.md) | измерения, на которых стоят решения — включая то, что измерили и решили *не* делать. Не все числа: измерение промпта обычно живёт в doc-комментарии рядом с правилом, которое оно решило (англ.) |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | как гонять наборы тестов и что изменение не должно тихо сломать (англ.) |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | как здесь принято себя вести (англ.) |
 | [SECURITY.md](SECURITY.md) | ключи, фотографии и как сообщить о проблеме (англ.) |
