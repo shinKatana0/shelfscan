@@ -8,8 +8,8 @@
 /// say it.
 ///
 /// Three things, in order: the rule on the exporter, the sentence the CLI
-/// builds from it, and a real `dart run bin/shelfscan.dart export` that prints
-/// it -- and, in every group, the silence on an export that has no such cell.
+/// builds from it, and a real CLI subprocess running `export` that prints it
+/// -- and, in every group, the silence on an export that has no such cell.
 /// The silence is the load-bearing half: a warning that fires on every export
 /// is one people learn to ignore.
 @Timeout(Duration(minutes: 3))
@@ -22,6 +22,7 @@ import 'package:shelfscan_core/shelfscan_core.dart';
 import 'package:test/test.dart';
 
 import '../bin/shelfscan.dart' show formulaCellsShown, spreadsheetNote;
+import 'cli_snapshot.dart';
 
 ResolvedGame _game(
   String rawTitle, {
@@ -67,7 +68,7 @@ String _join(String dir, String name) => '$dir${Platform.pathSeparator}$name';
 
 Future<ProcessResult> _runCli(List<String> args) => Process.run(
       Platform.resolvedExecutable,
-      ['run', 'bin/shelfscan.dart', ...args],
+      [cliSnapshot(), ...args],
       environment: {'IGDB_CLIENT_ID': '', 'IGDB_CLIENT_SECRET': ''},
       stdoutEncoding: utf8,
       stderrEncoding: utf8,
@@ -83,6 +84,8 @@ Directory _repoRoot() {
 }
 
 void main() {
+  setUpAll(cliSnapshot);
+
   group('CsvExporter.formulaCells', () {
     test('says nothing about an ordinary export', () {
       final doc = _doc([

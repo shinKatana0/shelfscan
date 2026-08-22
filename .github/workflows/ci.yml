@@ -33,6 +33,12 @@ jobs:
           sdk: stable
       - run: dart pub get
       - run: dart analyze
+      # Nine suites spawn CLI children and run them off one kernel snapshot
+      # (T-0217). `dart test` builds it on demand anyway, so this step buys no
+      # speed -- it moves the one-time build out of whichever suite would
+      # otherwise pay it inside its own @Timeout on a cold runner, and gives a
+      # compile failure its own red step instead of nine failing setUpAlls.
+      - run: dart run test/cli_snapshot.dart
       - run: dart test --reporter expanded
 
   app:

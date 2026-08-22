@@ -21,6 +21,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 import '../bin/shelfscan.dart' show reviewPathError;
+import 'cli_snapshot.dart';
 
 /// A reviewed document as `scan` writes one: a single approved, resolved game.
 const _reviewFixture = {
@@ -84,7 +85,7 @@ String _join(String dir, String name) => '$dir${Platform.pathSeparator}$name';
 
 ProcessResult _runCli(List<String> args) => Process.runSync(
       Platform.resolvedExecutable,
-      ['run', 'bin/shelfscan.dart', ...args],
+      [cliSnapshot(), ...args],
       // Blanked rather than inherited: a machine that has IGDB credentials
       // set would otherwise turn the valid-file case into a live API call.
       environment: const {'IGDB_CLIENT_ID': '', 'IGDB_CLIENT_SECRET': ''},
@@ -96,6 +97,8 @@ List<String> _lines(Object? stderrText) =>
     const LineSplitter().convert(stderrText as String);
 
 void main() {
+  setUpAll(cliSnapshot);
+
   group('reviewPathError', () {
     test('a file that exists is not an error', () {
       expect(reviewPathError(_reviewFile().file, 'resolve'), isNull);

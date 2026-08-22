@@ -21,6 +21,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 import '../bin/shelfscan.dart' show noPhotosMessage, readPhotoDirectory, scanPathError;
+import 'cli_snapshot.dart';
 
 Directory _tempDir() {
   final dir = Directory.systemTemp.createTempSync('shelfscan_scan_path_');
@@ -41,12 +42,14 @@ String _join(String dir, String name) => '$dir${Platform.pathSeparator}$name';
 
 ProcessResult _runScan(String path) => Process.runSync(
       Platform.resolvedExecutable,
-      ['run', 'bin/shelfscan.dart', 'scan', path],
+      [cliSnapshot(), 'scan', path],
       stdoutEncoding: utf8,
       stderrEncoding: utf8,
     );
 
 void main() {
+  setUpAll(cliSnapshot);
+
   group('scanPathError', () {
     test('a directory that exists is not an error', () {
       expect(scanPathError(_tempDir().path), isNull);
