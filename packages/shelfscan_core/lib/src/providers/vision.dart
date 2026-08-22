@@ -1437,10 +1437,15 @@ Exception visionWrongShapeFailure({
 /// 'Map<String, dynamic>' in type cast` -- the T-0072 class at its purest, a
 /// Dart generic naming neither the run, the model nor the endpoint.
 ///
-/// **Unmeasured**: no endpoint has produced one of these
-/// (T-0167). The shapes it is built for are the five the filing measured
-/// offline, of which `{"items":["Vex"]}` -- titles as plain strings -- is the
-/// one a model plausibly writes.
+/// **Measured since T-0278**, and by the default local model: past a density
+/// ceiling `qwen2.5vl:7b` repeats itself under greedy decoding until it runs
+/// out of context, and the answer that arrives is one array of near-identical
+/// entries. Whether that reaches here or [visionTruncatedFailure] is decided
+/// by nothing the user did -- the model either closes the document first
+/// (here) or fills the context first (there) -- which is why the advice below
+/// now names the shelf as well as the model id. The shapes the filing measured
+/// offline still hold; `{"items":["Vex"]}` is the one a model plausibly
+/// writes.
 ///
 /// [problem] is the parse's own `path is X; it must be Y`, which is the reason
 /// the check lives in the parse: the boundary could only have said "the wrong
@@ -1465,10 +1470,13 @@ String visionWrongShapeMessage({
       'one this scan asks for. None of it was read anyway: an answer this shape '
       'is declined whole rather than repaired into a plausible one, because a '
       'repaired row would sit in your review list looking exactly like a title '
-      'read off a spine. Scan that photo again, and if the answer has the same '
-      'shape a second time the model is the thing to change rather than the '
-      'shelf or the photograph: the model id is yours to type, in the app\'s '
-      'settings and in the CLI\'s environment.';
+      'read off a spine. Scan that photo again. If the answer has the same '
+      'shape a second time, try the shelf before the model: the one cause '
+      'measured for this shape is a frame holding more spines than the model '
+      'can hold at once, which makes it repeat itself until the answer is a '
+      'wall of copies, and photographing the shelf in two or three sections '
+      'ends it. If sections change nothing, the model id is yours to type, in '
+      'the app\'s settings and in the CLI\'s environment.';
 }
 
 /// How much of a provider's explanation is quoted before it stops being one.

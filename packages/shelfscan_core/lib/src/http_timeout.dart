@@ -75,6 +75,23 @@ import 'package:http/http.dart' as http;
 /// and the CLI is the shell that exposes it (T-0108); the app does not, which
 /// is why [timedOutMessage] takes the remedy from the shell rather than
 /// naming a control here.
+///
+/// **A dense photo is not a second such configuration, and that was measured
+/// rather than assumed (T-0278).** Past a density ceiling `qwen2.5vl:7b`
+/// repeats itself under greedy decoding until the server's context window is
+/// full, so the extra minutes a raised bound buys contain no title the first
+/// seconds had not already produced -- on the synthetic frame that reproduces
+/// it, 27,836 generated tokens carry 20 distinct titles and 29 copies of them.
+/// A user who raises this for that photo waits longer for the same nothing.
+///
+/// Two numbers from the same measurement, for anyone tempted to tune this:
+/// the densest frame that still answers honestly generates ~5,500 tokens, and
+/// generation on one machine ran 24-28 tokens/s with another process busy
+/// against 91-102 tokens/s quiet. So this bound admits ~3,000 tokens or
+/// ~12,000 depending on what else is running, which is a four-fold spread no
+/// single value tunes -- the argument for leaving it where it is and telling
+/// the user about the shelf instead. doc/measurements.md, "The 7B's density
+/// ceiling".
 const visionCallTimeout = Duration(seconds: 120);
 
 /// What one IGDB request is given.
