@@ -88,21 +88,25 @@ hard_kill() {
 }
 
 # bounded SECONDS DIR LOGFILE CMD...
+# Double-underscored on purpose: sh has no locals, and this is called from
+# inside run_suite's loop. An `_lg` here rewrote the caller's suite log path
+# under it, so the run after the loop read the wrong file and reported one
+# thing wrongly before the collision was noticed.
 bounded() {
-  _b=$1; _d=$2; _lg=$3; shift 3
-  ( cd "$_d" && exec "$@" ) >"$_lg" 2>&1 &
-  _child=$!
-  _waited=0
-  while kill -0 "$_child" 2>/dev/null; do
-    if [ "$_waited" -ge "$_b" ]; then
-      hard_kill "$_child"
-      wait "$_child" 2>/dev/null
+  __b=$1; __d=$2; __log=$3; shift 3
+  ( cd "$__d" && exec "$@" ) >"$__log" 2>&1 &
+  __child=$!
+  __waited=0
+  while kill -0 "$__child" 2>/dev/null; do
+    if [ "$__waited" -ge "$__b" ]; then
+      hard_kill "$__child"
+      wait "$__child" 2>/dev/null
       return $TRIPPED
     fi
     sleep 1
-    _waited=$((_waited + 1))
+    __waited=$((__waited + 1))
   done
-  wait "$_child"
+  wait "$__child"
 }
 
 # passed | failed | none -- "none" is a run that was cut off before it judged.
