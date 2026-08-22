@@ -555,8 +555,9 @@ looked up, so no row has candidates to offer. The export sheet also says which
 target would carry none of the rows you marked, before you pick it. In the app
 that mode is chosen by name, above the **Scan** button.
 
-For scale: on a real shelf measured during development, roughly one row in six
-had no IGDB id.
+What to expect: on a real shelf measured during development, a minority of
+rows had no IGDB id — enough that you meet them on any run, not so many that
+the rest could not be exported.
 
 If you export `.xcoll` with such rows approved, the app stops you first — and
 names the rows rather than counting them, because a count cannot be traced

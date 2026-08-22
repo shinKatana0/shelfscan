@@ -26,12 +26,10 @@ final _xcoll = TonkatsuExporter();
 /// What a row `.xcoll` cannot carry says, in the slot the absent `score N%`
 /// leaves free.
 ///
-/// 36 characters, measured against the 88 below: the widest subtitle in
-/// CONTROL-HIRES is a 72-character raw title under a 6-character hint, and
-/// with this clause it reads 127; the 90th percentile of the same control run
-/// goes 59 -> 98. Only the unmatched rows pay it (a seventh of a real
-/// run) and they are the ones that never carry a score or a canonical
-/// platform name, so nothing that exports gets longer.
+/// 36 characters, measured against the widest subtitle the breakpoint below
+/// is set from. Only the unmatched rows pay it, and they are the ones that
+/// never carry a score or a canonical platform name, so nothing that exports
+/// gets longer.
 const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 
 /// What a row says instead of `score N%` when nothing scored it (T-0172).
