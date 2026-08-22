@@ -115,6 +115,7 @@ class ReviewScreen extends StatefulWidget {
     required this.document,
     this.saver = const PlatformExportSaver(),
     this.resolver,
+    this.keyless = false,
     this.failedPhotos = const [],
     this.notLookedAtPhotos = const [],
     this.photos = const [],
@@ -167,6 +168,16 @@ class ReviewScreen extends StatefulWidget {
   /// item is then added unmatched, which is still worth doing -- csv
   /// exports it from the typed title alone.
   final ResolverWorker? resolver;
+
+  /// The run that produced [document] had no IGDB stage (T-0230) -- either
+  /// the mode was chosen or there was nothing to authenticate with.
+  ///
+  /// It changes what this screen SAYS, never what it does: no row is
+  /// exported differently, and nothing here re-derives `canExport`. What
+  /// moves is where the "not in .xcoll" fact is stated -- see
+  /// [_keylessBanner] for the argument, which is the design question T-0230
+  /// was filed to settle.
+  final bool keyless;
 
   @override
   State<ReviewScreen> createState() => _ReviewScreenState();
@@ -293,21 +304,39 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
   /// Target picker behind the primary Export button -- the only route to
   /// [_export] since T-0118.
+  ///
+  /// A target that would carry none of the marked rows says so here, before
+  /// the tap, rather than answering a confirmation dialog and then "nothing
+  /// to export" (T-0230). That is every target on a keyless run except csv,
+  /// and it is how the export a keyless run CAN use is the one offered.
+  ///
+  /// Asked of each exporter through `canExport`, never decided here: the same
+  /// rule [_export] filters by, so the sheet cannot promise a row the file
+  /// then drops. Not disabled either -- a target that explains itself beats
+  /// one that goes dead.
   Future<void> _chooseExportTarget() async {
+    final marked = _marked;
     final target = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
           children: [
-            for (final name in exporters.keys)
-              ListTile(
-                key: Key('export-sheet-$name'),
-                leading: const Icon(Icons.insert_drive_file),
-                title: Text('Export: $name'),
-                subtitle: Text('.${exporters[name]!().extension} file'),
-                onTap: () => Navigator.of(context).pop(name),
-              ),
+            for (final entry in exporters.entries)
+              Builder(builder: (context) {
+                final exporter = entry.value();
+                final carries = marked.where(exporter.canExport).length;
+                return ListTile(
+                  key: Key('export-sheet-${entry.key}'),
+                  leading: const Icon(Icons.insert_drive_file),
+                  title: Text('Export: ${entry.key}'),
+                  subtitle: Text(carries == 0 && marked.isNotEmpty
+                      ? '.${exporter.extension} file -- carries none of the '
+                          'marked rows'
+                      : '.${exporter.extension} file'),
+                  onTap: () => Navigator.of(context).pop(entry.key),
+                );
+              }),
           ],
         ),
       ),
@@ -534,7 +563,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final stopped = widget.notLookedAtPhotos;
     return [
       if (failed.isNotEmpty)
-        _missingPhotoBanner(
+        _runBanner(
           key: const Key('failed-photos-banner'),
           background: scheme.errorContainer,
           foreground: scheme.onErrorContainer,
@@ -544,7 +573,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
               '${failed.length == 1 ? 'it' : 'them'} is in this list.',
         ),
       if (stopped.isNotEmpty)
-        _missingPhotoBanner(
+        _runBanner(
           key: const Key('stopped-photos-banner'),
           background: scheme.secondaryContainer,
           foreground: scheme.onSecondaryContainer,
@@ -558,18 +587,57 @@ class _ReviewScreenState extends State<ReviewScreen> {
     ];
   }
 
-  Widget _missingPhotoBanner({
+  /// What a keyless run's whole list is, said once instead of on every row
+  /// (T-0230).
+  ///
+  /// This is where the per-row frame and clause go in this mode, and the
+  /// move is the point rather than a tidy-up. T-0223 put a frame on the rows
+  /// `.xcoll` cannot carry because they were a minority and had no fixed
+  /// place on a row to be found at; a universal mark is furniture, and a
+  /// reader who has to be told the same thing on every line has been told
+  /// nothing about any of them. What is true here is true of the run, so it
+  /// is stated where the run's other facts already are -- beside the lost
+  /// photos and the unread spines.
+  ///
+  /// `secondaryContainer` and not the error pair: a keyless run is a
+  /// legitimate choice with a consequence, the same footing the settings
+  /// screen gives a cloud backend (T-0045 item 22). It names the export that
+  /// works, because a banner that only says what is impossible is the
+  /// adoption cliff written down.
+  ///
+  /// Nothing here re-derives `canExport`. Which rows csv carries is the
+  /// exporter's rule and stays there; this says which lookup did not happen.
+  ///
+  /// Dense, and two lines rather than three. This screen has no spare
+  /// height: at 800x600 the third photo group is the last thing that fits,
+  /// and a full-size banner pushed it past the fold (measured 2026-08-22,
+  /// `flutter test`). The clause it replaces cost every unmatched row part
+  /// of a subtitle, so the trade is a fixed 64 px against a per-row one.
+  Widget _keylessBanner() => _runBanner(
+        key: const Key('keyless-run-banner'),
+        background: Theme.of(context).colorScheme.secondaryContainer,
+        foreground: Theme.of(context).colorScheme.onSecondaryContainer,
+        icon: Icons.link_off,
+        dense: true,
+        title: 'Keyless run -- nothing was looked up',
+        subtitle: 'Every row is the title as it was read. Export CSV; '
+            '.xcoll has no ids to carry.',
+      );
+
+  Widget _runBanner({
     required Key key,
     required Color background,
     required Color foreground,
     required IconData icon,
     required String title,
     required String subtitle,
+    bool dense = false,
   }) =>
       Material(
         key: key,
         color: background,
         child: ListTile(
+          dense: dense,
           iconColor: foreground,
           textColor: foreground,
           leading: Icon(icon),
@@ -916,7 +984,20 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final best = game.best;
     // One evaluation for the frame and the clause below, so the two can never
     // disagree about which rows they mean.
-    final needsAMatch = !_xcoll.canExport(game);
+    //
+    // False on every row of a keyless run, and that is the answer to T-0223's
+    // predicate inverting (T-0230). The frame and the clause mark the rows
+    // that need the user's hand, and both earn their place by being rare; a
+    // run with no IGDB stage makes them true of everything, at which point
+    // the frame locates nothing and "tap to pick a match" is not even
+    // accurate -- there is no candidate list to pick from, because nothing
+    // was looked up. The fact is a property of the run there, so the run says
+    // it once, above the list, in [_keylessBanner].
+    //
+    // Keyed off the mode and NOT off the rows: a MATCHED run in which every
+    // row happens to be unresolved is a run where something went wrong, and
+    // there the frames are exactly right.
+    final needsAMatch = !widget.keyless && !_xcoll.canExport(game);
     final tile = ListTile(
       key: Key('review-row-$index'),
       onTap: () => _pickCandidate(game),
@@ -1023,7 +1104,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
       ),
       body: Column(
         children: [
+          // After the photo banners and before the unread-spine prompt: the
+          // two above are things that went wrong with this run, and this is
+          // what the run is. Both of those keep the top of the screen.
           ...missing,
+          if (widget.keyless) _keylessBanner(),
           if (prompt != null) prompt,
           Expanded(
             child: LayoutBuilder(

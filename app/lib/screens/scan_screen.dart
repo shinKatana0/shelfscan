@@ -188,6 +188,28 @@ class _ScanScreenState extends State<ScanScreen> {
   /// switched away from is worse than none.
   String? _backendAdvice;
 
+  /// What this run does with the titles it reads, once the user has said
+  /// (T-0230). Null until they do, and that is the whole of the default rule:
+  /// an unpicked mode follows the credentials, so registering a Twitch
+  /// application in Settings switches the next run to matching without a
+  /// second gesture, while a mode the user picked outlives that trip.
+  ///
+  /// Deliberately not persisted, and not a [ProviderSettings] field. The
+  /// backend is configuration -- which service this app talks to at all --
+  /// and survives a restart for that reason; this is a property of one run,
+  /// like the photos in it and the Stop that ended it. Its restart default is
+  /// derived from something that IS persisted (the credentials), so nothing
+  /// is silently forgotten: the only state a restart drops is "I have
+  /// credentials and skipped them this once", which is what "this once"
+  /// means.
+  TitleMatching? _matchingChoice;
+
+  TitleMatching get _matching =>
+      _matchingChoice ??
+      (_settings.hasIgdbCredentials
+          ? TitleMatching.igdb
+          : TitleMatching.keyless);
+
   ProviderSettings get _settings => widget.settings;
 
   bool get _busy => _running || _picking;
@@ -481,6 +503,7 @@ class _ScanScreenState extends State<ScanScreen> {
         builder: (_) => ReviewScreen(
           document: held.document,
           resolver: held.resolver,
+          keyless: held.keyless,
           failedPhotos: lost.failed,
           notLookedAtPhotos: lost.notLookedAt,
           // The same list, not a copy: the review screen shows each group
@@ -584,8 +607,8 @@ class _ScanScreenState extends State<ScanScreen> {
       // item added by hand at review resolves through exactly the same
       // resolver (and the same "no credentials means skip" rule) as one the
       // model read off a photo.
-      final resolver =
-          ProviderPolicy.buildResolver(_settings, aliases: widget.aliases);
+      final resolver = ProviderPolicy.buildResolver(_settings,
+          aliases: widget.aliases, matching: _matching);
       // No photos means no vision provider is built at all, so a folder-only
       // run needs no key, no endpoint and no backend that can run -- which is
       // the whole difference between the two inputs, made structural rather
@@ -1039,6 +1062,54 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
+  /// The keyless run, offered as a mode rather than reached by leaving a
+  /// field blank (T-0230).
+  ///
+  /// Here and not in Settings, for two reasons. It is a property of the run,
+  /// and the run starts on this screen -- Settings persists everything it
+  /// holds, so a per-run control there would be the one thing its Save did
+  /// not save. And it is the screen a person is on before they scan, so the
+  /// mode is met rather than looked for: the same test T-0115 set when it
+  /// took the backend selector off Settings and left the statement behind.
+  ///
+  /// Plain rather than the coloured panel the backend warning uses: choosing
+  /// keyless costs no privacy and risks nothing, it changes what the export
+  /// can carry. Colouring it like the upload warning would say those two are
+  /// the same kind of news.
+  Widget _matchingPanel() {
+    final check = ProviderPolicy.checkMatching(_settings, _matching);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SegmentedButton<TitleMatching>(
+            key: const Key('title-matching'),
+            showSelectedIcon: false,
+            segments: [
+              for (final option in TitleMatching.values)
+                ButtonSegment(value: option, label: Text(option.label)),
+            ],
+            // What was asked for, not what [check] says will happen: the
+            // gap between the two is exactly what the sentence below is for,
+            // and a control that silently re-selects itself cannot say it.
+            selected: {_matching},
+            onSelectionChanged: (selection) =>
+                setState(() => _matchingChoice = selection.first),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              check.consequence,
+              key: const Key('title-matching-consequence'),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// The three input lists, in the order a run reads them.
   List<Widget> _inputRows() => [
         for (final photo in _photos)
@@ -1141,6 +1212,18 @@ class _ScanScreenState extends State<ScanScreen> {
               ],
             ),
           ),
+        // Last, so it sits directly above the Scan button it governs -- and
+        // so that nothing already on this list moves when it appears. This
+        // screen has three measured overflows behind it (T-0161, T-0179 and
+        // the empty-state one below), and a panel inserted above the others
+        // pushed the resume-review button and the status line's own shortcut
+        // out of an 800x600 viewport: still built, still found, no longer
+        // tappable (measured 2026-08-22, `flutter test`).
+        //
+        // Not while a run is in flight: its mode was fixed when it started,
+        // and a live control over a settled fact invites a tap that cannot
+        // do anything.
+        if (!_running) _matchingPanel(),
       ];
 
   @override
@@ -1224,7 +1307,20 @@ class _ScanScreenState extends State<ScanScreen> {
                           ),
                         ),
                       ),
-                      ..._runPanels(),
+                      // Flexible and scrolled, where this was a plain spread
+                      // until T-0230: the empty screen had ~4 px of slack
+                      // left over an 800x600 window (measured 2026-08-22,
+                      // `flutter test`), so the mode panel overflowed it the
+                      // moment it arrived -- the striped bar over the Scan
+                      // button this file has now measured three times. The
+                      // centred hint keeps its Expanded, the panels take what
+                      // they need up to the half they are flexed for, and
+                      // anything past that scrolls instead of being clipped.
+                      Flexible(
+                        child: SingleChildScrollView(
+                          child: Column(children: _runPanels()),
+                        ),
+                      ),
                     ],
                   )
                 // Scrolled, not clipped, and a Column inside a
@@ -1321,6 +1417,15 @@ class _HeldReview {
 
   final ReviewDocument document;
   final ResolverWorker resolver;
+
+  /// Whether this run had an IGDB stage at all (T-0230).
+  ///
+  /// Read off the resolver the run actually used rather than held beside it
+  /// as a second field: [SkipResolver] IS "no IGDB stage", it is what
+  /// `buildResolver` returns for both ways of arriving at a keyless run, and
+  /// a copy of the mode kept here could disagree with the document the review
+  /// screen is rendering.
+  bool get keyless => resolver is SkipResolver;
 
   /// Every row the user has ruled on, approved and rejected alike. Not the
   /// exporters' `approved`/`edited` rule, which lives in one place on the

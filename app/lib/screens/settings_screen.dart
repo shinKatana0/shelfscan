@@ -303,10 +303,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             const _SectionTitle('IGDB (optional)'),
+            // Names the mode rather than describing a blank field, and names
+            // where its control is -- the same shape as the backend line at
+            // the top of this screen, and for the same reason (T-0230).
+            //
+            // "you fix them during review" stood here until then and was not
+            // true of a run with no credentials: the resolve stage is skipped
+            // outright, so those rows arrive with no candidate list and there
+            // is nothing on the review screen to pick from.
             Text(
               'Optional: needed only for the Tonkatsu .xcoll export, which '
-              'carries IGDB ids. Without them the scan still runs; games '
-              'arrive unresolved and you fix them during review.',
+              'carries IGDB ids. Without them a scan is a '
+              '${TitleMatching.keyless.label} run -- it reads the photos and '
+              'exports CSV -- and that mode is named and chosen on the scan '
+              'screen.',
+              key: const Key('settings-igdb-optional'),
               style: Theme.of(context).textTheme.bodySmall,
             ),
             // "Where do I get this" answered in place. IGDB is

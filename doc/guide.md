@@ -497,7 +497,9 @@ the same order, so rows stay scannable:
 - **`matched by store id`** or **`score 87%`** — how the match was made. A
   store-id join writes no percentage, because a percentage on that row would
   be a string measurement nobody took;
-- **`not in .xcoll -- tap to pick a match`** — see below;
+- **`not in .xcoll -- tap to pick a match`** — see below. Absent on a keyless
+  run, where it would be true of every row and where there is no candidate
+  list to tap into;
 - **the status word**, once you have decided;
 - **`hint refused: "..."`** — the platform hint the pipeline threw out, named
   so the row is not mistaken for one whose branding was illegible;
@@ -525,6 +527,9 @@ The last entry is **No match**, which clears the match and rejects the item.
   can describe several spines, so there may be more, and the promise that
   nothing was invented for them. Each photo gets an **Add** button that files
   the item you type into that photo's group.
+- **`Keyless run -- nothing was looked up`** — this run had no IGDB stage, so
+  every row is the title as it was read. Not coloured as an error: it is the
+  mode you chose, and it names the export that carries the rows.
 
 ### What cannot reach `.xcoll`, and why
 
@@ -542,6 +547,13 @@ picked from, and an item you typed by hand while the resolver was unavailable.
 **CSV carries all of them**, as long as the row has a non-blank title. That is
 the fallback, and it is why keyless use is a real path rather than a crippled
 one.
+
+**On a keyless run every row is one of these**, so the app says it once above
+the list instead of on each row: a mark that is on everything locates nothing,
+and there the invitation to tap for a match is not even true — nothing was
+looked up, so no row has candidates to offer. The export sheet also says which
+target would carry none of the rows you marked, before you pick it. In the app
+that mode is chosen by name, above the **Scan** button.
 
 For scale: on a real shelf measured during development, roughly one row in six
 had no IGDB id.

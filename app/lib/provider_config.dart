@@ -144,6 +144,85 @@ class ProviderSettings {
 
 }
 
+/// The two named things a run can do with the titles it reads (T-0230).
+///
+/// Keyless was reachable before this by leaving the two IGDB fields blank,
+/// which is a state to fall into rather than a mode to pick -- and the CLI
+/// and README had named it a path ("Path A -- keyless") for as long as the
+/// app had not. Naming it here rather than on a screen keeps it beside the
+/// backend choice, which is the other thing a run is asked before it starts.
+///
+/// Two values and not three: "IGDB asked for but not configured" is not a
+/// third mode, it is [TitleMatching.igdb] degrading, and [MatchingCheck] is
+/// where that is said.
+enum TitleMatching { igdb, keyless }
+
+/// Shared for [VisionBackendLabel]'s reason: the scan screen's control and
+/// the settings screen's sentence about it must call the mode one thing.
+extension TitleMatchingLabel on TitleMatching {
+  String get label => switch (this) {
+        TitleMatching.igdb => 'Match with IGDB',
+        TitleMatching.keyless => 'Keyless',
+      };
+}
+
+/// What a keyless run's rows will be, said where the mode is picked rather
+/// than in a README -- the rule decision 0011 set for the privacy warning,
+/// applied to the other thing a person cannot find out afterwards.
+///
+/// Three things this may not say, and an earlier draft of it said two.
+/// It may not promise keyless *detection*: reading the photographs still
+/// costs a vision backend, and on a phone that backend is a cloud one
+/// (T-0229 asks whether the other half can go too). It may not restate
+/// `canExport` -- that a row with a raw title reaches csv is the exporter's
+/// rule, and a second copy of it rots, which `review_screen.dart` already
+/// warns about. And it names the export that does work, not only the one
+/// that does not: the point of the mode is that there is a way through it.
+const keylessConsequence =
+    'No IGDB lookup: every row keeps the title the model read. No cover art '
+    'and no platform id, and the Tonkatsu .xcoll export carries none of '
+    'these rows -- CSV carries them all. Reading the photos still takes a '
+    'vision backend.';
+
+const igdbConsequence =
+    'Titles are looked up on IGDB, which is what .xcoll carries: the ids a '
+    'catalog app turns into cover art and platform names.';
+
+/// Asked for, and not registered for. Phrased as the two ways forward rather
+/// than as a fault: one of them is to scan now, which is the whole of T-0230.
+String get igdbUnconfiguredNote =>
+    'No Twitch application is registered yet, so this run would be keyless '
+    'anyway. Add the IGDB client id and secret in Settings, or choose '
+    '${TitleMatching.keyless.label} and scan now.';
+
+/// What a matching choice means for this run, answered from
+/// [ProviderSettings] alone -- no network, no provider, no I/O, so a screen
+/// says it at the moment of the tap. The shape and the reason are
+/// [BackendCheck]'s (T-0040).
+///
+/// No `blocker` here, and that difference is the point: an unconfigured
+/// backend fails a scan, while unconfigured IGDB degrades it to a keyless
+/// one. So [matching] is what a scan started now would really do, and
+/// [unconfigured] is why it can differ from what was asked for.
+class MatchingCheck {
+  const MatchingCheck({
+    required this.matching,
+    required this.consequence,
+    this.unconfigured = false,
+  });
+
+  final TitleMatching matching;
+
+  /// What the rows of this run will be, in the words the choice is made with.
+  final String consequence;
+
+  /// [TitleMatching.igdb] was asked for and there is nothing to authenticate
+  /// with, so this run is keyless without having been chosen as one.
+  final bool unconfigured;
+
+  bool get keyless => matching == TitleMatching.keyless;
+}
+
 /// Shared so the settings screen and the scan screen's quick switch cannot
 /// end up calling the same backend two different things.
 extension VisionBackendLabel on VisionBackend {
@@ -274,6 +353,30 @@ class ProviderPolicy {
     );
   }
 
+  /// What [chosen] costs and whether this run can honour it (T-0230). Sole
+  /// author of both answers, so the sentence a screen prints and the resolver
+  /// [buildResolver] hands the pipeline are decided in one place.
+  static MatchingCheck checkMatching(
+      ProviderSettings settings, TitleMatching chosen) {
+    if (chosen == TitleMatching.keyless) {
+      return const MatchingCheck(
+        matching: TitleMatching.keyless,
+        consequence: keylessConsequence,
+      );
+    }
+    if (!settings.hasIgdbCredentials) {
+      return MatchingCheck(
+        matching: TitleMatching.keyless,
+        consequence: igdbUnconfiguredNote,
+        unconfigured: true,
+      );
+    }
+    return const MatchingCheck(
+      matching: TitleMatching.igdb,
+      consequence: igdbConsequence,
+    );
+  }
+
   /// Sole source of both the tap-time answer and the [build] failure, so
   /// the early message and the late one cannot drift apart.
   static String? _missing(VisionBackend backend, ProviderSettings settings) {
@@ -373,11 +476,19 @@ class ProviderPolicy {
   /// [aliases] is the table loaded from the bundled asset (see
   /// `title_aliases.dart`); omitting it leaves the resolver on its built-in
   /// fallback.
+  ///
+  /// [matching] is the mode the user picked (T-0230), and it defaults to
+  /// [TitleMatching.igdb] so a caller that never asks keeps the credential
+  /// rule it always had. The two ways of arriving at a keyless run are
+  /// answered by [checkMatching] rather than tested again here: one rule,
+  /// one author, and the screen showing the sentence is reading it from the
+  /// same call.
   static ResolverWorker buildResolver(
     ProviderSettings settings, {
     Map<String, String>? aliases,
+    TitleMatching matching = TitleMatching.igdb,
   }) {
-    if (!settings.hasIgdbCredentials) return SkipResolver();
+    if (checkMatching(settings, matching).keyless) return SkipResolver();
     return ResolverWorker(
       IgdbClient(
         clientId: settings.igdbClientId,
