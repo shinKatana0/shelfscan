@@ -139,7 +139,7 @@ worth reading before you pick a cloud endpoint.
 | [doc/guide.md](doc/guide.md) | one complete run, from nothing to an imported collection — starting with how to photograph the shelf |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the pipeline, the platform boundary, where a new source plugs in |
 | [doc/decisions/](doc/decisions/) | the non-obvious decisions, each with the measurement that settled it |
-| [doc/measurements.md](doc/measurements.md) | every number — including what was measured and then *not* built |
+| [doc/measurements.md](doc/measurements.md) | the measurements behind the decisions — including what was measured and then *not* built. Not every number: a prompt figure usually lives in the doc comment beside the rule it settled |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | running the suites, and what a change must not silently break |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | how people are expected to behave here |
 | [SECURITY.md](SECURITY.md) | keys, photographs, and how to report a problem |
