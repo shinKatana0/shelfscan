@@ -24,7 +24,13 @@ collection.review.json
 
 # Real shelf photos. Never committed: they are pictures of a
 # private home, and nothing in the pipeline needs them in git.
-photos/
+#
+# The glob, not one name: a second photo directory was created for a
+# measurement on 2026-08-22 and `git status` showed it untracked rather
+# than ignored, which `git add -A` -- what the publication rebuild runs --
+# would have committed. A pattern costs nothing and does not have to be
+# remembered at the moment a directory is made.
+photos*/
 
 # Secrets. Credentials live in environment variables (CLI) or the OS
 # keychain (app) and must never reach a file inside the repo -- see the
