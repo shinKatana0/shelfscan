@@ -1,6 +1,6 @@
 # Decision records
 
-Twelve decisions that a competent reader, looking at this code, would ask
+Fourteen decisions that a competent reader, looking at this code, would ask
 *why is it like this* about — and whose answer is not the obvious one.
 
 Each record has four sections: the context, the decision, **the measurement that
@@ -61,6 +61,7 @@ anyone who ever does hold that record.
 | [0011](0011-byok-no-proxy-and-no-endpoint-by-default.md) | No shipped credentials, no proxy, no endpoint by default | An embedded key is not a secret and a shared proxy would make this project the processor of other people's photographs of their homes. |
 | [0012](0012-what-is-dropped-is-named-never-counted.md) | What is dropped is named, never counted | This project's most-filed defect class is silence; and where an exact count is not available the interface states a bound rather than inventing a number. |
 | [0014](0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md) | Stay in 0.x until the two file formats stop moving | `*.review.json` and which rows reach `.xcoll` have both changed shape this month, and no document written by one version has yet been loaded by another. |
+| [0015](0015-the-kind-of-work-is-a-property-of-the-row.md) | The kind of work is a property of the row, not of the run | The export target is a mixed-media manager and the models already answer a mixed shelf, so a games-or-anime mode would only be discarding rows that were read correctly. |
 
 **0013 is not missing.** It records how this project's own working record is
 organised, which is development rather than product, so it stays with the board

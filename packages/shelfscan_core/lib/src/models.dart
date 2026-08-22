@@ -71,6 +71,9 @@ String? _presentName(String? name) {
 String? _photoName(Object? value, String path) =>
     _presentName(_shapeOrNull<String>(value, path, 'a photo file name'));
 
+/// The physical CARRIER a row was read off, never what the row is a copy of
+/// -- [WorkKind] is that, and decision 0015 is why the two are separate types
+/// with one confusable name between them.
 enum MediaType {
   cartridge,
   disc,
@@ -80,6 +83,42 @@ enum MediaType {
         (e) => e.name == v,
         orElse: () => MediaType.unknown,
       );
+}
+
+/// The kind of WORK a row is a copy of, as against [MediaType], which is the
+/// carrier it came on: a disc case on a shelf holds a game or an anime, and
+/// `.xcoll` has a field for the kind because Tonkatsu Box is a mixed-media
+/// manager (decision 0015).
+///
+/// Not named for media, though `media_type` is the wire key on both sides:
+/// that name already means the carrier throughout this repository -- in
+/// `review.json`, in the CSV header, and in the vision schema whose
+/// fingerprint `control_set_test.dart` pins -- and one name for two concepts
+/// is what this type exists to stop.
+///
+/// EXTERNAL CONTRACT on the export side. `game` is the only value that has
+/// been round-tripped through Tonkatsu Box's importer, which is what T-0009
+/// verified; `anime` is Tonkatsu's own vocabulary for a kind it manages, but
+/// this spelling of it is an assumption until an import measures it.
+enum WorkKind {
+  game,
+  anime;
+
+  /// Absent is [game] -- the whole collection was games before this field
+  /// existed. An unrecognised value is NOT: `unknown` is an honest answer for
+  /// a carrier the model could not tell, and there is no equivalent here, so
+  /// a typo in a hand-edited document would land silently on a claim about
+  /// what the row is. `review.json` is hand-editable by design (T-0050).
+  static WorkKind parse(Object? value, String path) {
+    final name = _shapeOrNull<String>(value, path, 'game or anime');
+    if (name == null) return WorkKind.game;
+    return WorkKind.values.firstWhere(
+      (e) => e.name == name,
+      orElse: () =>
+          throw ReviewFormatException(path, 'is "$name"; it must be game or '
+              'anime'),
+    );
+  }
 }
 
 /// Set by the human during the review step.
@@ -232,6 +271,7 @@ class Detection {
     this.sourceEntry,
     this.sourceId,
     this.sourceYear,
+    this.workKind = WorkKind.game,
   });
 
   /// An item the vision stage never produced, typed in by a human at review.
@@ -317,6 +357,20 @@ class Detection {
   /// when what was read was not a platform at all ([discardedPlatformHint]).
   final String? platformHint;
   final MediaType mediaType;
+
+  /// What this row is a copy of, which is a property of the ROW and not of the
+  /// run that found it (decision 0015): one shelf holds both, one photograph
+  /// reads both, and one collection imports both.
+  ///
+  /// Read here rather than on [ResolvedGame] because the stage that would
+  /// route it -- pick which catalogue answers this title -- consumes a
+  /// [Detection] and produces a [ResolvedGame], so a kind decided after
+  /// resolution would be decided too late to route anything.
+  ///
+  /// Nothing sets it away from [WorkKind.game] yet: no source reads a kind and
+  /// no screen offers one. The field exists so that whichever does is a change
+  /// to one stage rather than to the shape of the document.
+  final WorkKind workKind;
 
   /// 0..1, the vision model's own estimate.
   final double confidence;
@@ -465,6 +519,11 @@ class Detection {
         if (sourceEntry != null) 'source_entry': sourceEntry,
         if (sourceId != null) 'source_id': sourceId,
         if (sourceYear != null) 'source_year': sourceYear,
+        // Absent at the default for the reason the three above are absent when
+        // empty, and here it covers every document anyone has yet written: a
+        // scan of games writes the exact bytes it wrote before this field
+        // existed.
+        if (workKind != WorkKind.game) 'work_kind': workKind.name,
       };
 
   /// Every field except `raw_title` is optional, so the minimum a human has
@@ -494,6 +553,7 @@ class Detection {
           : _optionalText(json['discarded_platform_hint']),
       mediaType: MediaType.parse(_shapeOrNull<String>(json['media_type'],
           _at(path, 'media_type'), 'cartridge, disc or unknown')),
+      workKind: WorkKind.parse(json['work_kind'], _at(path, 'work_kind')),
       confidence: _shapeOrNull<num>(json['confidence'], _at(path, 'confidence'),
                   'a number between 0 and 1')
               ?.toDouble() ??
