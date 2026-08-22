@@ -1,6 +1,27 @@
+import 'dart:io';
+
 import 'package:test/test.dart';
 
 import '../tool/cloud_probe.dart';
+import '../tool/control_capture.dart'
+    show hiRes, manifestPath, notHereExit;
+
+/// The published manifest's shape, and the same file with its control-set
+/// blocks hand-edited out. Neither needs a figure: the point is what the tool
+/// answers when it cannot find one.
+const _published = '''
+```control-set
+[CONTROL-HIRES]
+photos = a.jpg, b.jpg
+```
+''';
+
+const _promptOnly = '''
+```control-set
+[PROMPT]
+fingerprint = 0000beef
+```
+''';
 
 void main() {
   group('flattenUsage', () {
@@ -34,6 +55,35 @@ void main() {
       });
 
       expect(flat.keys, ['prompt_tokens', 'prompt_tokens_details.cached_tokens']);
+    });
+  });
+
+  group('a checkout that cannot answer the probe', () {
+    late Directory root;
+
+    setUp(() {
+      root = Directory.systemTemp.createTempSync('shelfscan-probe-test');
+      File('${root.path}/$manifestPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(_published);
+    });
+    tearDown(() => root.deleteSync(recursive: true));
+
+    test('will not probe where the working record is absent (T-0261)',
+        () async {
+      expect(
+          await runProbe([hiRes, '1', '${root.path}/out.json'], const {},
+              from: root),
+          notHereExit);
+    });
+
+    test('names a missing manifest block instead of a null check (T-0232)',
+        () async {
+      File('${root.path}/$manifestPath').writeAsStringSync(_promptOnly);
+      expect(
+          await runProbe([hiRes, '1', '${root.path}/out.json'], const {},
+              from: root),
+          2);
     });
   });
 }

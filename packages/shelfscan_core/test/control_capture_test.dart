@@ -36,6 +36,37 @@ const _env = {
 
 CaptureKey _key() => wantedKey('CONTROL-TEST', _section, _env);
 
+/// The published manifest's shape: labels and photo lists, and none of the
+/// figures, which is what a clone holds.
+const _published = '''
+```control-set
+[CONTROL-HIRES]
+photos = a.jpg, b.jpg
+```
+
+```control-set
+[CONTROL-LOWRES]
+photos = c.jpg
+```
+''';
+
+/// The same file with both control-set blocks hand-edited out.
+const _promptOnly = '''
+```control-set
+[PROMPT]
+fingerprint = 0000beef
+```
+''';
+
+/// The working record's half, invented: it only has to exist and parse.
+const _workingRecord = '''
+```control-set
+[CONTROL-HIRES]
+sizes = 10, 20
+```
+''';
+
+
 Map<String, dynamic> _detection(String photo, String title, String? hint) =>
     Detection(
       rawTitle: title,
@@ -184,6 +215,71 @@ void main() {
       final nested = '${dir.path}/a/b/capture.json';
       writeAtomically(nested, 'x');
       expect(File(nested).existsSync(), isTrue);
+    });
+  });
+
+  group('a checkout without the working record', () {
+    late Directory root;
+
+    setUp(() {
+      root = Directory.systemTemp.createTempSync('shelfscan-clone-test');
+      File('${root.path}/$manifestPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(_published);
+    });
+    tearDown(() => root.deleteSync(recursive: true));
+
+    test('says which document holds the figures and that it is elsewhere', () {
+      expect(figuresNotHere(root), contains(controlSetPath));
+    });
+
+    test('answers a named verdict, not a stack trace (T-0261)', () {
+      final lines = notHereReport([hiRes, lowRes], figuresNotHere(root)!);
+      expect(lines.first, startsWith('$hiRes: UNVERIFIABLE -- '));
+      expect(lines[1], startsWith('$lowRes: UNVERIFIABLE -- '));
+      // The line that makes it actionable: there is a check a clone CAN run.
+      expect(lines.last, contains('dart test'));
+    });
+
+    test('exits with the documented code, whichever command asked', () async {
+      for (final command in ['where', 'status', 'capture', 'replay']) {
+        expect(
+            await run([command, 'all'],
+                from: root,
+                environment: {'SHELFSCAN_CAPTURE_DIR': '${root.path}/here'}),
+            notHereExit,
+            reason: command);
+      }
+    });
+
+    test('reads them again where the record is beside the photographs', () {
+      File('${root.path}/$controlSetPath').writeAsStringSync(_workingRecord);
+      expect(figuresNotHere(root), isNull);
+    });
+  });
+
+  group('a manifest missing a block', () {
+    test('names the block and the file it is missing from (T-0232)', () {
+      expect(blockMissing(const {}, hiRes), contains('[$hiRes]'));
+      expect(blockMissing(const {}, hiRes), contains(manifestPath));
+      expect(
+          blockMissing(const {
+            hiRes: {'photos': 'a.jpg'}
+          }, hiRes),
+          isNull);
+    });
+
+    test('is a named exit rather than a null check', () async {
+      final root = Directory.systemTemp.createTempSync('shelfscan-block-test');
+      addTearDown(() => root.deleteSync(recursive: true));
+      File('${root.path}/$manifestPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(_promptOnly);
+      expect(
+          await run(['status', hiRes],
+              from: root,
+              environment: {'SHELFSCAN_CAPTURE_DIR': '${root.path}/here'}),
+          2);
     });
   });
 
