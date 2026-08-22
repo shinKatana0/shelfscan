@@ -120,6 +120,7 @@ Future<void> _pump(
   ResolverWorker? resolver,
   List<PhotoInput> photos = const [],
   ThemeData? theme,
+  bool keyless = false,
 }) async =>
     tester.pumpWidget(MaterialApp(
       theme: theme,
@@ -127,6 +128,7 @@ Future<void> _pump(
         document: doc,
         saver: saver,
         resolver: resolver,
+        keyless: keyless,
         photos: photos,
       ),
     ));
@@ -456,6 +458,109 @@ void main() {
 
       expect(_strings(tester), coloured);
       expect(coloured, contains(contains('not in .xcoll')));
+    });
+  });
+
+  /// The frame above earns its place by being rare, and a run with no IGDB
+  /// stage makes it true of every row. T-0230's answer: the mark goes and the
+  /// run says it once. The trigger is the mode, never a count of the rows --
+  /// the last test in this group is the one that pins that.
+  group('a keyless run says it once instead of on every row (T-0230)', () {
+    ReviewDocument unmatchedShelf() => _doc([
+          _game('JP SPINE'),
+          _game('WORN LABEL'),
+          _game('LOGO ONLY'),
+        ]);
+
+    testWidgets('no row is framed and no row carries the clause',
+        (tester) async {
+      await _pump(tester, unmatchedShelf(), FakeExportSaver(), keyless: true);
+
+      expect(_frames(tester), isEmpty);
+      expect(find.textContaining('not in .xcoll'), findsNothing);
+    });
+
+    testWidgets('the run states it above the list, and names the export that '
+        'works', (tester) async {
+      await _pump(tester, unmatchedShelf(), FakeExportSaver(), keyless: true);
+
+      final banner = find.byKey(const Key('keyless-run-banner'));
+      expect(banner, findsOneWidget);
+      expect(
+        find.descendant(of: banner, matching: find.textContaining('CSV')),
+        findsOneWidget,
+      );
+      // It may not promise keyless detection, and it may not promise
+      // anything a phone cannot do (T-0229 is the other half).
+      final said = _strings(tester).join(' ');
+      expect(said, isNot(contains('offline')));
+      expect(said, isNot(contains('never leave')));
+    });
+
+    testWidgets('an ordinary run is unchanged -- banner absent, frames present',
+        (tester) async {
+      await _pump(tester, unmatchedShelf(), FakeExportSaver());
+
+      expect(find.byKey(const Key('keyless-run-banner')), findsNothing);
+      expect(_frames(tester), [0, 1, 2]);
+      expect(find.textContaining('not in .xcoll'), findsNWidgets(3));
+    });
+
+    // The rule is "this run had no IGDB stage", not "every row came back
+    // unresolved". A matched run in which everything failed to resolve is a
+    // run that went wrong, and there the frames are exactly what T-0223 put
+    // them there for.
+    testWidgets('a matched run whose every row is unresolved still frames',
+        (tester) async {
+      await _pump(tester, unmatchedShelf(), FakeExportSaver(),
+          resolver: FakeResolver());
+
+      expect(find.byKey(const Key('keyless-run-banner')), findsNothing);
+      expect(_frames(tester), [0, 1, 2]);
+    });
+
+    testWidgets('the export a keyless run can use writes every marked row',
+        (tester) async {
+      final doc = _doc([
+        _game('JP SPINE', status: ReviewStatus.approved),
+        _game('WORN LABEL', status: ReviewStatus.approved),
+      ]);
+      final saver = FakeExportSaver();
+      await _pump(tester, doc, saver, keyless: true);
+
+      await _tapExport(tester, 'csv');
+
+      expect(saver.calls, hasLength(1));
+      expect(saver.calls.single.extension, 'csv');
+      expect(saver.calls.single.content, contains('JP SPINE'));
+      expect(saver.calls.single.content, contains('WORN LABEL'));
+    });
+
+    // Before the tap, not after a confirmation dialog and a "nothing to
+    // export". Asked of the exporter, so the sheet cannot promise a row the
+    // file then drops.
+    testWidgets('the target that carries nothing says so in the sheet',
+        (tester) async {
+      final doc = _doc([_game('JP SPINE', status: ReviewStatus.approved)]);
+      await _pump(tester, doc, FakeExportSaver(), keyless: true);
+
+      await tester.tap(find.byKey(const Key('export-primary')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('export-sheet-tonkatsu')),
+          matching: find.textContaining('carries none of the marked rows'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('export-sheet-csv')),
+          matching: find.textContaining('carries none'),
+        ),
+        findsNothing,
+      );
     });
   });
 

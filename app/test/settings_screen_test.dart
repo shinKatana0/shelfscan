@@ -624,6 +624,25 @@ void main() {
     expect(find.textContaining('Link copied'), findsOneWidget);
   });
 
+  // The section used to say the rows "arrive unresolved and you fix them
+  // during review", which was not true of a run with no credentials: the
+  // resolve stage is skipped outright, so those rows carry no candidate list
+  // and there is nothing on the review screen to pick from. It names the mode
+  // and its control instead (T-0230) -- one control per stored thing, and the
+  // other screen states it, which is the shape T-0115 set.
+  testWidgets('the IGDB section names the keyless mode and where to choose it',
+      (tester) async {
+    await _pump(tester, ProviderSettings(), _Backends());
+
+    final note = tester
+        .widget<Text>(find.byKey(const Key('settings-igdb-optional')))
+        .data!;
+
+    expect(note, contains(TitleMatching.keyless.label));
+    expect(note, contains('scan screen'));
+    expect(note, isNot(contains('fix them during review')));
+  });
+
   testWidgets('a storage failure is reported instead of silently losing keys',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
