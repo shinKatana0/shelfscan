@@ -1,8 +1,8 @@
 [English](guide.md) · [Русский](guide.ru.md) · **日本語**
 
-> **`doc/guide.md` の翻訳。** Translated from `0b15a68` (2026-08-22).
+> **`doc/guide.md` の翻訳。** Translated from `85cbd54` (2026-08-22).
 > 英語の原文が先に進んでいないかは、次の一行で確認できます:
-> `git log --oneline 0b15a68..HEAD -- doc/guide.md` — 出力が空なら、この翻訳は
+> `git log --oneline 85cbd54..HEAD -- doc/guide.md` — 出力が空なら、この翻訳は
 > 最新です。規則の全文は一箇所にのみ置いてあります:
 > [`../README.md` の「Translations」](../README.md#translations)。
 > **コードブロックとプログラムの出力は翻訳していません。** それらはツール自身が
