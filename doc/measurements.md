@@ -1143,12 +1143,21 @@ the first twenty titles and the remaining minutes are copies, and it is
 declined at the end regardless. `SHELFSCAN_VISION_TIMEOUT=900` buys four and a
 half minutes of progress bar over 120 s and the same zero rows.
 
-**Below the ceiling the bound is not about the shelf.** Generation on one
-machine, same model and same server process, ran **24–28 tokens/s** with
-another process busy against **91–102 tokens/s** quiet. A 120 s bound
-therefore admits ~3,000 output tokens or ~12,000 depending on what else is
-running — roughly 60 spines against 250. No single number tunes that, so the
-default stays at 120 s and the guide tells the user about the frame instead.
+**Below the ceiling the bound is not about the shelf.** Seventeen passes on
+one machine, one model, one server process, inside thirty-one minutes:
+generation ran **24.0 to 104.6 tokens/s**, median **102** over the thirteen
+uncontended ones. The four slow passes (24.0, 27.9, 46.9, 54.0) fall inside
+another agent's app-test-suite window; four later passes inside that same
+window ran at full rate, so the contention was bursty and the window is where
+the slow block sits rather than a per-run tax that can be predicted. The
+spread is the finding either way: a 120 s bound admits ~3,000 output tokens or
+~12,000 depending on nothing but what else the machine is doing — roughly 60
+spines against 250. No single number tunes that, so the default stays at 120 s
+and the guide tells the user about the frame instead.
+
+The pairs that show it directly, same frame, same tokens, different clock:
+40 spines took 92.5 s in the slow block and 22.5 s outside it; 120 spines took
+61.6 s and 56.7 s; 176 spines 304.9 s and 300.4 s.
 
 ### The bound on `unreadable`, rejected
 

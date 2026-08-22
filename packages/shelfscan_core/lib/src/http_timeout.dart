@@ -86,12 +86,13 @@ import 'package:http/http.dart' as http;
 ///
 /// Two numbers from the same measurement, for anyone tempted to tune this:
 /// the densest frame that still answers honestly generates ~5,500 tokens, and
-/// generation on one machine ran 24-28 tokens/s with another process busy
-/// against 91-102 tokens/s quiet. So this bound admits ~3,000 tokens or
-/// ~12,000 depending on what else is running, which is a four-fold spread no
-/// single value tunes -- the argument for leaving it where it is and telling
-/// the user about the shelf instead. doc/measurements.md, "The 7B's density
-/// ceiling".
+/// generation of the same frames on one machine ranged 24.0 to 104.6
+/// tokens/s -- median 102 over the thirteen uncontended passes, 24.0 at the
+/// worst, inside another agent's test-suite window. So this bound admits
+/// ~3,000 tokens or ~12,000 depending on nothing but what else is running,
+/// which is a four-fold spread no single value tunes -- the argument for
+/// leaving it where it is and telling the user about the shelf instead.
+/// doc/measurements.md, "The 7B's density ceiling".
 const visionCallTimeout = Duration(seconds: 120);
 
 /// What one IGDB request is given.
