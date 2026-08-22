@@ -23,7 +23,7 @@ Detection _detection({
       rawTitle: 'HOLLOWMERE: THE TIDE CLERK',
       mediaType: mediaType,
       confidence: 0.9,
-      sourcePhoto: 'shelf-a.jpg',
+      sourcePhoto: 'shelf_a.jpg',
       platformHint: 'PS5',
       workKind: workKind ?? WorkKind.game,
     );
