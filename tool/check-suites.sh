@@ -113,11 +113,16 @@ verdict_of() {
   fi
 }
 
-# The files named `did not complete`, from the summary block both reporters
-# print under `--reporter expanded`. A real failure is listed there without the
-# suffix, so this selects host deaths only.
+# The files named `did not complete`. Two sources, because neither is
+# sufficient on its own: the `Failing tests:` summary block stops after four
+# entries and says "... and N more" (measured -- 39 marked tests, 4 listed), and
+# the per-test `[E]` lines carry no path when the run held a single file.
+# A real failure appears in both without the suffix, so this selects host
+# deaths only.
 dnc_files() {
-  sed -n '/^Failing tests:/,$ s/^[[:space:]]*\(.*\.dart\): .*(did not complete)$/\1/p' "$1" | sort -u
+  { sed -n '/^Failing tests:/,$ s/^[[:space:]]*\(.*\.dart\): .*(did not complete)$/\1/p' "$1"
+    sed -n 's/^[0-9][0-9]:[0-9][0-9] [^:]*: \(.*\.dart\): .* - did not complete \[E\]$/\1/p' "$1"
+  } | sort -u
 }
 
 WORST=0
@@ -168,6 +173,9 @@ run_suite() {
         _real=$((_real + 1))
       fi
     done <"$_list"
+    _other=$(grep -c ' \[E\]$' "$_lg")
+    _other=$((_other - $(grep -c ' - did not complete \[E\]$' "$_lg")))
+    [ "$_other" -gt 0 ] && echo "   ...and $_other test(s) failed outright in the same run; see the log."
     if [ "$_real" -gt 0 ]; then
       echo "   FAILED: $_real file(s) reproduce alone."
       note_worst 1
