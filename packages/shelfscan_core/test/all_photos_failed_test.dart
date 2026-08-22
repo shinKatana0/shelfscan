@@ -24,6 +24,8 @@ import 'dart:typed_data';
 import 'package:shelfscan_core/shelfscan_core.dart';
 import 'package:test/test.dart';
 
+import 'cli_snapshot.dart';
+
 /// Measured, api.openai.com, 2026-08-15: a model id that does not exist.
 const _notFoundBody = '{"error":{"message":"The model `nope-4` does not exist '
     'or you do not have access to it.","type":"invalid_request_error",'
@@ -104,6 +106,8 @@ Future<HttpServer> _refusingEndpoint() async {
 }
 
 void main() {
+  setUpAll(cliSnapshot);
+
   group('every photo failed', () {
     test('no document comes back, and the reason is stated once', () async {
       final photos = [_photo('a.jpg'), _photo('b.jpg'), _photo('c.jpg')];
@@ -184,8 +188,7 @@ void main() {
       final result = await Process.run(
         Platform.resolvedExecutable,
         [
-          'run',
-          'bin/shelfscan.dart',
+          cliSnapshot(),
           'scan',
           dir.path,
           '--provider',

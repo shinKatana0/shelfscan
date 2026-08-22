@@ -6,7 +6,7 @@
 /// T-0155's doc comment says the seam exists for: a game owned on a disc AND
 /// installed on the PC comes out of ONE invocation as ONE row.
 ///
-/// The headline test is a real `dart run bin/shelfscan.dart` subprocess. It
+/// The headline test is a real CLI subprocess. It
 /// needs a vision answer, so a loopback HTTP server stands in for Ollama --
 /// the wire, the CLI, the walk, the dedupe and the written file are all real,
 /// and only the model is a fixture. The IGDB variables are blanked, so stage 3
@@ -29,6 +29,7 @@ import '../bin/shelfscan.dart'
         readInstallDirectory,
         sourceRunsFor;
 import '../bin/galaxy_db.dart' show GalaxyLibrary, galaxyRowToJson;
+import 'cli_snapshot.dart';
 
 /// The GoG product id of MOOR (1993) on GOG's own store, as quoted in
 /// doc/measurements.md, "The exact join". Nothing from a real library is
@@ -98,7 +99,7 @@ Future<Uri> _fakeOllama(String rawTitle) async {
 Future<ProcessResult> _runCli(List<String> args, {required Uri ollama}) =>
     Process.run(
       Platform.resolvedExecutable,
-      ['run', 'bin/shelfscan.dart', ...args],
+      [cliSnapshot(), ...args],
       environment: {
         'SHELFSCAN_OLLAMA_URL': ollama.toString(),
         // Blanked so a machine that has IGDB credentials cannot turn this into
@@ -119,6 +120,8 @@ SourceEntry _libraryEntry(String id, String title) => SourceEntry(
     );
 
 void main() {
+  setUpAll(cliSnapshot);
+
   group('the CLI, end to end, in one invocation', () {
     late Directory photos;
     late Directory games;

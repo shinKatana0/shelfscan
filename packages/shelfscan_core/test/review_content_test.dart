@@ -25,6 +25,7 @@ import 'package:test/test.dart';
 
 import '../bin/shelfscan.dart'
     show jsonErrorLocation, reviewParseError, reviewShapeError;
+import 'cli_snapshot.dart';
 
 /// The smallest document `scan` can write: one approved, resolved game.
 Map<String, dynamic> _reviewFixture() => {
@@ -89,7 +90,7 @@ String _join(String dir, String name) => '$dir${Platform.pathSeparator}$name';
 
 ProcessResult _runCli(List<String> args) => Process.runSync(
       Platform.resolvedExecutable,
-      ['run', 'bin/shelfscan.dart', ...args],
+      [cliSnapshot(), ...args],
       // Blanked so a machine that has IGDB credentials cannot turn any case
       // here into a live API call.
       environment: const {'IGDB_CLIENT_ID': '', 'IGDB_CLIENT_SECRET': ''},
@@ -111,6 +112,8 @@ ReviewFormatException _shapeErrorOf(Object? source) {
 }
 
 void main() {
+  setUpAll(cliSnapshot);
+
   group('ReviewDocument.parse', () {
     test('unparseable text is a FormatException, not a shape error', () {
       expect(() => ReviewDocument.parse('not json at all'),

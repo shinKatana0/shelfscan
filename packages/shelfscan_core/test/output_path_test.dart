@@ -22,12 +22,14 @@
 /// so a machine that has one set cannot escalate.
 ///
 /// The budget is headroom for a slower machine, not a claim about any
-/// duration. This is the most load-sensitive file in the suite because it
-/// spawns 13 CLI children and `dart run bin/shelfscan.dart` front-end compiles
-/// from source on every one of them -- the file-path form writes no snapshot,
-/// measured 4.6-4.9 s cold and warm alike (T-0203). Its heaviest test spawns
-/// three of them: 9.6 s idle, 27.3 s under four concurrent full-suite runs.
-/// 6 minutes is 13x the contended figure; it was 3 minutes until T-0203.
+/// duration. This was the most load-sensitive file in the suite: it spawns 14
+/// CLI children, and until T-0217 each one front-end compiled the entry point
+/// from source, because `dart run` on a file path writes no snapshot. They now
+/// run the kernel snapshot `cli_snapshot.dart` builds once per run, measured
+/// to take a child from 2.29 s to 0.32 s. The budget is left exactly where
+/// T-0203 put it: it was headroom then and it is more of it now, and widening
+/// an allowance in the same task that shrank the work would hide which of the
+/// two did anything.
 @Timeout(Duration(minutes: 6))
 library;
 
@@ -37,6 +39,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 import '../bin/shelfscan.dart' show outputPathError;
+import 'cli_snapshot.dart';
 
 Directory _tempDir() {
   final dir = Directory.systemTemp.createTempSync('shelfscan_output_path_');
@@ -140,7 +143,7 @@ class _StubVision {
 Future<ProcessResult> _runCli(List<String> args, {String? ollamaUrl}) =>
     Process.run(
       Platform.resolvedExecutable,
-      ['run', 'bin/shelfscan.dart', ...args],
+      [cliSnapshot(), ...args],
       environment: {
         'IGDB_CLIENT_ID': '',
         'IGDB_CLIENT_SECRET': '',
@@ -155,6 +158,8 @@ List<String> _lines(Object? stderrText) =>
     const LineSplitter().convert(stderrText as String);
 
 void main() {
+  setUpAll(cliSnapshot);
+
   group('outputPathError', () {
     test('a writable path in an existing directory is not an error', () {
       expect(outputPathError(_join(_tempDir().path, 'out.csv')), isNull);

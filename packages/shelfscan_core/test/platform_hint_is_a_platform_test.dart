@@ -24,6 +24,8 @@ import 'dart:io';
 import 'package:shelfscan_core/shelfscan_core.dart';
 import 'package:test/test.dart';
 
+import 'cli_snapshot.dart';
+
 String _schemaHintLine() {
   final items =
       (jsonDecode(detectionJsonSchema) as Map<String, dynamic>)['items']
@@ -86,6 +88,8 @@ class _StubVision {
 }
 
 void main() {
+  setUpAll(cliSnapshot);
+
   group('a line of our own prompt is not a platform', () {
     for (final echo in _echoes) {
       test('${jsonEncode(echo)} never reaches platformHint', () {
@@ -267,7 +271,7 @@ void main() {
 
       final run = await Process.run(
         Platform.resolvedExecutable,
-        ['run', 'bin/shelfscan.dart', 'scan', photos.path, '-o', out],
+        [cliSnapshot(), 'scan', photos.path, '-o', out],
         environment: {
           'IGDB_CLIENT_ID': '',
           'IGDB_CLIENT_SECRET': '',

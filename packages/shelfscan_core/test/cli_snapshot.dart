@@ -7,12 +7,14 @@
 /// the source, 0.32 s for the kernel snapshot this file builds, 0.19 s for a
 /// `dart compile exe` binary.
 ///
-/// The snapshot wins over the AOT binary on the build side and ties on the
-/// total: 1.60 s to build against 5.97 s, which over the children in this
-/// package cancels the 0.13 s each that AOT is faster. So the tie is broken on
-/// the other axis -- a kernel snapshot runs on the same JIT VM `dart run`
-/// does, and changes what is compiled rather than how it runs, while AOT is a
-/// second execution mode for the CLI that nothing else in this project uses.
+/// AOT is the faster child and the slower build -- 5.97 s against 1.60 s --
+/// and over the 56 children this package spawns the two nearly cancel: about
+/// three seconds across a whole suite run, and AOT loses on every rebuild a
+/// source edit forces. It is not chosen, and the deciding reason is the other
+/// axis rather than the seconds: a kernel snapshot runs on the same JIT VM
+/// `dart run` does, so it changes what is compiled and not how it runs, while
+/// AOT would give the CLI a second execution mode that nothing else here uses
+/// and that these tests would then be the only thing exercising.
 ///
 /// It is built here, not only in CI, so a local `dart test` is as fast as a CI
 /// one; `.github/workflows/ci.yml` calls [main] before `dart test` only so the

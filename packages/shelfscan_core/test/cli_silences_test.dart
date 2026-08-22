@@ -2,7 +2,7 @@
 ///
 /// Both were measured against a real folder of downloaded games during
 /// development; that folder is not published. Both are reproduced here as a
-/// real `dart run bin/shelfscan.dart` subprocess: `scan-installs` makes no
+/// real CLI subprocess: `scan-installs` makes no
 /// vision call and no IGDB call with the credentials blanked, so the whole
 /// command is exercised with nothing faked and nothing leaving the machine.
 ///
@@ -28,6 +28,7 @@ import '../bin/shelfscan.dart'
         installsFlag,
         libraryFlag,
         unknownOptionError;
+import 'cli_snapshot.dart';
 
 Directory _tempDir(String prefix) {
   final dir = Directory.systemTemp.createTempSync(prefix);
@@ -51,7 +52,7 @@ void _file(Directory parent, String name, [String content = '']) =>
 
 Future<ProcessResult> _runCli(List<String> args) => Process.run(
       Platform.resolvedExecutable,
-      ['run', 'bin/shelfscan.dart', ...args],
+      [cliSnapshot(), ...args],
       environment: {'IGDB_CLIENT_ID': '', 'IGDB_CLIENT_SECRET': ''},
       stdoutEncoding: utf8,
       stderrEncoding: utf8,
@@ -78,6 +79,8 @@ ReviewDocument _doc({
     );
 
 void main() {
+  setUpAll(cliSnapshot);
+
   group('an entry count and a game count that differ', () {
     late Directory games;
     late String out;
