@@ -29,6 +29,19 @@ Uint8List _bytes(List<int> head) =>
 final _jpeg = _bytes(const [0xFF, 0xD8, 0xFF, 0xE0]);
 final _heic = _bytes([0, 0, 0, 0x18, ...'ftyp'.codeUnits, ...'heic'.codeUnits]);
 
+/// The flattened source around [needle], so a failure can quote the shape that
+/// is there instead of printing the whole file as its `Actual` (T-0324). The
+/// window leans forward: what is looked for here is a call head, and its
+/// arguments -- the thing in question -- come after it.
+String _flattenedAround(String flattened, String needle) {
+  final at = flattened.indexOf(needle);
+  if (at < 0) return '(not present)';
+  final from = at > 40 ? at - 40 : 0;
+  var to = at + needle.length + 140;
+  if (to > flattened.length) to = flattened.length;
+  return '...${flattened.substring(from, to)}...';
+}
+
 /// Counts the picks and hands back named bytes.
 ///
 /// [files] and [gate] are settable, because a test that picks twice is asking
@@ -89,13 +102,33 @@ void main() {
     // photographs and the picker decides how, so the plugin has one caller
     // and a widget test can no longer see these arguments without naming it
     // again.
-    final source = File('lib/input_picker.dart').readAsStringSync();
+    const path = 'app/lib/input_picker.dart';
+    // Flattened: a named argument and its value may sit on two lines and mean
+    // the same thing, and unflattened a rewrap failed this with the whole file
+    // as the matcher's Actual and no sentence (T-0324). It loosens nothing
+    // that is asked here -- FileType.image does not become FileType.custom by
+    // being wrapped.
+    final source = File('lib/input_picker.dart')
+        .readAsStringSync()
+        .replaceAll(RegExp(r'\s+'), ' ');
 
-    expect(source, contains('pickFiles('),
-        reason: 'the source scan found no call, so the checks below would '
-            'pass on a file that picks nothing');
-    expect(source, contains('type: FileType.custom'));
-    expect(source, contains('allowedExtensions: pickerExtensions'));
+    if (!source.contains('pickFiles(')) {
+      fail('$path: a source scan of the whitespace-flattened file found no '
+          'pickFiles(, so nothing here opens the file dialog and the arguments '
+          'checked below would pass on a file that picks nothing.');
+    }
+    for (final argument in const [
+      'type: FileType.custom',
+      'allowedExtensions: pickerExtensions',
+    ]) {
+      if (!source.contains(argument)) {
+        fail('$path: a source scan of the whitespace-flattened file found '
+            'pickFiles( but no `$argument` in it, so the dialog is asked for '
+            'something other than this extension list -- and FileType.image '
+            'is the shape whose Windows filter hides .heic. What it asks '
+            'for:\n  ${_flattenedAround(source, 'pickFiles(')}');
+      }
+    }
     expect(pickerExtensions, contains('heic'));
   });
 
