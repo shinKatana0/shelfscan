@@ -62,6 +62,7 @@ ResolvedGame _game(
   List<Candidate> candidates = const [],
   ReviewStatus status = ReviewStatus.pending,
   String sourcePhoto = 'shelf1.jpg',
+  WorkKind workKind = WorkKind.game,
 }) =>
     ResolvedGame(
       detection: Detection(
@@ -70,6 +71,7 @@ ResolvedGame _game(
         confidence: 1.0,
         sourcePhoto: sourcePhoto,
         platformHint: 'PS4',
+        workKind: workKind,
       ),
       best: best,
       candidates: candidates,
@@ -320,6 +322,25 @@ void main() {
       await tester.tap(find.byIcon(Icons.check_circle));
       await tester.pumpAndSettle();
       expect(find.textContaining('not in .xcoll'), findsOneWidget);
+    });
+
+    // The clause has two reasons behind it now (T-0290) and only one of them
+    // is fixable by tapping. An animation item states film or series in
+    // `platform_id`, which nothing upstream of the exporter knows, so the row
+    // is dropped WITH a match -- and "tap to pick a match" there would send
+    // the user after a remedy that does not exist.
+    testWidgets('a kind .xcoll cannot carry says which reason it is',
+        (tester) async {
+      final doc = _doc([
+        _game('LANTERN COAST',
+            workKind: WorkKind.animation,
+            best: _candidate(1, 'Lantern Coast', score: 0.91)),
+      ]);
+      await _pump(tester, doc, FakeExportSaver());
+
+      expect(find.textContaining('not in .xcoll -- film or series?'),
+          findsOneWidget);
+      expect(find.textContaining('tap to pick a match'), findsNothing);
     });
 
     testWidgets('a row that can export carries no such clause', (tester) async {

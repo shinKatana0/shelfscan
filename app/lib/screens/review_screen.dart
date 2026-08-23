@@ -32,6 +32,13 @@ final _xcoll = TonkatsuExporter();
 /// gets longer.
 const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 
+/// The same slot for the OTHER reason `.xcoll` refuses a row: an animation
+/// item states film or series in `platform_id` and nothing here knows which,
+/// so the row is dropped however well it matched. Picking a match would not
+/// help, and saying so would be the clause telling the user to do a thing that
+/// cannot work. 32 characters, inside the budget measured above.
+const _noXcollKindClause = 'not in .xcoll -- film or series?';
+
 /// What a row says when it is a box rather than a thing (T-0163).
 ///
 /// It states the count and offers the choice, because the choice is not one
@@ -1028,7 +1035,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     // Keyed off the mode and NOT off the rows: a MATCHED run in which every
     // row happens to be unresolved is a run where something went wrong, and
     // there the frames are exactly right.
-    final needsAMatch = !widget.keyless && !_xcoll.canExport(game);
+    final notInXcoll = !widget.keyless && !_xcoll.canExport(game);
     final tile = ListTile(
       key: Key('review-row-$index'),
       onTap: () => _correctRow(index),
@@ -1049,8 +1056,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
         // cost the whole list a word to say nothing. The value is always
         // visible and always correctable in the row's sheet, and a row whose
         // kind was corrected says so through the clause below (0015).
+        // [WorkKind.label], never the wire value: `animation` is Tonkatsu's
+        // word for the file and nobody's word for the thing on the shelf.
         if (game.detection.workKind != WorkKind.game)
-          game.detection.workKind.name,
+          game.detection.workKind.label,
         // Ahead of the status: this is what the row IS, and the box is the
         // reason the row has not been decided yet.
         if (game.mapsToSeveral) _boxClause(game.parts.length),
@@ -1059,7 +1068,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
         // of the review status on purpose: this is a property of the row's
         // data, true while it is still pending, and the decision the user has
         // taken is spelled out by the next clause anyway (T-0123).
-        if (needsAMatch) _noXcollClause,
+        if (notInXcoll)
+          game.detection.workKind == WorkKind.animation
+              ? _noXcollKindClause
+              : _noXcollClause,
         if (game.status != ReviewStatus.pending) game.status.name,
         // Otherwise this row is indistinguishable from one whose branding was
         // illegible, and the value that caused it is only in the file
@@ -1100,7 +1112,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         ],
       ),
     );
-    if (!needsAMatch) return tile;
+    if (!notInXcoll) return tile;
     // A [DecoratedBox], not a Container: a Container adds the border's width
     // as padding, which would cost the row 2 logical px of height and take the
     // subtitle's measured 380 px budget to 378 -- see [_wideLayout]. This
@@ -1480,7 +1492,7 @@ class _RowSheet extends StatelessWidget {
               leading: Icon(kind == game.detection.workKind
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked),
-              title: Text(kind.name),
+              title: Text(kind.label),
               onTap: () => Navigator.of(context).pop(_CorrectKind(kind)),
             ),
         ],

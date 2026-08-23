@@ -30,7 +30,7 @@ const _seasons = [
       ordinal: 3),
 ];
 
-Detection _detection({WorkKind workKind = WorkKind.anime}) => Detection(
+Detection _detection({WorkKind workKind = WorkKind.animation}) => Detection(
       rawTitle: 'LANTERN COAST CHRONICLE COMPLETE BOX',
       mediaType: MediaType.disc,
       confidence: 0.8,
@@ -123,7 +123,7 @@ void main() {
         // groups under it on the review screen and carries the same
         // provenance into the csv export.
         expect(row.detection.sourcePhoto, 'shelf_b.jpg');
-        expect(row.detection.workKind, WorkKind.anime);
+        expect(row.detection.workKind, WorkKind.animation);
       }
     });
 
@@ -131,8 +131,8 @@ void main() {
       final rows = _box().expandParts();
       rows.first.correctWorkKind(WorkKind.game);
       expect(rows.first.detection.workKind, WorkKind.game);
-      expect(rows[1].detection.workKind, WorkKind.anime);
-      expect(rows[2].detection.workKind, WorkKind.anime);
+      expect(rows[1].detection.workKind, WorkKind.animation);
+      expect(rows[2].detection.workKind, WorkKind.animation);
     });
 
     test('each part exports on its own identity', () {
@@ -176,8 +176,8 @@ void main() {
         );
 
     test('the stale match goes and the row is marked as owed a lookup', () {
-      final row = matchedRow()..correctWorkKind(WorkKind.anime);
-      expect(row.detection.workKind, WorkKind.anime);
+      final row = matchedRow()..correctWorkKind(WorkKind.animation);
+      expect(row.detection.workKind, WorkKind.animation);
       // The whole point: a right word beside a wrong match is the failure
       // the correction exists to prevent (decision 0015).
       expect(row.best, isNull);
