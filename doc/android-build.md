@@ -121,8 +121,10 @@ it.
 **Symptom.** A plugin subproject's `checkDebugAarMetadata` task fails with a
 message spelling out a comparison between two API levels and naming both
 modules. Here it was `:file_picker`, compiled against `android-34`, and
-`:flutter_plugin_android_lifecycle`, which `file_picker` pulls in and which
-requires its dependents to compile against 36 or later.
+`:flutter_plugin_android_lifecycle`, which `file_picker` pulled in then and
+which requires its dependents to compile against 36 or later. `file_picker` 12
+does not pull it in any more — see *The `compileSdk` hook forces 36 onto a
+plugin that declares 37* below, which is what that leaves behind.
 
 **Cause.** `compileSdk` has to be raised in two places, and the second is the
 one that matters. Raising it in `app/android/app/build.gradle.kts` fixes the
