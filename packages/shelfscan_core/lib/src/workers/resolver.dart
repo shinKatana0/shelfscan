@@ -895,7 +895,26 @@ class TmdbResolverWorker extends Worker<Detection, ResolvedGame> {
     final raw = task.rawTitle.trim();
     if (raw.isEmpty) return ResolvedGame(detection: task);
 
-    final hits = await tmdb.searchMovie(raw, year: task.sourceYear);
+    final year = task.sourceYear;
+    var hits = await tmdb.searchMovie(raw, year: year);
+
+    // The film-shaped zero-result retry, and the second one on this seam
+    // (T-0336). TMDB's `year` is a filter rather than a preference -- measured
+    // live, see [TmdbClient.searchMovie] -- so a filename year one off the
+    // catalogued one answers zero rows instead of the film, and the comment
+    // that used to rule that out named the very case that causes it: a
+    // festival release against a general one, a territory date.
+    //
+    // Shaped after [ResolverWorker.process]'s two fallbacks in the one respect
+    // that matters: it fires ONLY where the first query found nothing at all,
+    // so the cost is one extra request on rows that were already lost, and
+    // none on any row that resolved. There is nothing to drop when the
+    // filename carried no year, so that row asks once and stops.
+    var withoutYear = false;
+    if (hits.isEmpty && year != null) {
+      hits = await tmdb.searchMovie(raw);
+      withoutYear = hits.isNotEmpty;
+    }
     if (hits.isEmpty) return ResolvedGame(detection: task);
 
     final folded = raw.toLowerCase();
@@ -908,13 +927,14 @@ class TmdbResolverWorker extends Worker<Detection, ResolvedGame> {
 
     return ResolvedGame(
       detection: task,
-      best: _bestFilm(scored, task.sourceYear),
+      best: _bestFilm(scored, year, withoutYear: withoutYear),
       candidates: [
         for (final entry in scored)
           _candidate(entry.hit, entry.score,
               alternative: _matchedOriginal(queries, entry.hit)
                   ? entry.hit.originalTitle
-                  : null)
+                  : null,
+              withoutYear: withoutYear)
       ],
     );
   }
@@ -940,13 +960,19 @@ class TmdbResolverWorker extends Worker<Detection, ResolvedGame> {
           ResolverWorker._bestScore(queries, hit.title);
 
   static Candidate _candidate(TmdbHit hit, double score,
-          {String? alternative}) =>
+          {String? alternative, required bool withoutYear}) =>
       Candidate(
         externalId: '$tmdbCatalogue:${hit.tmdbId}',
         title: hit.title,
         score: score,
         matchedAlternativeName: alternative,
         releaseYear: hit.releaseYear,
+        // Every row of a retry is a row the year could not corroborate, not
+        // just the one that wins, so the mark is on the list and not on the
+        // pick: a human choosing among five candidates is owed the same fact
+        // the auto-match gate acted on.
+        matchMethod:
+            withoutYear ? MatchMethod.yearlessRetry : MatchMethod.fuzzy,
       );
 
   /// The auto-match, or null for the human.
@@ -959,18 +985,52 @@ class TmdbResolverWorker extends Worker<Detection, ResolvedGame> {
   /// against it, and the year is the only thing separating the two. Refusing a
   /// tie the year could have settled is what T-0165 measured as the cost of a
   /// gate that cannot see the year, on the games side.
-  static Candidate? _bestFilm(
-      List<({TmdbHit hit, double score})> scored, int? year) {
+  ///
+  /// **[withoutYear] withdraws the tie-break, and withdraws nothing else**
+  /// (T-0336). A hit reached only after the year was dropped has had the
+  /// year's corroboration taken out from under it: TMDB has just answered that
+  /// no film of this title carries the year the filename claims. So the one
+  /// gate that spends the year is the one that cannot be trusted to hold, and
+  /// the score has to stand on its own -- exactly one film at the top, at or
+  /// above [minAutoScore], or the human decides.
+  ///
+  /// **The IGDB retry's identity bar is deliberately NOT copied here**, and
+  /// the reason is that the two retries loosen different things.
+  /// [ResolverWorker]'s ladder shortens the query STRING, so a retry hit
+  /// scoring high against the whole spine has by construction found a title
+  /// that is not the spine's -- a sibling -- and 1.000 is the only honest bar
+  /// for it. This retry changes no character of the query: the title asked for
+  /// is the title asked for the first time. Demanding 1.000 would answer a
+  /// question this retry never raised, and would admit precisely the row that
+  /// is dangerous -- three films sharing one title all score 1.000, and the
+  /// year that used to separate them is exactly what has just been spent. The
+  /// risk sits in the tie, so the tie is what closes.
+  ///
+  /// Two alternatives were weighed and not taken. **Refusing every retry hit**
+  /// leaves the case the retry exists for -- one film, one title, a year off
+  /// by one -- as a row the human must approve by hand, which is barely better
+  /// than the silence it replaces. **Raising the score bar** instead of
+  /// closing the tie fails for the reason this class reuses [minAutoScore] at
+  /// all: there is nothing measured behind a second number.
+  ///
+  /// The score itself is untouched either way. It measures two strings, both
+  /// queries send the same one, and a fact about the match belongs on
+  /// [MatchMethod] -- where the argument for that split already is.
+  static Candidate? _bestFilm(List<({TmdbHit hit, double score})> scored,
+      int? year, {required bool withoutYear}) {
     final top = scored.first;
     if (top.score < minAutoScore) return null;
 
     final tied =
         scored.where((e) => (e.score - top.score).abs() < 1e-9).toList();
-    if (tied.length == 1) return _candidate(top.hit, top.score);
+    if (tied.length == 1) {
+      return _candidate(top.hit, top.score, withoutYear: withoutYear);
+    }
 
-    if (year == null) return null;
+    if (withoutYear || year == null) return null;
     final byYear = tied.where((e) => e.hit.releaseYear == year).toList();
     if (byYear.length != 1) return null;
-    return _candidate(byYear.first.hit, byYear.first.score);
+    return _candidate(byYear.first.hit, byYear.first.score,
+        withoutYear: false);
   }
 }

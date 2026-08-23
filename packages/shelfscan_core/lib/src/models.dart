@@ -799,7 +799,23 @@ enum MatchMethod {
   /// The store's own product id joined to IGDB `external_games` (T-0159).
   /// No gate applies to it -- [minAutoScore], `platformAgreement`,
   /// `volumeNumbersAgree` and the tie rule all exist to make a guess safe.
-  externalId;
+  externalId,
+
+  /// A film found only after TMDB's `year` filter was dropped from a search
+  /// that answered nothing with it (T-0336).
+  ///
+  /// This is the case the paragraph above is about, in its second shape. The
+  /// score means exactly what it means on any other row -- both queries sent
+  /// the same title, so nothing about the strings changed -- and what is
+  /// missing is underneath it: TMDB answered that no film of this title
+  /// carries the year the filename claims. A reviewer reading `score 100%`
+  /// alone would take a corroborated match and an uncorroborated one for the
+  /// same row, which is the thing this enum exists to stop.
+  ///
+  /// `TmdbResolverWorker` withdraws the year tie-break for such a row, so it
+  /// auto-matches only where the score stands alone; the argument is at that
+  /// method and is not repeated here.
+  yearlessRetry;
 
   static MatchMethod parse(String? v) => MatchMethod.values.firstWhere(
         (e) => e.name == v,
@@ -930,7 +946,7 @@ class Candidate {
             ?.toInt(),
         matchMethod: MatchMethod.parse(_shapeOrNull<String>(
             json['match_method'], _at(path, 'match_method'),
-            'fuzzy or externalId')),
+            'fuzzy, externalId or yearlessRetry')),
       );
 }
 
