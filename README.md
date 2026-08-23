@@ -967,21 +967,35 @@ So the cheap option carries a rider, and it is narrow enough to follow without
 thinking about it:
 
 **If your English edit deleted or replaced a command, a fenced code block, a
-flag, a path or a file name, make the same deletion or replacement in all four
-translated files, in the same commit — then mark them `STALE` as usual.**
+flag, a path or a file name, make the same deletion or replacement wherever
+the four translated files carry it — then mark them `STALE` as usual.**
 
 That needs no knowledge of the target language, because what it applies to is
-exactly what is never translated (the paragraph below): the text you removed is
-byte-identical in every file that still carries it, so one command finds every
-copy.
+exactly what is never translated (the paragraph below): the thing you removed
+is byte-identical in every file that still carries it, so one command finds
+every copy.
 
 ```
-grep -n "the line you just deleted" README.ru.md README.ja.md doc/guide.ru.md doc/guide.ja.md
+grep -n "igdb_id" README.ru.md README.ja.md doc/guide.ru.md doc/guide.ja.md
 ```
 
-Delete what it names, or paste the English's replacement over it. The
-translation is then behind by an **addition** again, which is the case the
-marker already handles.
+**Grep the name you replaced, not the line you deleted** — the two are the
+same thing only when you removed a whole line. T-0300 replaced a column name
+*inside* lines: six copies sat in fenced blocks and were byte-identical, and
+three sat inside translated prose, where the surrounding sentence is Russian
+or Japanese and the line matches nothing. Grepping the line would have shipped
+two translations whose code blocks said the new name and whose prose still
+said the old one, which is worse than either endpoint.
+
+The command spans four files as a **check**; edit the ones that carry a copy
+and say in the report that the others did not. Delete what it names, or paste
+the English's replacement over it. The translation is then behind by an
+**addition** again, which is the case the marker already handles.
+
+**Two commits, not one, when you translate rather than only mark.** A marker
+naming the commit the English moved to cannot be part of that commit. Put the
+content in one and bump the markers in the next — `2866320` then `f4574b7` is
+the worked example.
 
 **The hole gets no note.** A line saying "this step was removed, read the
 English" has to be written in Russian and in Japanese, and a rule whose last
