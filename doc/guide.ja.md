@@ -29,6 +29,14 @@
 > 書いています（`README.ja.md` は仕様書なので「である」調です）。ただし
 > 制約と警告はぼかしていません。読めないものは「読めません」と書いてあります。
 
+<!-- TRANSCRIPTS. Some blocks below are program output and are pinned, byte
+     for byte, against a real run of the command: they carry a marker of the
+     form "transcript: NAME" in an HTML comment directly above them. The test
+     is packages/shelfscan_core/test/guide_transcript_test.dart. Change one of
+     those blocks, or the string the program builds, and it fails until the
+     two agree again. That file also lists the output blocks it does NOT pin,
+     and why. -->
+
 # shelfscan — 一回の実行を通しで
 
 このページは、一回の実行を、何もない状態から Tonkatsu Box に取り込まれた
@@ -343,9 +351,13 @@ Flutter アプリでは、代わりに**設定**の IGDB の二つの欄に入�
 **どちらも設定されていない。** `scan` は失敗しません。機能を落としたうえで、
 そう言います:
 
+<!-- transcript: igdb-skipped -->
+
     IGDB credentials not set -- resolve stage will be skipped, games stay unresolved (fine for vision validation).
 
 `resolve` のほうは失敗します。解決こそがその全目的だからです:
+
+<!-- transcript: resolve-needs-igdb -->
 
     The "resolve" command needs IGDB credentials: set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET (see .env.example). Resolving is the entire point of this command, so there is nothing useful to do without them.
 
@@ -445,6 +457,8 @@ IGDB の失敗から復旧するのに再スキャンは不要です。資格情
 
 **別のコマンドのフラグを渡した。** 何かを読む前に検査されるので、費用は発生
 しません:
+
+<!-- transcript: unknown-option -->
 
     Unknown option "--targt" for "export". Nothing was read. Options of "export": -o, --target.
     "--target" is not an option of "scan" -- it belongs to "export". Nothing was read. Options of "scan": -o, --provider, --fallback, --aliases, --installs, --library, --galaxy-db. Run "shelfscan" with no arguments for what each command reads.
@@ -672,6 +686,8 @@ IGDB の失敗から復旧するのに再スキャンは不要です。資格情
 
 **知らない書き出し先を指定すると、存在するものを挙げます:**
 
+<!-- transcript: unknown-export-target -->
+
     Unknown target "tonkatsu-box". Known: tonkatsu, csv
 
 **CSV を書き出した場合**、これが出ることもあります。該当するときだけで、普通の
@@ -740,6 +756,8 @@ PC にインストールしてあるゲームと、GOG で所有しているが�
 
 **この契約は内側からは強制できないので、実行のたびに何をしているかを述べます:**
 
+<!-- transcript: scan-installs-notice -->
+
     Reading C:\GOG Games: file and folder NAMES, plus any goggame-*.info beside them. No photo is read and no vision model is called. Nothing here can tell an application from a game, or a game from a film, by its name -- point this at a media folder, and review every row before you export it.
 
 これは真に受けてください。実在の `Downloads` フォルダに向けたところ、**出てきた
@@ -751,6 +769,8 @@ PC にインストールしてあるゲームと、GOG で所有しているが�
 
 そのため、よく知られた個人用・システム用ディレクトリの短い固定の一覧は、正面から
 拒否されます:
+
+<!-- transcript: scan-installs-refused -->
 
     Not a games folder: C:\Users\me\Downloads. This reads NAMES, and no rule reading a name tells NoteWellSetup.exe from setup_moor_1.9.exe -- run over a Downloads folder it titles every installer it finds, and not one of them is a game (T-0158). Point it at the directory your games are installed in.
 

@@ -7,6 +7,14 @@
      STALE. The rule in full, and why there is no CI check for it, is one
      place only: ../README.md, "Translations". -->
 
+<!-- TRANSCRIPTS. Some blocks below are program output and are pinned, byte
+     for byte, against a real run of the command: they carry a marker of the
+     form "transcript: NAME" in an HTML comment directly above them. The test
+     is packages/shelfscan_core/test/guide_transcript_test.dart. Change one of
+     those blocks, or the string the program builds, and it fails until the
+     two agree again. That file also lists the output blocks it does NOT pin,
+     and why. -->
+
 # shelfscan — one complete run
 
 This page walks one run from nothing to a collection imported into Tonkatsu
@@ -366,9 +374,13 @@ are stored in the OS keychain rather than in any file.
 
 **Neither is set.** `scan` does not fail — it degrades, and says so:
 
+<!-- transcript: igdb-skipped -->
+
     IGDB credentials not set -- resolve stage will be skipped, games stay unresolved (fine for vision validation).
 
 `resolve` does fail, because resolving is its entire purpose:
+
+<!-- transcript: resolve-needs-igdb -->
 
     The "resolve" command needs IGDB credentials: set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET (see .env.example). Resolving is the entire point of this command, so there is nothing useful to do without them.
 
@@ -470,6 +482,8 @@ Finally:
 
 **A flag that belongs to another command.** Checked before anything is read,
 so nothing is paid for:
+
+<!-- transcript: unknown-option -->
 
     Unknown option "--targt" for "export". Nothing was read. Options of "export": -o, --target.
     "--target" is not an option of "scan" -- it belongs to "export". Nothing was read. Options of "scan": -o, --provider, --fallback, --aliases, --installs, --library, --galaxy-db. Run "shelfscan" with no arguments for what each command reads.
@@ -706,6 +720,8 @@ The count is asked of the exporter rather than re-derived, so a summary saying
 
 **An unknown target names the ones that exist:**
 
+<!-- transcript: unknown-export-target -->
+
     Unknown target "tonkatsu-box". Known: tonkatsu, csv
 
 **If you exported CSV**, you may also see this, and only when it applies —
@@ -773,6 +789,8 @@ review list a list of games.
 **Every run says what it is doing, because this contract cannot be enforced
 from the inside:**
 
+<!-- transcript: scan-installs-notice -->
+
     Reading C:\GOG Games: file and folder NAMES, plus any goggame-*.info beside them. No photo is read and no vision model is called. Nothing here can tell an application from a game, or a game from a film, by its name -- point this at a media folder, and review every row before you export it.
 
 Take that seriously. Pointed at a real `Downloads` folder, **every title it
@@ -824,6 +842,8 @@ nothing to put in one.
 
 So a short, closed list of well-known personal and system directories is
 refused outright:
+
+<!-- transcript: scan-installs-refused -->
 
     Not a games folder: C:\Users\me\Downloads. This reads NAMES, and no rule reading a name tells NoteWellSetup.exe from setup_moor_1.9.exe -- run over a Downloads folder it titles every installer it finds, and not one of them is a game (T-0158). Point it at the directory your games are installed in.
 
