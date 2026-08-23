@@ -152,6 +152,19 @@ There is a cost, and the first two items are the ones that were weighed.
    is a title and a platform id. A mode could have given that its own document
    type. This decision guarantees the answer has to land inside
    `ReviewDocument`.
+
+   **Settled, 2026-08-23 —
+   [0016](0016-a-row-is-identified-by-the-catalogue-that-answered.md), T-0292.**
+   It did land inside `ReviewDocument`, in two additive pieces and at no cost
+   this paragraph did not predict. A row that maps to several catalogue
+   entries carries them in `ResolvedGame.parts` (T-0163); a row's external
+   identity stops being a games-catalogue key and becomes the catalogue that
+   answered plus that catalogue's id, and the platform becomes optional
+   instead of a placeholder. What this paragraph got wrong is the price: the
+   rename it feared touches twelve lines of production code and reaches no
+   file format, because `Candidate`'s wire key was never its identifier —
+   which is the separation T-0290 had to build for `WorkKind` and that this
+   type already had.
 3. **Every stage after the prompt carries a branch, permanently.** A mode is
    one test at the top of a run. A property is a test in the resolver, in the
    review screen and in the exporter, and each further kind multiplies them.
@@ -230,3 +243,6 @@ correctly.
 Each is its own task, and none of them is decided here: the second catalogue
 client, the second prompt, the row-identity question (T-0163), the UI control
 for the per-run hint, and whether the CSV export grows a column for the kind.
+
+The row-identity question has since been decided, in
+[0016](0016-a-row-is-identified-by-the-catalogue-that-answered.md).
