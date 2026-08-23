@@ -83,6 +83,61 @@ Directory _repoRoot() {
   }
 }
 
+/// The `README.md` section the note delegates its remedy to, and the section
+/// a failure quotes. Named once, so the section quoted and the heading
+/// asserted on are provably the same one.
+const _readmeSection = 'Opening the CSV in a spreadsheet';
+
+/// Which half to suspect first when one of the four fails. The note and the
+/// section are two halves of one remedy, so the `spreadsheetNote` group's
+/// colour is what says which half moved (T-0328).
+const _noteOrDocument =
+    'If the "spreadsheetNote" group above is green, the note still delegates '
+    'the remedy to this section, so it is the section that stopped giving it '
+    'and a user following an export is now sent to a page that does not '
+    'answer. If that group is red too, the note itself has changed and the '
+    'section may be correctly following it.';
+
+/// Fails unless the whitespace-flattened [readme] still carries [needle].
+///
+/// What these four assert is that a **published document** still says
+/// something, and a red has two causes that want opposite repairs: the page
+/// was reworded, or the behaviour it describes moved and the page followed.
+/// So the message forks twice -- on whether the section survives at all, and
+/// on [thenSuspect] (T-0328).
+///
+/// `fail` rather than `expect`, and the section rather than the document: the
+/// flatten leaves README on one enormous line, which a matcher prints whole
+/// as its `Actual`, from the top of the file and nowhere near this section
+/// (T-0321, T-0325).
+void _readmeStillSays(String readme, String needle,
+    {required String thenSuspect}) {
+  if (readme.contains(needle)) return;
+  final at = readme.indexOf(_readmeSection);
+  if (at < 0) {
+    final held = needle == _readmeSection
+        ? ''
+        : ' The phrase looked for, "$needle", lived inside it.';
+    fail('README.md: a scan of the whitespace-flattened document found no '
+        'section "$_readmeSection" at all, so it is gone or renamed.$held '
+        'Suspect the document rather than the note: spreadsheetNote in '
+        'bin/shelfscan.dart names that heading to the user verbatim, so an '
+        'export now points at a section README does not have.');
+  }
+  // To the next heading, and bounded anyway: a README that lost its next
+  // heading would otherwise hand back the whole document this exists to stop
+  // quoting.
+  final rest = readme.substring(at);
+  final end = RegExp(r' #+ ').firstMatch(rest)?.start ?? rest.length;
+  fail('README.md: a scan of the whitespace-flattened document found the '
+      'section "$_readmeSection" but not "$needle" anywhere in the document. '
+      'The section is still there and no longer says this. $thenSuspect '
+      'Whichever it is, the scan folds every run of whitespace to one space, '
+      'so the phrase may be wrapped across two lines in the file and a grep '
+      'of README.md as it stands can miss text that is still there. What the '
+      'section says now:\n  ${rest.substring(0, end > 4000 ? 4000 : end)}');
+}
+
 void main() {
   setUpAll(cliSnapshot);
 
@@ -284,10 +339,13 @@ void main() {
           .readAsStringSync()
           .replaceAll(RegExp(r'\s+'), ' ');
 
-      expect(readme, contains('Opening the CSV in a spreadsheet'));
-      expect(readme, contains('import it rather than double-click it'));
-      expect(readme, contains('Data → From Text/CSV'));
-      expect(readme, contains('Evaluate formulas'));
+      _readmeStillSays(readme, _readmeSection, thenSuspect: _noteOrDocument);
+      _readmeStillSays(readme, 'import it rather than double-click it',
+          thenSuspect: _noteOrDocument);
+      _readmeStillSays(readme, 'Data → From Text/CSV',
+          thenSuspect: _noteOrDocument);
+      _readmeStillSays(readme, 'Evaluate formulas',
+          thenSuspect: _noteOrDocument);
     });
   });
 }
