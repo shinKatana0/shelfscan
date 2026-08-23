@@ -10,15 +10,18 @@
 /// **What it does NOT copy is the platform gate.** IGDB's search is
 /// constrained by a platform id and scored against it; a film has no platform,
 /// which is why `TonkatsuExporter` writes no `platform_id` for one and why
-/// `FileNameParse.platformHint` is null on a film row. The year is what
-/// narrows a film search instead, and it is the field a release filename
-/// almost always carries.
+/// `FileNameParse.platformHint` is null on a film row. The year takes the
+/// gate's place instead, and it is the field a release filename almost always
+/// carries — but it is a hard filter rather than a preference, which is
+/// [TmdbClient.searchMovie]'s subject and cost this project T-0336.
 ///
-/// **UNRUN AGAINST THE LIVE SERVICE.** No TMDB credential exists on the
-/// machine this was written on, so every test below it is offline against a
-/// fake client: the request this builds and the parsing of a recorded-shape
-/// response are verified, and the claim that TMDB answers that shape is read
-/// off TMDB's published API rather than measured. See `doc/reports/T-0162.md`.
+/// **RUN AGAINST THE LIVE SERVICE ONCE, FOR ONE QUESTION.** Five searches on
+/// 2026-08-23 settled what the `year` parameter does, and nothing else. Every
+/// other claim here is still offline against a fake client: the request this
+/// builds and the parsing of a recorded-shape response are verified, and that
+/// TMDB answers that shape is read off its published API rather than
+/// measured. No TMDB credential exists on the machine this is developed on.
+/// See `doc/reports/T-0162.md` and `doc/reports/T-0336.md`.
 library;
 
 import 'dart:convert';
@@ -156,10 +159,25 @@ class TmdbClient {
 
   /// Films TMDB knows under [title], most confident first.
   ///
-  /// [year] narrows rather than filters — it is passed as TMDB's `year`
-  /// parameter, which prefers but does not require a match, so a filename
-  /// whose year is off by one (a festival release against a general one, which
-  /// is common) still finds the film instead of finding nothing.
+  /// **[year] FILTERS. Measured live, five searches, 2026-08-23.** This
+  /// comment said the opposite until then — that TMDB's `year` prefers a
+  /// match without requiring one, so a filename year off by one still finds
+  /// the film — and every clause of it was false. It had been written against
+  /// a fake, which answered as it was told to.
+  ///
+  /// What the service does: a film whose catalogued release year is not the
+  /// one asked for is **absent from the answer, not demoted in it**. The
+  /// correct year cuts a common title from dozens of candidates to the one
+  /// right film; that same year off by one comes back either empty or holding
+  /// a list the film is not in.
+  ///
+  /// So the parameter stays — the narrowing is the whole value of it, and the
+  /// measurement shows it doing exactly the work it was added for. The
+  /// off-by-one it creates is real and common (a festival year against a
+  /// general release, a territory date) and is handled one layer up, by
+  /// `TmdbResolverWorker`'s retry without it. This client asks once and
+  /// reports what came back; the retry is a decision about evidence and
+  /// belongs where the evidence is weighed.
   Future<List<TmdbHit>> searchMovie(String title, {int? year}) async {
     final query = title.trim();
     if (query.isEmpty) return const [];
