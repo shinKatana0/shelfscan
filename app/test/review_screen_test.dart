@@ -211,8 +211,14 @@ void main() {
 
     expect(find.text('Duskhollow: The Old Wardens'), findsOneWidget);
     expect(find.text('PlayStation 4 - score 62%'), findsOneWidget);
-    expect(find.byIcon(Icons.radio_button_checked), findsOneWidget);
-    expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
+    // Per candidate rather than by counting radios across the sheet: since
+    // T-0163 the sheet carries a second one-of-N group, for the kind of work,
+    // so a bare count no longer says which candidate is marked -- which is
+    // this test's actual claim.
+    Icon iconOf(int igdbId) => tester.widget<Icon>(find.descendant(
+        of: find.byKey(Key('candidate-$igdbId')), matching: find.byType(Icon)));
+    expect(iconOf(1).icon, Icons.radio_button_checked);
+    expect(iconOf(2).icon, Icons.radio_button_unchecked);
   });
 
   testWidgets('a refused platform hint is named on the row (T-0084)',
