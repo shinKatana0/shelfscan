@@ -17,7 +17,6 @@
 /// still open review (T-0030), because the run produced a result.
 library;
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -26,7 +25,7 @@ import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
-import 'scan_wiring_test.dart' show FakeFilePicker;
+import 'scan_wiring_test.dart' show FakeInputPicker;
 import 'settings_store_test.dart' show RecordingStore;
 
 /// Throws the error scripted for a photo's name, reads every other photo.
@@ -95,9 +94,9 @@ Future<void> _pumpScan(
   required List<String> photos,
   required Map<String, Object> failWith,
 }) async {
-  FilePicker.platform = FakeFilePicker(photos);
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
+      picker: FakeInputPicker(photos),
       // Cloud with a key: the configuration a 404 on a model id comes from,
       // and it puts the privacy warning directly above the status line, which
       // is where the shortcut has to remain findable.

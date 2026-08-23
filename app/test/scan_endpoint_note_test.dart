@@ -14,7 +14,6 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -24,7 +23,7 @@ import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
-import 'scan_wiring_test.dart' show FakeFilePicker;
+import 'scan_wiring_test.dart' show FakeInputPicker;
 import 'settings_store_test.dart' show RecordingStore;
 
 http.Response _completion() => http.Response(
@@ -81,9 +80,9 @@ Future<void> _pumpScan(
   required Future<http.Response> Function(Map<String, Object?> sent) answer,
   required List<String> heard,
 }) async {
-  FilePicker.platform = FakeFilePicker(['shelf1.jpg']);
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
+      picker: FakeInputPicker(['shelf1.jpg']),
       settings: _endpointSettings(),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
       debugVisionProviderBuilder: (onNote) => OpenAiCompatibleVisionProvider(

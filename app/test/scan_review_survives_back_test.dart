@@ -13,7 +13,6 @@
 /// moment the user is asked.
 library;
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/provider_config.dart';
@@ -22,13 +21,14 @@ import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
 import 'scan_all_failed_test.dart' show ScriptedVision;
-import 'scan_wiring_test.dart' show FakeFilePicker, FakeVisionProvider;
+import 'scan_wiring_test.dart' show FakeInputPicker, FakeVisionProvider;
 import 'settings_store_test.dart' show RecordingStore;
 
 Widget _screen(VisionProvider vision) => MaterialApp(
       home: ScanScreen(
         settings: ProviderSettings(backend: VisionBackend.local),
         store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+        picker: FakeInputPicker(),
         debugVisionProvider: vision,
       ),
     );
@@ -49,8 +49,6 @@ Future<void> _mark(WidgetTester tester, int row, IconData mark) async {
 }
 
 void main() {
-  setUp(() => FilePicker.platform = FakeFilePicker());
-
   testWidgets('Back keeps every decision, and Resume review is the way in',
       (tester) async {
     await tester.pumpWidget(_screen(FakeVisionProvider()));

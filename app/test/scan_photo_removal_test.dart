@@ -14,7 +14,6 @@ library;
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/provider_config.dart';
@@ -22,7 +21,7 @@ import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
-import 'scan_picker_test.dart' show RecordingFilePicker;
+import 'scan_picker_test.dart' show RecordingInputPicker;
 import 'settings_store_test.dart' show RecordingStore;
 
 final _jpeg =
@@ -64,13 +63,14 @@ Future<_RecordingVision> _pumpWithPhotos(
   WidgetTester tester,
   List<String> names, {
   Map<String, Completer<void>> gates = const {},
+  RecordingInputPicker? picker,
 }) async {
   final vision = _RecordingVision(gates: gates);
-  FilePicker.platform =
-      RecordingFilePicker({for (final name in names) name: _jpeg});
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
       settings: ProviderSettings(backend: VisionBackend.local),
+      picker: picker ??
+          RecordingInputPicker({for (final name in names) name: _jpeg}),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
       debugVisionProvider: vision,
     ),
@@ -127,11 +127,12 @@ void main() {
 
   testWidgets('an open file dialog holds it still too -- one guard, not two',
       (tester) async {
-    await _pumpWithPhotos(tester, ['shelf1.jpg']);
+    final picker = RecordingInputPicker({'shelf1.jpg': _jpeg});
+    await _pumpWithPhotos(tester, ['shelf1.jpg'], picker: picker);
 
     final gate = Completer<void>();
-    FilePicker.platform =
-        RecordingFilePicker({'shelf2.jpg': _jpeg}, gate: gate);
+    picker.files = {'shelf2.jpg': _jpeg};
+    picker.gate = gate;
     await tester.tap(find.text('Add photos'));
     await tester.pump();
     expect(_enabled(tester, _remove('shelf1.jpg')), isFalse,

@@ -16,10 +16,11 @@ library;
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
+import 'package:shelfscan_app/input_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/game_folders.dart';
+import 'package:shelfscan_app/photo_files.dart';
 import 'package:shelfscan_app/provider_config.dart';
 import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
@@ -45,7 +46,7 @@ GameFolder _folder(String path, List<String> names) => GameFolder(
 /// Answers both dialogs, so the guard can be tested across them: the presses
 /// that stack explorers are the ones landing while another one is open, and
 /// two controls make that a cross-product rather than two cases.
-class _BothPicker extends FilePicker {
+class _BothPicker extends InputPicker {
   _BothPicker({this.directory, this.files = const {}, this.gate});
 
   final String? directory;
@@ -53,42 +54,23 @@ class _BothPicker extends FilePicker {
   final Completer<void>? gate;
   int directoryCalls = 0;
   int fileCalls = 0;
-  String? askedDialogTitle;
+  String? askedPrompt;
 
   @override
-  Future<String?> getDirectoryPath({
-    String? dialogTitle,
-    bool lockParentWindow = false,
-    String? initialDirectory,
-  }) async {
+  Future<String?> pickFolder({required String prompt}) async {
     directoryCalls++;
-    askedDialogTitle = dialogTitle;
+    askedPrompt = prompt;
     await gate?.future;
     return directory;
   }
 
   @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    bool allowCompression = true,
-    int compressionQuality = 30,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-  }) async {
+  Future<List<PickedFile>?> pickPhotos() async {
     fileCalls++;
     await gate?.future;
-    return FilePickerResult([
-      for (final entry in files.entries)
-        PlatformFile(
-            name: entry.key, size: entry.value.length, bytes: entry.value),
-    ]);
+    return [
+      for (final entry in files.entries) (name: entry.key, bytes: entry.value)
+    ];
   }
 }
 
@@ -120,6 +102,7 @@ class _RecordingVision implements VisionProvider {
 
 Future<_RecordingVision> _pump(
   WidgetTester tester, {
+  required _BothPicker picker,
   VisionBackend backend = VisionBackend.local,
   Map<String, Completer<void>> gates = const {},
   GameFolder? folder,
@@ -130,6 +113,7 @@ Future<_RecordingVision> _pump(
     home: ScanScreen(
       settings: ProviderSettings(backend: backend),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+      picker: picker,
       debugVisionProvider: vision,
       debugFolderReader: (path) async =>
           held.path == path ? held : _folder(path, const []),
@@ -150,8 +134,7 @@ void main() {
   testWidgets('the folder has its own control, beside Add photos',
       (tester) async {
     final picker = _BothPicker(directory: _gogGames);
-    FilePicker.platform = picker;
-    await _pump(tester,
+    await _pump(tester, picker: picker,
         folder: _folder(_gogGames, const ['setup_moor_1.9.exe', 'notes.txt']));
 
     expect(find.text('Add photos'), findsOneWidget);
@@ -173,23 +156,20 @@ void main() {
       'the control names the folder it wants, in the button and in the dialog',
       (tester) async {
     final picker = _BothPicker(directory: _gogGames);
-    FilePicker.platform = picker;
-    await _pump(tester);
+    await _pump(tester, picker: picker);
 
     // Before anything is picked, the empty screen already names the second
     // input as an installed-games folder rather than as "a folder".
     expect(find.byKey(const Key('folder-hint')), findsOneWidget);
     await _addFolder(tester);
-    expect(picker.askedDialogTitle,
-        'Pick the folder your games are installed in');
+    expect(picker.askedPrompt, 'Pick the folder your games are installed in');
   });
 
   testWidgets('two presses inside one frame open one dialog (T-0116)',
       (tester) async {
     final gate = Completer<void>();
     final picker = _BothPicker(directory: _gogGames, gate: gate);
-    FilePicker.platform = picker;
-    await _pump(tester);
+    await _pump(tester, picker: picker);
 
     // No pump between the taps: the second press reaches a button still built
     // as enabled, which is the press that produced a real stack.
@@ -205,8 +185,7 @@ void main() {
     final gate = Completer<void>();
     final picker = _BothPicker(
         directory: _gogGames, files: {'shelf1.jpg': _jpeg}, gate: gate);
-    FilePicker.platform = picker;
-    await _pump(tester);
+    await _pump(tester, picker: picker);
 
     await tester.tap(find.byKey(const Key('add-games-folder')));
     await tester.pump();
@@ -224,8 +203,7 @@ void main() {
     final gates = {'shelf1.jpg': Completer<void>()};
     final picker =
         _BothPicker(directory: _gogGames, files: {'shelf1.jpg': _jpeg});
-    FilePicker.platform = picker;
-    await _pump(tester, gates: gates);
+    await _pump(tester, picker: picker, gates: gates);
 
     await tester.tap(find.text('Add photos'));
     await tester.pumpAndSettle();
@@ -247,9 +225,12 @@ void main() {
   testWidgets('a folder can be taken back out, and not during a run',
       (tester) async {
     final gates = {'shelf1.jpg': Completer<void>()};
-    FilePicker.platform =
-        _BothPicker(directory: _gogGames, files: {'shelf1.jpg': _jpeg});
-    final vision = await _pump(tester, gates: gates);
+    final vision = await _pump(
+      tester,
+      picker:
+          _BothPicker(directory: _gogGames, files: {'shelf1.jpg': _jpeg}),
+      gates: gates,
+    );
 
     await _addFolder(tester);
     await tester.tap(find.text('Add photos'));
@@ -275,8 +256,7 @@ void main() {
 
   testWidgets('the same folder twice is refused by name, not added twice',
       (tester) async {
-    FilePicker.platform = _BothPicker(directory: _gogGames);
-    await _pump(tester);
+    await _pump(tester, picker: _BothPicker(directory: _gogGames));
 
     await _addFolder(tester);
     await _addFolder(tester);
@@ -289,8 +269,9 @@ void main() {
   group('the folder the user did not mean', () {
     testWidgets('a downloads folder is questioned before it is read',
         (tester) async {
-      FilePicker.platform = _BothPicker(directory: _downloads);
-      await _pump(tester, folder: _folder(_downloads, const ['NoteWellSetup.exe']));
+      await _pump(tester,
+          picker: _BothPicker(directory: _downloads),
+          folder: _folder(_downloads, const ['NoteWellSetup.exe']));
 
       await tester.tap(find.text('Add games folder'));
       await tester.pumpAndSettle();
@@ -306,8 +287,9 @@ void main() {
     });
 
     testWidgets('and added anyway if the user says so', (tester) async {
-      FilePicker.platform = _BothPicker(directory: _downloads);
-      await _pump(tester, folder: _folder(_downloads, const ['NoteWellSetup.exe']));
+      await _pump(tester,
+          picker: _BothPicker(directory: _downloads),
+          folder: _folder(_downloads, const ['NoteWellSetup.exe']));
 
       await tester.tap(find.text('Add games folder'));
       await tester.pumpAndSettle();
@@ -319,8 +301,7 @@ void main() {
     });
 
     testWidgets('a games folder is not questioned at all', (tester) async {
-      FilePicker.platform = _BothPicker(directory: _gogGames);
-      await _pump(tester);
+      await _pump(tester, picker: _BothPicker(directory: _gogGames));
 
       await tester.tap(find.text('Add games folder'));
       await tester.pumpAndSettle();
@@ -333,8 +314,8 @@ void main() {
       (tester) async {
     // Cloud with no key: `ProviderPolicy.build` throws a StateError for these
     // settings, so a run that survives them is one that built no provider.
-    FilePicker.platform = _BothPicker(directory: _gogGames);
     final vision = await _pump(tester,
+        picker: _BothPicker(directory: _gogGames),
         backend: VisionBackend.cloud,
         folder:
             _folder(_gogGames, const ['setup_moor_1.9.exe', 'unins000.exe']));

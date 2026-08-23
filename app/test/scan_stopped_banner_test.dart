@@ -12,7 +12,6 @@ library;
 
 import 'dart:async';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/provider_config.dart';
@@ -20,7 +19,7 @@ import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
-import 'scan_wiring_test.dart' show FakeFilePicker;
+import 'scan_wiring_test.dart' show FakeInputPicker;
 import 'settings_store_test.dart' show RecordingStore;
 
 /// Fails the photos in [fails], holds the rest at their own gate so the test
@@ -68,9 +67,9 @@ Future<_StagedVision> _runToStop(
   required _StagedVision vision,
   required int stopAfterAsked,
 }) async {
-  FilePicker.platform = FakeFilePicker(photos);
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
+      picker: FakeInputPicker(photos),
       settings: ProviderSettings(backend: VisionBackend.local),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
       debugVisionProvider: vision,

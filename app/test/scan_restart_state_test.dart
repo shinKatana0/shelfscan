@@ -11,7 +11,6 @@ library;
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/provider_config.dart';
@@ -19,7 +18,7 @@ import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
-import 'scan_picker_test.dart' show RecordingFilePicker;
+import 'scan_picker_test.dart' show RecordingInputPicker;
 import 'settings_store_test.dart' show RecordingStore;
 
 final _jpeg = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, ...List.filled(32, 0)]);
@@ -63,13 +62,13 @@ void main() {
   testWidgets('a new run clears the last run\'s errors and keeps the picker\'s '
       'rejections', (tester) async {
     final vision = _SwitchableVision();
-    FilePicker.platform = RecordingFilePicker({
-      'shelf1.jpg': _jpeg,
-      'shelf2.jpg': _jpeg,
-      'notes.txt': _notAPhoto,
-    });
     await tester.pumpWidget(MaterialApp(
       home: ScanScreen(
+        picker: RecordingInputPicker({
+          'shelf1.jpg': _jpeg,
+          'shelf2.jpg': _jpeg,
+          'notes.txt': _notAPhoto,
+        }),
         settings: ProviderSettings(backend: VisionBackend.local),
         store:
             SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
@@ -115,12 +114,10 @@ void main() {
 
   testWidgets('the two panels say which run each is about', (tester) async {
     final vision = _SwitchableVision();
-    FilePicker.platform = RecordingFilePicker({
-      'shelf1.jpg': _jpeg,
-      'notes.txt': _notAPhoto,
-    });
     await tester.pumpWidget(MaterialApp(
       home: ScanScreen(
+        picker: RecordingInputPicker(
+            {'shelf1.jpg': _jpeg, 'notes.txt': _notAPhoto}),
         settings: ProviderSettings(backend: VisionBackend.local),
         store:
             SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),

@@ -22,11 +22,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
+import 'package:shelfscan_app/input_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/galaxy_db.dart';
 import 'package:shelfscan_app/game_folders.dart';
+import 'package:shelfscan_app/photo_files.dart';
 import 'package:shelfscan_app/provider_config.dart';
 import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
@@ -67,7 +68,7 @@ GameFolder _folder(String path, List<String> names) => GameFolder(
 
 /// Answers both file dialogs, so the guard can be tested across all three
 /// controls: what stacked explorers for the owner was one dialog per press.
-class _BothPicker extends FilePicker {
+class _BothPicker extends InputPicker {
   _BothPicker({this.directory, this.files = const {}, this.gate});
 
   final String? directory;
@@ -77,38 +78,19 @@ class _BothPicker extends FilePicker {
   int fileCalls = 0;
 
   @override
-  Future<String?> getDirectoryPath({
-    String? dialogTitle,
-    bool lockParentWindow = false,
-    String? initialDirectory,
-  }) async {
+  Future<String?> pickFolder({required String prompt}) async {
     directoryCalls++;
     await gate?.future;
     return directory;
   }
 
   @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    bool allowCompression = true,
-    int compressionQuality = 30,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-  }) async {
+  Future<List<PickedFile>?> pickPhotos() async {
     fileCalls++;
     await gate?.future;
-    return FilePickerResult([
-      for (final entry in files.entries)
-        PlatformFile(
-            name: entry.key, size: entry.value.length, bytes: entry.value),
-    ]);
+    return [
+      for (final entry in files.entries) (name: entry.key, bytes: entry.value)
+    ];
   }
 }
 
@@ -161,6 +143,7 @@ class _Reader {
 
 Future<(_RecordingVision, _Reader)> _pump(
   WidgetTester tester, {
+  required _BothPicker picker,
   VisionBackend backend = VisionBackend.local,
   Map<String, Completer<void>> gates = const {},
   GalaxyLibrary? library,
@@ -182,6 +165,7 @@ Future<(_RecordingVision, _Reader)> _pump(
     home: ScanScreen(
       settings: ProviderSettings(backend: backend),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+      picker: picker,
       debugVisionProvider: vision,
       debugLibraryReader: reader.read,
       debugFolderReader: (path) async => folder ?? _folder(path, const []),
@@ -201,8 +185,8 @@ bool _scanEnabled(WidgetTester tester) =>
 void main() {
   testWidgets('the library has its own control, beside the folder one',
       (tester) async {
-    FilePicker.platform = _BothPicker(directory: _gogGames);
-    final (_, reader) = await _pump(tester);
+    final (_, reader) =
+        await _pump(tester, picker: _BothPicker(directory: _gogGames));
 
     // Named on the empty screen before anything is added, where the second
     // input is named too.
@@ -220,8 +204,7 @@ void main() {
 
   testWidgets('it says how old the cache is, before the row count means '
       'anything', (tester) async {
-    FilePicker.platform = _BothPicker();
-    await _pump(tester,
+    await _pump(tester, picker: _BothPicker(),
         library: _library(
             [_release(_moorId, 'MOOR'), _release('1100000014', 'Another')]));
 
@@ -237,8 +220,8 @@ void main() {
   testWidgets('two presses inside one frame read the database once (T-0116)',
       (tester) async {
     final gate = Completer<void>();
-    FilePicker.platform = _BothPicker();
-    final (_, reader) = await _pump(tester, readerGate: gate);
+    final (_, reader) =
+        await _pump(tester, picker: _BothPicker(), readerGate: gate);
 
     // No pump between the taps: the second press reaches a control still built
     // as enabled, which is the press that produced a real stack of
@@ -255,8 +238,7 @@ void main() {
     final gate = Completer<void>();
     final picker =
         _BothPicker(directory: _gogGames, files: {'shelf1.jpg': _jpeg});
-    FilePicker.platform = picker;
-    await _pump(tester, readerGate: gate);
+    await _pump(tester, picker: picker, readerGate: gate);
 
     await tester.tap(find.byKey(const Key('add-gog-library')));
     await tester.pump();
@@ -274,8 +256,8 @@ void main() {
 
   testWidgets('and it does not read while a picker is up', (tester) async {
     final gate = Completer<void>();
-    FilePicker.platform = _BothPicker(directory: _gogGames, gate: gate);
-    final (_, reader) = await _pump(tester);
+    final (_, reader) = await _pump(tester,
+        picker: _BothPicker(directory: _gogGames, gate: gate));
 
     await tester.tap(find.byKey(const Key('add-games-folder')));
     await tester.pump();
@@ -291,8 +273,8 @@ void main() {
   testWidgets('the control is dead during a run, and nothing is read if '
       'pressed', (tester) async {
     final gates = {'shelf1.jpg': Completer<void>()};
-    FilePicker.platform = _BothPicker(files: {'shelf1.jpg': _jpeg});
-    final (_, reader) = await _pump(tester, gates: gates);
+    final (_, reader) = await _pump(tester,
+        picker: _BothPicker(files: {'shelf1.jpg': _jpeg}), gates: gates);
 
     await tester.tap(find.text('Add photos'));
     await tester.pumpAndSettle();
@@ -314,8 +296,8 @@ void main() {
   testWidgets('it can be taken back out, and not during a run (T-0138)',
       (tester) async {
     final gates = {'shelf1.jpg': Completer<void>()};
-    FilePicker.platform = _BothPicker(files: {'shelf1.jpg': _jpeg});
-    await _pump(tester, gates: gates);
+    await _pump(tester,
+        picker: _BothPicker(files: {'shelf1.jpg': _jpeg}), gates: gates);
 
     await _addLibrary(tester);
     await tester.tap(find.text('Add photos'));
@@ -340,8 +322,7 @@ void main() {
 
   testWidgets('adding it twice is refused by name, not silently ignored',
       (tester) async {
-    FilePicker.platform = _BothPicker();
-    final (_, reader) = await _pump(tester);
+    final (_, reader) = await _pump(tester, picker: _BothPicker());
 
     await _addLibrary(tester);
     await _addLibrary(tester);
@@ -353,8 +334,7 @@ void main() {
   });
 
   testWidgets('a host with no Galaxy is named, not left silent', (tester) async {
-    FilePicker.platform = _BothPicker();
-    await _pump(tester,
+    await _pump(tester, picker: _BothPicker(),
         readerThrows: GalaxyLibraryException(galaxyUnsupported('android')!));
 
     await _addLibrary(tester);
@@ -369,8 +349,7 @@ void main() {
 
   testWidgets('an absent database is named with what to do about it',
       (tester) async {
-    FilePicker.platform = _BothPicker();
-    await _pump(tester,
+    await _pump(tester, picker: _BothPicker(),
         readerThrows: GalaxyLibraryException(
             'No GOG Galaxy library database at C:\\nowhere.db.'));
 
@@ -384,8 +363,7 @@ void main() {
       (tester) async {
     // Cloud with no key: `ProviderPolicy.build` throws a StateError for these
     // settings, so a run that survives them is one that built no provider.
-    FilePicker.platform = _BothPicker();
-    final (vision, _) = await _pump(tester,
+    final (vision, _) = await _pump(tester, picker: _BothPicker(),
         backend: VisionBackend.cloud,
         library: _library([_release(_moorId, 'MOOR')]));
 
@@ -399,8 +377,7 @@ void main() {
   });
 
   testWidgets('what the library declines is named, not counted', (tester) async {
-    FilePicker.platform = _BothPicker();
-    await _pump(tester, library: _library([
+    await _pump(tester, picker: _BothPicker(), library: _library([
       _release(_moorId, 'MOOR'),
       _release('1100000017', 'MOOR - Soundtrack', isDlc: 1),
     ]));
@@ -419,8 +396,8 @@ void main() {
 
   testWidgets('photos and the library are ONE run: a disc and the same game '
       'owned are one row', (tester) async {
-    FilePicker.platform = _BothPicker(files: {'shelf1.jpg': _jpeg});
     final (vision, _) = await _pump(tester,
+        picker: _BothPicker(files: {'shelf1.jpg': _jpeg}),
         visionTitle: 'MOOR', library: _library([_release(_moorId, 'MOOR')]));
 
     await _addLibrary(tester);
@@ -437,9 +414,9 @@ void main() {
 
   testWidgets('a folder and the library in one run are two sources, not one',
       (tester) async {
-    FilePicker.platform = _BothPicker(directory: _gogGames);
     final (vision, _) = await _pump(
       tester,
+      picker: _BothPicker(directory: _gogGames),
       folder: _folder(_gogGames, const ['setup_harbour_lantern_1.6.15.exe']),
       library: _library([_release(_moorId, 'MOOR')]),
     );

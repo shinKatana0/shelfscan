@@ -11,9 +11,10 @@ library;
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shelfscan_app/input_picker.dart';
+import 'package:shelfscan_app/photo_files.dart';
 import 'package:shelfscan_app/provider_config.dart';
 import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
@@ -82,8 +83,8 @@ class FakeVisionProvider implements VisionProvider {
 }
 
 /// Lets a widget test "pick" photos without a real file dialog.
-class FakeFilePicker extends FilePicker {
-  FakeFilePicker([this.names = const ['shelf1.jpg'], Uint8List? bytes])
+class FakeInputPicker extends InputPicker {
+  FakeInputPicker([this.names = const ['shelf1.jpg'], Uint8List? bytes])
       : bytes = bytes ?? Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0]);
 
   final List<String> names;
@@ -95,24 +96,11 @@ class FakeFilePicker extends FilePicker {
   final Uint8List bytes;
 
   @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    bool allowCompression = true,
-    int compressionQuality = 30,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-  }) async =>
-      FilePickerResult([
-        for (final name in names)
-          PlatformFile(name: name, size: bytes.length, bytes: bytes),
-      ]);
+  Future<List<PickedFile>?> pickPhotos() async =>
+      [for (final name in names) (name: name, bytes: bytes)];
+
+  @override
+  Future<String?> pickFolder({required String prompt}) async => null;
 }
 
 PhotoInput _photo(String name) =>
@@ -251,8 +239,6 @@ void main() {
   });
 
   group('one reader per photo (T-0061)', () {
-    setUp(() => FilePicker.platform = FakeFilePicker());
-
     testWidgets('a scan reads each photo exactly once, key stored, spines '
         'unread, and a stale cloud_fallback in preferences', (tester) async {
       // Everything the removed toggle used to need is present: a local run,
@@ -271,6 +257,7 @@ void main() {
         home: ScanScreen(
           settings: await store.load(),
           store: store,
+          picker: FakeInputPicker(),
           debugVisionProvider: vision,
         ),
       ));
@@ -287,8 +274,6 @@ void main() {
   });
 
   group('scan screen', () {
-    setUp(() => FilePicker.platform = FakeFilePicker());
-
     testWidgets('a cloud scan with no key explains itself and offers Settings',
         (tester) async {
       final settings = ProviderSettings(backend: VisionBackend.cloud);
@@ -297,6 +282,7 @@ void main() {
           settings: settings,
           store: SettingsStore(
               secrets: RecordingStore(), prefs: RecordingStore()),
+          picker: FakeInputPicker(),
         ),
       ));
 
@@ -322,6 +308,7 @@ void main() {
         home: ScanScreen(
           settings: settings,
           store: SettingsStore(secrets: secrets, prefs: RecordingStore()),
+          picker: FakeInputPicker(),
         ),
       ));
 
@@ -350,16 +337,16 @@ void main() {
       // The bytes exist only here: the document carries photo names, so if
       // the scan screen does not hand its list over, review has no images
       // and no way to get them.
-      FilePicker.platform = FakeFilePicker(
-        ['shelf1.jpg', 'shelf2.jpg'],
-        base64Decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlE'
-            'QVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
-      );
       await tester.pumpWidget(MaterialApp(
         home: ScanScreen(
           settings: ProviderSettings(backend: VisionBackend.local),
           store: SettingsStore(
               secrets: RecordingStore(), prefs: RecordingStore()),
+          picker: FakeInputPicker(
+            ['shelf1.jpg', 'shelf2.jpg'],
+            base64Decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlE'
+                'QVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
+          ),
           debugVisionProvider: FakeVisionProvider(),
         ),
       ));

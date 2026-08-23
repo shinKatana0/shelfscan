@@ -12,7 +12,6 @@
 /// client would throw if any IGDB traffic were attempted.
 library;
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/provider_config.dart';
@@ -20,7 +19,7 @@ import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
-import 'scan_wiring_test.dart' show FakeFilePicker, FakeVisionProvider;
+import 'scan_wiring_test.dart' show FakeInputPicker, FakeVisionProvider;
 import 'settings_store_test.dart' show RecordingStore;
 
 SettingsStore _store() =>
@@ -31,7 +30,8 @@ ProviderSettings _withCredentials() =>
 
 Future<void> _pump(WidgetTester tester, ProviderSettings settings) =>
     tester.pumpWidget(MaterialApp(
-      home: ScanScreen(settings: settings, store: _store()),
+      home: ScanScreen(
+          settings: settings, store: _store(), picker: FakeInputPicker()),
     ));
 
 /// The control is labelled, so the label is the handle -- and asserting on it
@@ -189,7 +189,8 @@ void main() {
       // A rebuild is what returning from Settings produces; nothing here taps
       // the control, so the default rule is what is under test.
       await tester.pumpWidget(MaterialApp(
-        home: ScanScreen(settings: settings, store: _store()),
+        home: ScanScreen(
+          settings: settings, store: _store(), picker: FakeInputPicker()),
       ));
 
       expect(_consequence(tester), igdbConsequence);
@@ -202,12 +203,11 @@ void main() {
     // would turn into a StateError if it were.
     testWidgets('choosing it, scanning, and arriving at a review that says so',
         (tester) async {
-      FilePicker.platform = FakeFilePicker();
-      addTearDown(() => FilePicker.platform = FakeFilePicker());
       await tester.pumpWidget(MaterialApp(
         home: ScanScreen(
           settings: _withCredentials(),
           store: _store(),
+          picker: FakeInputPicker(),
           debugVisionProvider: FakeVisionProvider(),
         ),
       ));

@@ -15,7 +15,6 @@
 /// nothing.
 library;
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/provider_config.dart';
@@ -24,7 +23,7 @@ import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
 import 'scan_all_failed_test.dart' show ScriptedVision;
-import 'scan_wiring_test.dart' show FakeFilePicker;
+import 'scan_wiring_test.dart' show FakeInputPicker;
 import 'settings_store_test.dart' show RecordingStore;
 
 /// The real builders, not hand-written copies of their sentences: what the
@@ -67,9 +66,9 @@ Future<void> _pumpScan(WidgetTester tester, Object failure) async {
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  FilePicker.platform = FakeFilePicker(const ['shelf1.jpg']);
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
+      picker: FakeInputPicker(const ['shelf1.jpg']),
       settings: ProviderSettings(
         backend: VisionBackend.cloud,
         anthropicApiKey: 'sk-test',

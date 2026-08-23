@@ -9,7 +9,6 @@ library;
 
 import 'dart:async';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/provider_config.dart';
@@ -17,7 +16,7 @@ import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
-import 'scan_wiring_test.dart' show FakeFilePicker;
+import 'scan_wiring_test.dart' show FakeInputPicker;
 import 'settings_store_test.dart' show RecordingStore;
 
 /// Holds each photo at its own gate and records what it was handed, so the
@@ -55,10 +54,11 @@ bool _enabled(WidgetTester tester, Finder button) =>
 Finder _scanButton() => find.ancestor(
     of: find.text('Scan'), matching: find.byType(FilledButton));
 
-ScanScreen _screen(_GatedVision vision) => ScanScreen(
+ScanScreen _screen(_GatedVision vision, List<String> photos) => ScanScreen(
       // Local runs one photo at a time (ProviderPolicy.visionConcurrency), so
       // exactly one photo is in flight when the stop arrives.
       settings: ProviderSettings(backend: VisionBackend.local),
+      picker: FakeInputPicker(photos),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
       debugVisionProvider: vision,
     );
@@ -66,9 +66,9 @@ ScanScreen _screen(_GatedVision vision) => ScanScreen(
 void main() {
   testWidgets('there is no stop control until a run is going', (tester) async {
     final gates = {'shelf1.jpg': Completer<void>()};
-    FilePicker.platform = FakeFilePicker(gates.keys.toList());
     final vision = _GatedVision(gates);
-    await tester.pumpWidget(MaterialApp(home: _screen(vision)));
+    await tester
+        .pumpWidget(MaterialApp(home: _screen(vision, gates.keys.toList())));
 
     expect(_stop, findsNothing);
 
@@ -97,9 +97,9 @@ void main() {
       'shelf2.jpg': Completer<void>(),
       'shelf3.jpg': Completer<void>(),
     };
-    FilePicker.platform = FakeFilePicker(gates.keys.toList());
     final vision = _GatedVision(gates);
-    await tester.pumpWidget(MaterialApp(home: _screen(vision)));
+    await tester
+        .pumpWidget(MaterialApp(home: _screen(vision, gates.keys.toList())));
 
     await tester.tap(find.text('Add photos'));
     await tester.pumpAndSettle();
@@ -157,9 +157,9 @@ void main() {
       'shelf1.jpg': Completer<void>(),
       'shelf2.jpg': Completer<void>(),
     };
-    FilePicker.platform = FakeFilePicker(gates.keys.toList());
     final vision = _GatedVision(gates);
-    await tester.pumpWidget(MaterialApp(home: _screen(vision)));
+    await tester
+        .pumpWidget(MaterialApp(home: _screen(vision, gates.keys.toList())));
 
     await tester.tap(find.text('Add photos'));
     await tester.pumpAndSettle();

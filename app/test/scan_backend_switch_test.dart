@@ -10,7 +10,6 @@
 /// no provider is constructed and nothing is dialled.
 library;
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/provider_config.dart';
@@ -18,7 +17,7 @@ import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
-import 'scan_wiring_test.dart' show FakeFilePicker;
+import 'scan_wiring_test.dart' show FakeInputPicker;
 import 'settings_store_test.dart' show RecordingStore;
 
 SettingsStore _store() =>
@@ -26,7 +25,8 @@ SettingsStore _store() =>
 
 Future<void> _pump(WidgetTester tester, ProviderSettings settings) =>
     tester.pumpWidget(MaterialApp(
-      home: ScanScreen(settings: settings, store: _store()),
+      home: ScanScreen(
+          settings: settings, store: _store(), picker: FakeInputPicker()),
     ));
 
 /// Taps a segment of the app-bar switch. The segments are icon-only, so the
@@ -205,8 +205,6 @@ void main() {
     // Settings, so the two users who never do either -- every Android user,
     // where cloud is the default, and any desktop user whose cloud choice is
     // already stored -- were told nothing at all.
-    setUp(() => FilePicker.platform = FakeFilePicker());
-
     testWidgets('a stored cloud backend says so before anything is touched',
         (tester) async {
       await _pump(
@@ -306,8 +304,6 @@ void main() {
   });
 
   group('the switch on the scan screen', () {
-    setUp(() => FilePicker.platform = FakeFilePicker());
-
     testWidgets('cloud without a key says so at once and offers the way out',
         (tester) async {
       await _pump(tester, ProviderSettings(backend: VisionBackend.local));
@@ -395,6 +391,7 @@ void main() {
         home: ScanScreen(
           settings: settings,
           store: SettingsStore(secrets: RecordingStore(), prefs: prefs),
+          picker: FakeInputPicker(),
         ),
       ));
 
