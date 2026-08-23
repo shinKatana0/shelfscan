@@ -1,9 +1,27 @@
 # shelfscan — Measurement Archive
 
-Every figure this project has taken, and everything it measured and then
-rejected. Collected here by T-0125, out of the front page that had accumulated
-them. Nothing here was rewritten; the numbers are quoted from code comments and
-from briefs, and several of those comments cite them back.
+The measurements this project's decisions rest on, and everything it measured
+and then rejected. Collected here by T-0125, out of the front page that had
+accumulated them. Nothing here was rewritten; the numbers are quoted from code
+comments and from briefs, and several of those comments cite them back.
+
+**Not every figure, though, and the shortfall is a real one rather than a
+backlog.** Some measurements live in the doc comment beside the rule they
+settle instead of here, and `PROJECT.md` says so outright of
+`detectionPromptRules` and `detectionJsonSchema`: "their doc comments carry the
+numbers". Where a figure governs one constant, moving it here parts it from
+what it governs and copying it here states one measurement in two places —
+which is how two published versions of it come to disagree. The providers under
+`packages/shelfscan_core/lib/src/providers/` are where that shows: of thirteen
+distinct numeric claims sampled there by T-0271, eight have no home below, and
+the sample was thirteen out of seventy-eight doc-comment lines carrying a
+number — so eight is a floor rather than a total. **Look beside the rule before
+concluding a figure was never taken.**
+
+None of that loosens the standing rule in `PROJECT.md` that a new measurement
+is written here in the first place: that rule decides between this file and
+`PROJECT.md`, which is the page it exists to stop growing back, and it is not a
+licence to leave a figure in a doc comment because writing it here is work.
 
 Read this when you are about to spend effort on something — a bigger model,
 splitting the photos, a prompt wording, a scoring threshold — or when you are
