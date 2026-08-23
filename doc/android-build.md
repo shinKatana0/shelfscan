@@ -1,11 +1,11 @@
 # Building for Android on Windows
 
-A debug apk was built from this tree on 2026-08-23, on Flutter 3.47.0 stable,
-from a machine that had no JDK, no Android Studio and no Android SDK on it.
-Getting there cost three diagnoses, and none of the three presents as a missing
-step — each one presents as a build failure that names something else, or names
-nothing at all. This page is those diagnoses written down so that the next
-person pays for none of them.
+Debug and release apks were built from this tree on 2026-08-23, on Flutter
+3.47.0 stable, from a machine that had no JDK, no Android Studio and no Android
+SDK on it. Getting there cost four diagnoses, and not one of them presents as a
+missing step: three fail the build while naming something else, or naming
+nothing at all, and the fourth does not fail the build. This page is those
+diagnoses written down so that the next person pays for none of them.
 
 Windows desktop has its own two undocumented prerequisites, and they are
 elsewhere: [`README.md`](../README.md), *Setup → The app*.
@@ -39,6 +39,7 @@ matching `build-tools`, and **`cmdline-tools;19.0`**.
 ```
 android --no-metrics sdk install platform-tools
 android --no-metrics sdk install "platforms;android-36"
+android --no-metrics sdk install "build-tools;<version>"
 android --no-metrics sdk install "cmdline-tools;19.0"
 ```
 
@@ -78,10 +79,19 @@ flutter build apk --debug
 The apk lands at `app\build\app\outputs\flutter-apk\app-debug.apk` and carries
 the `applicationId` set in `app/android/app/build.gradle.kts`.
 
-## The three traps, in the order they bite
+`flutter build apk` gives you the release one. Both succeeded here on
+2026-08-23: **debug 155 MB, release 50.9 MB**. R8 runs on the release build and
+leaves a mapping file beside the apk. A debug apk three times the size of the
+release one is not a symptom of anything — expect it.
+
+**Test on a release build, not only a debug one.** Trap 4 below is invisible to
+`flutter run`.
+
+## The four traps, in the order they bite
 
 Each one is written symptom first, because that is the half you arrive
-holding.
+holding. The first three fail the build. **The fourth does not**, which is why
+it is last and why it is the worst of them.
 
 ### 1. The build dies with a negative exit value and names nothing
 
@@ -140,9 +150,59 @@ calls `evaluationDependsOn(":app")`, and that evaluates the projects. An
 not something a Gradle file usually is, and it is the reason the two blocks are
 not merged.
 
-Traps 2 and 3 are recorded as comments at their sites as well. That reaches
+### 4. A release build has no network, and it fails the build in no way at all
+
+**Symptom.** The release apk installs, launches and draws. Then every provider
+call fails, with nothing the app can tell apart from a dead network — no
+permission dialog, no error naming a permission, just a scan that cannot reach
+anything. **A debug build does not reproduce it.**
+
+That last sentence is the trap. `flutter run` and `flutter build apk --debug`
+both work perfectly, so the obvious way to test a change proves nothing about
+the build you would ship.
+
+**Cause.** Flutter declares `android.permission.INTERNET` in
+`app/android/app/src/debug/AndroidManifest.xml` and `src/profile/` only. The
+main manifest — the one a release build uses — is generated without it.
+
+**Fix.** Declare it in `app/android/app/src/main/AndroidManifest.xml`. It is
+already there in this tree, with the reason in a comment beside it.
+
+**Why this stays on the page even though it is fixed:** the fix lives in a
+platform folder, and a platform folder is the thing somebody regenerates. Run
+`flutter create` over `app/android/` one day and the empty manifest comes back,
+exactly as `com.example` comes back over the Windows runner — which is the
+defect T-0194 exists for.
+
+The same manifest carries `android:label`, which Flutter fills with the project
+name, `shelfscan_app`. It is now `shelfscan`, matching what `Runner.rc` and the
+Windows window title already say. A regenerated folder undoes that too, and
+unlike the permission it is visible: it is the name under the launcher icon.
+
+Traps 2, 3 and 4 are recorded as comments at their sites as well. That reaches
 somebody already editing those files; it does not reach somebody who has just
 run `flutter build apk` for the first time, which is why they are also here.
+Trap 1 has no site to live at, because the thing at fault is not in the tree.
+
+## The release build is signed with the debug key
+
+`app/android/app/build.gradle.kts` sets, under `buildTypes.release`:
+
+```kotlin
+signingConfig = signingConfigs.getByName("debug")
+```
+
+That is the Flutter template's line and it is still there, with the template's
+`TODO` above it. Two things follow, and they are worth stating because a reader
+who assumes the opposite will go and do unnecessary work:
+
+- **You do not need a keystore to build a release apk.** It builds, installs
+  and runs. Nothing on this page asks you to create one.
+- **The apk is not publishable as it stands.** Google Play will not accept an
+  artifact signed with the debug key, so a real signing config is a
+  prerequisite of a release rather than of a build.
+
+No signing procedure is written here, because none has been run here.
 
 ## What the Android CLI sends to Google
 

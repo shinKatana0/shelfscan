@@ -40,10 +40,12 @@ rediscovered:
 
 - **Windows** — two things `flutter doctor` does not check at all:
   [`README.md`](README.md), *Setup → The app*.
-- **Android** — the toolchain, and three failures that each name something
-  other than the missing step: [`doc/android-build.md`](doc/android-build.md).
-  **Android Studio is not required**; the command-line SDK is enough, and that
-  page is the shortest route from a bare Windows machine to an apk.
+- **Android** — the toolchain, and four failures: three that name something
+  other than the missing step, and one that does not fail the build at all and
+  is invisible to every debug build.
+  [`doc/android-build.md`](doc/android-build.md). **Android Studio is not
+  required**; the command-line SDK is enough, and that page is the shortest
+  route from a bare Windows machine to an apk.
 
 Neither is needed to run the suites, review a change, or work on
 `shelfscan_core`.
