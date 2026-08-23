@@ -55,6 +55,62 @@ Directory _repoRoot() {
   }
 }
 
+/// The `README.md` section the three assertions below are about. Named once,
+/// so the section a failure quotes and the heading it asserts on are provably
+/// the same one.
+const _readmeSection = 'Opening the CSV in a spreadsheet';
+
+/// Which half to suspect first when one of the three fails. The group above
+/// pins the behaviour this section describes, so its colour is the thing that
+/// separates a reworded page from a changed decision (T-0328).
+const _decisionOrDocument =
+    'If the group "the four characters are written through verbatim" above is '
+    'green, the exporter still writes all four leaders through untouched and '
+    'it is the page that moved: restore the sentence, or move this needle '
+    'with it. If that group is red too, the T-0185 decision itself has '
+    'changed, and this file and the README section then have to move together '
+    '-- which is what this file exists to force.';
+
+/// Fails unless the whitespace-flattened [readme] still carries [needle].
+///
+/// What these three assert is that a **published document** still says
+/// something, and a red has two causes that want opposite repairs: the page
+/// was reworded, or the behaviour it describes moved and the page followed.
+/// So the message forks twice -- on whether the section survives at all, and
+/// on [thenSuspect] (T-0328).
+///
+/// `fail` rather than `expect`, and the section rather than the document: the
+/// flatten leaves README on one enormous line, which a matcher prints whole
+/// as its `Actual`, from the top of the file and nowhere near this section
+/// (T-0321, T-0325).
+void _readmeStillSays(String readme, String needle,
+    {required String thenSuspect}) {
+  if (readme.contains(needle)) return;
+  final at = readme.indexOf(_readmeSection);
+  if (at < 0) {
+    final held = needle == _readmeSection
+        ? ''
+        : ' The phrase looked for, "$needle", lived inside it.';
+    fail('README.md: a scan of the whitespace-flattened document found no '
+        'section "$_readmeSection" at all, so it is gone or renamed.$held '
+        'Suspect the document rather than the exporter: spreadsheetNote in '
+        'bin/shelfscan.dart names that heading to the user verbatim, so an '
+        'export now points at a section README does not have.');
+  }
+  // To the next heading, and bounded anyway: a README that lost its next
+  // heading would otherwise hand back the whole document this exists to stop
+  // quoting.
+  final rest = readme.substring(at);
+  final end = RegExp(r' #+ ').firstMatch(rest)?.start ?? rest.length;
+  fail('README.md: a scan of the whitespace-flattened document found the '
+      'section "$_readmeSection" but not "$needle" anywhere in the document. '
+      'The section is still there and no longer says this. $thenSuspect '
+      'Whichever it is, the scan folds every run of whitespace to one space, '
+      'so the phrase may be wrapped across two lines in the file and a grep '
+      'of README.md as it stands can miss text that is still there. What the '
+      'section says now:\n  ${rest.substring(0, end > 4000 ? 4000 : end)}');
+}
+
 void main() {
   group('the four characters are written through verbatim', () {
     for (final lead in _formulaLeaders) {
@@ -160,15 +216,18 @@ void main() {
     });
 
     test('README tells the reader what a spreadsheet does with the cell', () {
-      expect(readme, contains('Opening the CSV in a spreadsheet'));
-      expect(
+      _readmeStillSays(readme, _readmeSection,
+          thenSuspect: _decisionOrDocument);
+      _readmeStillSays(
           readme,
-          contains('evaluate any cell whose text begins with `=`, `+`, `-` '
-              'or `@` as a formula'));
+          'evaluate any cell whose text begins with `=`, `+`, `-` '
+              'or `@` as a formula',
+          thenSuspect: _decisionOrDocument);
     });
 
     test('and says the names are written through unchanged', () {
-      expect(readme, contains('shelfscan writes your names through unchanged'));
+      _readmeStillSays(readme, 'shelfscan writes your names through unchanged',
+          thenSuspect: _decisionOrDocument);
     });
   });
 
