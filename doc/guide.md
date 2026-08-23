@@ -838,11 +838,13 @@ Two things keep that honest, and neither is automatic:
   instruction to *review every row* now means the kind as well as the title.
   Correcting it throws away whatever match the row was holding — a match found
   under the wrong kind is not evidence for the right one — and marks the row as
-  owed a fresh one. **Nothing performs that fresh lookup.** The review screen
-  says the row will be looked up again, and then nothing looks it up; running
-  `resolve` over the saved document re-runs every row, but it re-runs them
-  against IGDB, which is the wrong catalogue for a film. So a corrected film row
-  reaches your export carrying the title read off its filename and nothing else.
+  owed a fresh one. **Nothing performs that fresh lookup**, and since T-0311 the
+  review screen says so rather than promising one. The app has nowhere to send
+  it: its only resolver call fires on an item you have just typed, and it writes
+  no review document, so there is no file to point `resolve` at. `resolve` over
+  a document the CLI itself produced does re-run every row — against IGDB, which
+  is the wrong catalogue for a film. So a corrected film row reaches your export
+  carrying the title read off its filename and nothing else.
 
 **No run calls TMDB today.** Neither shell wires that client up, and no TMDB
 credential has ever been used here, so whether TMDB answers real release names
