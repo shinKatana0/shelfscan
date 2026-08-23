@@ -37,13 +37,17 @@ void main() {
   test('every request states temperature and seed', () async {
     final body = await _sentBy((client) => OllamaVisionProvider(client: client));
 
-    expect(body['options'], {'temperature': 0, 'seed': 20260814});
+    expect(body['options'],
+        {'temperature': 0, 'seed': 20260814, 'num_predict': 8192});
   });
 
   test('both are overridable, so a run can deliberately sample', () async {
     final body = await _sentBy((client) =>
         OllamaVisionProvider(client: client, temperature: 0.8, seed: 3));
 
-    expect(body['options'], {'temperature': 0.8, 'seed': 3});
+    // `num_predict` rides along and is not overridable; ollama_generation_cap_test
+    // is where that is argued.
+    expect(body['options'],
+        {'temperature': 0.8, 'seed': 3, 'num_predict': 8192});
   });
 }

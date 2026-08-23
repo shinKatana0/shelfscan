@@ -28,6 +28,41 @@ const defaultOllamaModel = 'qwen2.5vl:7b';
 /// Any fixed value would do; this one is the date it was chosen (T-0053).
 const _defaultSeed = 20260814;
 
+/// The generation cap this request carries, and why it is neither the context
+/// window nor the cheapest number that stops the loop (T-0281).
+///
+/// Without one, this model past its density ceiling repeats itself under
+/// greedy decoding and generates until the context window is full: 27836
+/// tokens after a 4932-token prefill, `4932 + 27836 = 32768` exactly, about
+/// five minutes, and what comes back is not JSON. `temperature` 0 is why
+/// nothing escapes -- greedy decoding has no draw to break a repetition fixed
+/// point with. The ladder behind both bounds below is doc/measurements.md,
+/// "The 7B's density ceiling"; every frame in it is synthetic.
+///
+/// Bounded from below by an honest answer and from above by [timeout], and
+/// the context window is not either bound:
+///
+///   floor    output is linear at ~48 tokens a row and the densest frame that
+///            answers honestly generates 5504 of them (120 spines, 114 items,
+///            108 titles correct). A cap under that turns a frame that would
+///            have answered into [visionTruncatedFailure]. 4096 is measured,
+///            stops the loop in 46 s, and is rejected for exactly this.
+///   ceiling  the cap only helps if the generation REACHES it inside
+///            [visionCallTimeout]; past that the loop is aborted as a stall
+///            and the user is told the server went quiet, which is the wrong
+///            sentence and carries no advice. Uncontended throughput is
+///            ~92-105 generated tokens/s end to end (T-0278, 17 passes), so
+///            120 s buys roughly 11000 tokens: 12288 lands on the bound and
+///            16384 sits past it.
+///
+/// 8192 is 1.5x the honest maximum and about 80 s of generation, measured at
+/// 8192 tokens exactly and `done_reason: length` on a synthetic 176-spine
+/// frame that runs to 32768 without it. That it equals `_maxOutputTokens` in
+/// openai_compatible_vision.dart is two arguments arriving at one number
+/// rather than a shared constant -- that one clears a reasoning model's tail,
+/// this one clears a dense shelf -- so neither moves the other.
+const _numPredict = 8192;
+
 /// Named because two of the messages below quote the route the 404 came from,
 /// which is the whole evidence that a 404 is about the address and not the
 /// model.
@@ -144,7 +179,11 @@ class OllamaVisionProvider implements VisionProvider {
             'model': model,
             'stream': false,
             'format': 'json',
-            'options': {'temperature': temperature, 'seed': seed},
+            'options': {
+              'temperature': temperature,
+              'seed': seed,
+              'num_predict': _numPredict,
+            },
             'messages': [
               {
                 'role': 'user',
@@ -178,17 +217,15 @@ class OllamaVisionProvider implements VisionProvider {
     final answer = jsonDecode(response.body) as Map<String, dynamic>;
     final content =
         (answer['message'] as Map<String, dynamic>?)?['content'] as String?;
-    // This request sends no `num_predict`, so the ceiling behind a `length` is
-    // the server's own (context window or its default) rather than anything
-    // this repository chose -- hence a null cap, which is what keeps the
-    // message from quoting a number (T-0111). Unmeasured: no local run here has
-    // reached it, and an Ollama old enough to omit `done_reason` simply falls
-    // through to the parse, which is today's behaviour.
+    // Reached routinely, not hypothetically: past the density ceiling this
+    // model runs to [_numPredict] every time (T-0281), which is why the cap is
+    // named here rather than passed as null. An Ollama old enough to omit
+    // `done_reason` still falls through to the parse.
     if (answer['done_reason'] == 'length') {
       throw visionTruncatedFailure(
         service: 'Ollama at $baseUrl',
         model: model,
-        cap: null,
+        cap: _numPredict,
         answer: content ?? '',
         body: response.body,
         hasKey: false,

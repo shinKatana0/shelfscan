@@ -160,15 +160,17 @@ void main() {
       expect(message, contains('wrote no answer at all'));
     });
 
-    test('ollama: done_reason length, and no number to quote', () async {
+    test('ollama: done_reason length names the cap the request sent', () async {
       final message =
           await _messageOf(_analyzeOllama(_ollama(_halfJson, done: 'length')));
 
-      // This request sends no cap, so the ceiling is the server's own: naming a
-      // number here would name one this repository never sent.
+      // Until T-0281 this request carried no cap and the sentence said so. It
+      // carries one now, so the number is this build's and quoting it is the
+      // same rule the cloud pair follows -- name what was sent, never invent a
+      // ceiling.
       expect(message, contains('Ollama at http://localhost:11434'));
-      expect(message, contains("endpoint's own"));
-      expect(message, isNot(contains('token output cap')));
+      expect(message, contains('8192-token output cap'));
+      expect(message, isNot(contains("endpoint's own")));
       // A keyless server has no key to clear anyone of suspecting (T-0097).
       expect(message.toLowerCase(), isNot(contains('the key')));
     });

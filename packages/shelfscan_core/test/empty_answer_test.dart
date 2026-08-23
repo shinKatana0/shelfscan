@@ -272,7 +272,7 @@ void main() {
       final message = await _messageOf(_analyzeOllama(_ollama('', done:
           'length')));
 
-      expect(message, contains("endpoint's own"));
+      expect(message, contains('8192-token output cap'));
       expect(message, contains('wrote no answer at all'));
     });
   });

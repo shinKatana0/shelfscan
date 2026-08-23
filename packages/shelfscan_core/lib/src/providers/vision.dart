@@ -1148,13 +1148,14 @@ Exception visionTruncatedFailure({
 ///
 /// **The advice is what the user can reach, which is one action of the two.**
 /// Fewer spines per photo is theirs. The cap is not: it is a constant in this
-/// build (`_maxOutputTokens` in openai_compatible_vision.dart,
-/// [_anthropicMaxOutputTokens] here), and neither the app nor the CLI exposes
-/// a control for it, so recommending it would be T-0072 again in a new
-/// costume. A null [cap] is the case where this request carried none -- an
-/// endpoint that refused both names for it (T-0120/T-0139), and Ollama, which
-/// is asked for no cap at all -- and there the ceiling is the endpoint's own,
-/// so the sentence must not claim a number this repository sent.
+/// build (`_maxOutputTokens` in openai_compatible_vision.dart, `_numPredict`
+/// in ollama_vision.dart, [_anthropicMaxOutputTokens] here), and neither the
+/// app nor the CLI exposes a control for any of the three, so recommending it
+/// would be T-0072 again in a new costume. A null [cap] is the case where this
+/// request carried none -- an endpoint that refused both names for it
+/// (T-0120/T-0139) -- and there the ceiling is the endpoint's own, so the
+/// sentence must not claim a number this repository sent. Ollama was that case
+/// until T-0281 measured what its absent cap cost and sent one.
 String visionTruncatedMessage({
   required String service,
   required String model,
