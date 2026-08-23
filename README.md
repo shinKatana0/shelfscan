@@ -137,6 +137,7 @@ worth reading before you pick a cloud endpoint.
 | | |
 |---|---|
 | [doc/guide.md](doc/guide.md) | one complete run, from nothing to an imported collection — starting with how to photograph the shelf |
+| [doc/android-build.md](doc/android-build.md) | building the Android apk on Windows: the toolchain, and four failures, three of which name something other than the missing step |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the pipeline, the platform boundary, where a new source plugs in |
 | [doc/decisions/](doc/decisions/) | the non-obvious decisions, each with the measurement that settled it |
 | [doc/measurements.md](doc/measurements.md) | the measurements behind the decisions — including what was measured and then *not* built. Not every number: a prompt figure usually lives in the doc comment beside the rule it settled |
@@ -945,11 +946,56 @@ commit the English moved to. Marking is the cheap option and it is the right
 one when you do not read the language — nobody is asked to fake a translation,
 only to stop the file claiming a currency it lost.
 
+**Marking is not enough when the edit *removed* something.** The marker is an
+HTML comment, so on GitHub the deleted thing renders and the warning about it
+does not. A translation behind by an **addition** costs its reader a paragraph
+they cannot see; one behind by a **removal** leaves them holding the thing
+English deleted, with no signal at all. That is not hypothetical: both
+translated READMEs went on giving a `flutter create` command as the setup step
+— the one that overwrites the committed platform folders and drops the
+`INTERNET` permission a release build has no other way to get — correctly
+marked `STALE` the whole time, and on the rendered page the mark was invisible
+and the command was not.
+
+So the cheap option carries a rider, and it is narrow enough to follow without
+thinking about it:
+
+**If your English edit deleted or replaced a command, a fenced code block, a
+flag, a path or a file name, make the same deletion or replacement in all four
+translated files, in the same commit — then mark them `STALE` as usual.**
+
+That needs no knowledge of the target language, because what it applies to is
+exactly what is never translated (the paragraph below): the text you removed is
+byte-identical in every file that still carries it, so one command finds every
+copy.
+
+```
+grep -n "the line you just deleted" README.ru.md README.ja.md doc/guide.ru.md doc/guide.ja.md
+```
+
+Delete what it names, or paste the English's replacement over it. The
+translation is then behind by an **addition** again, which is the case the
+marker already handles.
+
+**The hole gets no note.** A line saying "this step was removed, read the
+English" has to be written in Russian and in Japanese, and a rule whose last
+step needs a translator fails in exactly the situation this whole convention
+exists for. A reader who meets prose describing a step that is no longer under
+it goes to `README.md`, which the top of their file links. Confusion is the
+price, and it is the cheaper of the two failures.
+
+**And one case this does not reach**, named rather than papered over: a removal
+that lived only in translated prose, with no untranslated string to grep for.
+There `STALE` stays the whole obligation — you cannot find the paragraph
+without the language, and cutting by guess cuts the wrong thing. Say in the
+commit message what was removed, so whoever next reads that language knows what
+to look for.
+
 Two things are deliberately not translated: **code blocks and program output**,
 which are quoted from the running tool and would stop matching what a reader
-sees, and the **engineering records** — `ARCHITECTURE.md`, `doc/decisions/` and
-`doc/measurements.md`. Those are English only, along with code comments and
-commit messages.
+sees, and the **engineering records** — `ARCHITECTURE.md`, `doc/decisions/`,
+`doc/measurements.md` and the build diagnoses in `doc/android-build.md`. Those
+are English only, along with code comments and commit messages.
 
 **A CI check was considered and not built.** It is buildable — the workflow
 already runs on every push — but the only check worth having is "the English
