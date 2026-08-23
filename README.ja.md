@@ -349,7 +349,7 @@ Exported 0 of 18 approved game(s) -> shelf.xcoll
 ```
 
 CSV にはその要件がない。ビジョンモデルが読んだタイトルとプラットフォームを、
-`igdb_id` 列を空にしたまま保持する。
+`external_id` 列を空にしたまま保持する。
 
 <a id="path-b--bring-your-own-keys"></a>
 
@@ -748,8 +748,13 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
 ### CSV の列
 
 ```
-title,platform,media_type,igdb_id,source_photo
+title,platform,media_type,external_id,source_photo
 ```
+
+`external_id` は、その行を解決したカタログでの呼び名であり、`catalogue:id` の形を
+とる——`igdb:1234`。接頭辞がどのカタログの答えかを示すので、読み手は最初の `:` で
+分割すればよく、カタログを決め打ちしなくてよい。何も解決しなかった行では空になる。
+鍵なしの実行では全行がそれにあたる。
 
 `source_photo` は、そのタイトルが読み取られた*元の*写真であり、どの写真からも
 読まれていない場合——確認時に入力した行や、インストール済みゲームから取った行
@@ -759,7 +764,7 @@ title,platform,media_type,igdb_id,source_photo
 フォルダ）は、行の出所を述べられるように、さらに三列を足す:
 
 ```
-title,platform,media_type,igdb_id,source_photo,source_entry,origin,source_id
+title,platform,media_type,external_id,source_photo,source_entry,origin,source_id
 ```
 
 | 列 | 意味 |
