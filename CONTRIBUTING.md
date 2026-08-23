@@ -46,6 +46,11 @@ that is `editor.formatOnSave` under `[dart]`, in IntelliJ and Android Studio
 the "Reformat code" save action. It is the setting that runs the command for
 you without asking, and it is the likeliest way this happens to somebody.
 
+In VS Code this workspace already sets that key for you, in
+`.vscode/settings.json`, for Dart and for this folder only. Take it as one
+fewer thing to remember rather than as a guarantee: no other editor reads that
+file, and the sentence above is still the rule.
+
 That belongs beside the four commands above rather than in passing, because
 none of them will tell you it happened. `dart analyze` and `flutter analyze` do
 not judge formatting, `tool/check-suites.sh` runs the two suites and no format

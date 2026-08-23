@@ -18,6 +18,14 @@ pubspec.lock
 # convention commits it; see doc/reports/T-0194.md before changing that.
 app/.metadata
 
+# Editor state is not committed here, with one deliberate exception: the Dart
+# formatting keys in .vscode/settings.json, which are project-scoped tool
+# behaviour rather than anybody preferences (T-0323). Everything else VS Code
+# writes into that folder -- launch configurations, extension lists, workspace
+# state -- stays out, so the exception cannot widen by accident.
+.vscode/*
+!.vscode/settings.json
+
 # Kotlin Gradle session state, written inside the committed android/ folder by
 # a release build rather than under build/, so the rule above does not reach it.
 app/android/.kotlin/

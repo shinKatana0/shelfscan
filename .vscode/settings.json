@@ -1,0 +1,7 @@
+{
+  "//": "Project-scoped tool behaviour, not anybody's preferences. This tree is hand-wrapped and no formatter reproduces it; see CONTRIBUTING.md, 'Formatting'. Turning this off here keeps a save from rewriting files your change never touched. It applies to Dart in this workspace only -- your own settings, your other languages and your other projects are untouched. It is a convenience, not a guard: other editors do not read this file.",
+  "[dart]": {
+    "editor.formatOnSave": false,
+    "editor.formatOnType": false
+  }
+}
