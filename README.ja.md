@@ -1,12 +1,5 @@
-<!-- STALE. This translation stands at f291393 (2026-08-23); the English
-     README.md has moved on past 7a15993 and this file has not followed.
-     Two claims below are now wrong and one of them is dangerous: "What it
-     cannot do" and "Setup -> The app" still say Android has never been built
-     and that the platform folders are generated rather than committed, and
-     they still give `flutter create --platforms=windows,android .` as the
-     setup step. That command regenerates committed, hand-edited folders and
-     destroys the release identity. Follow README.md, not this file.
-     The rule, and how to check: README.md, "Translations". -->
+<!-- Translated from 7a15993 (2026-08-23). The rule, and how to check
+     whether this is still true: README.md, "Translations". -->
 
 [English](README.md) · [Русский](README.ru.md) · **日本語**
 
@@ -35,9 +28,9 @@
 
 正直なほうの半分を先に置く。ここの各行は実測であり、リンク先にその数値がある。
 
-- **現時点では Windows のみ。** アプリをビルドして動かしたのは Windows だけで、
-  Android は一度もビルドも実行もしていない。対応済みではなく未検証として扱う
-  こと。構造上 Windows 限定のものが二つある。スマートフォンの HEIC 写真の変換は Windows
+- **二つのうち Android のほうが手薄である。** Windows も Android もこのリポジトリ
+  からビルドして動かしているが、構造上 Windows 限定のものが二つある。
+  スマートフォンの HEIC 写真の変換は Windows
   Imaging Component を使い、GOG Galaxy ライブラリは Galaxy 自身のデータベース
   から読むが、Galaxy は Windows 用プログラムである。インストーラも配布バイナリ
   もなく、ソースからビルドする（[セットアップ](#setup)）。
@@ -411,33 +404,50 @@ export IGDB_CLIENT_SECRET=...
 
 ### アプリ
 
-**ビルドして動かしたターゲットは Windows だけである。** 以下のコマンドの Android
-側も書いてあり、プロバイダの方針も入っているが、一度もビルドも実行もされていな
-い。対応済みではなく未検証として扱うこと。
+どちらのターゲットもこのリポジトリからビルドして動かしている。ただし
+`flutter doctor` が緑でもどちらも通らない。それぞれに足りない前提は、後から
+調べ直さずに済むよう書き出してある。**Windows** はすぐ下、**Android** は
+[`doc/android-build.md`](doc/android-build.md)（英語）に、ツールチェーンと四つの
+つまずき — うち三つは足りない手順とは別のものを名指しし、一つはビルドを落とし
+さえしない — がある。どちらにも Android Studio は要らない。
 
-プラットフォーム用フォルダは生成物であり、リポジトリには入っていない:
+**プラットフォーム用フォルダはリポジトリに入っている。** `flutter create` が
+`app/windows/` と `app/android/` を一度だけ生成した。それ以降は手で編集してきた
+ソースであり、リリース版の識別情報 — `Runner.rc`、`AndroidManifest.xml`、
+`applicationId`、アイコン — を持ち、ほかのファイルと同じようにレビューされる。
+その中で本当に生成されるものは、`flutter create` がそのフォルダに書く
+`.gitignore` が除外しているし、ビルド生成物はそもそも別のパスにある。
+[`.gitignore`](.gitignore) のその項目のコメントが、同じことをもっと詳しく書いて
+いる。
+
+だからクローンした時点ですでにあり、セットアップはこれだけである:
 
 ```
 cd app
-flutter create --platforms=windows,android .
-rm test/widget_test.dart README.md
 flutter pub get
 flutter run -d windows   # or: flutter run -d <android-device>
 ```
 
-`flutter create` はプラットフォーム用フォルダと一緒に、既定のカウンタ
-テンプレートから、このプロジェクトの一部ではないファイルを二つ書く。三行目の
-削除はそのためであり、片づけではなく手順の一部である。`test/widget_test.dart`
-はここに存在しない `MyApp` を起動するので（このアプリは `ShelfscanApp`）、
-残しておくと `flutter test` は誰も書いていないファイルで落ちる:
+**この作業ツリーの上で `flutter create` を走らせないこと。** それらのフォルダを
+作り直し、上に挙げた識別情報の代わりに `com.example` を返してくる。Android では
+さらに、リリースビルドがほかに得る手段のない `INTERNET` 権限を落とす — どの
+ビルドも失敗せず、デバッグビルドでも再現しない喪失である。すでに走らせて
+しまったなら、`git status` が触れたファイルをすべて挙げるので、それらに
+`git checkout --` をかければ元に戻る。
+
+`flutter create` はさらに、既定のカウンタテンプレートから、このプロジェクトの
+一部ではなく、ここでは追跡もされていないファイルを二つ書く。`app/README.md` と
+`app/test/widget_test.dart` である。どちらも削除すること。テストはここに存在
+しない `MyApp` を起動するので（このアプリは `ShelfscanApp`）、残しておくと
+`flutter test` は誰も書いていないファイルで落ちる:
 
 ```
 test/widget_test.dart:16:35: Error: Couldn't find constructor 'MyApp'.
 ```
 
-どちらのファイルも意図的に `.gitignore` に入れていない。後で `flutter create`
-を走らせれば戻ってくるし、`git status` がそれらを挙げることが唯一の警告だから
-である。
+どちらも意図的に `.gitignore` に入れていない。追跡されず無視もされていないから
+こそ `git status` がそれらを挙げるのであり、それがコマンドを走らせてしまった
+ことに対する唯一の警告だからである。
 
 #### Windows: `flutter doctor` が教えてくれない二つの前提
 
