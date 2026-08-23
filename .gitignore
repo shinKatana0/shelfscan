@@ -18,6 +18,10 @@ pubspec.lock
 # convention commits it; see doc/reports/T-0194.md before changing that.
 app/.metadata
 
+# Kotlin Gradle session state, written inside the committed android/ folder by
+# a release build rather than under build/, so the rule above does not reach it.
+app/android/.kotlin/
+
 # Local working files
 collection.review.json
 *.xcoll
