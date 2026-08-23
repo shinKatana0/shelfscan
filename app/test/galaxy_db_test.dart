@@ -20,6 +20,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/galaxy_db.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
+/// The CLI copy, named as a reader would type it from the repository root.
+/// [_cliReader] reaches it from `app/`, which is where this suite runs.
+const _cliPath = 'packages/shelfscan_core/bin/galaxy_db.dart';
+
 /// The CLI's copy, as text. Both shells live in one repository and the app's
 /// tests already reach out of `app/` for `data/title_aliases.json`.
 ///
@@ -28,9 +32,7 @@ import 'package:shelfscan_core/shelfscan_core.dart';
 /// compared against it are LF. Without the fold the guard fails on a clean
 /// checkout and reports drift that is not there (merge, 2026-08-16).
 String _cliReader() =>
-    File('../packages/shelfscan_core/bin/galaxy_db.dart')
-        .readAsStringSync()
-        .replaceAll('\r\n', '\n');
+    File('../$_cliPath').readAsStringSync().replaceAll('\r\n', '\n');
 
 /// The app's own copy, as text. Read rather than imported: what is guarded
 /// below is a private function that runs once per process, against whichever
@@ -48,22 +50,98 @@ String _flattenedAround(String flattened, String needle) {
   return '...${flattened.substring(from, to)}...';
 }
 
+/// The CLI's `const [name] = ...;`, so the three guards below quote the one
+/// declaration they are about instead of answering with the whole file
+/// (T-0325).
+///
+/// None of the three holds a `;` of its own, so the first one after the name
+/// closes it. One that grew a statement would come back cut short -- which
+/// the quoted region shows, rather than hiding behind a bare "not found".
+String _cliDeclaration(String name) {
+  final cli = _cliReader();
+  final at = cli.indexOf('const $name =');
+  if (at < 0) {
+    fail('$_cliPath: a source scan for `const $name =` found nothing. The '
+        'CLI copy no longer declares it under that name, so the two shells '
+        'cannot be compared on it at all.');
+  }
+  final end = cli.indexOf(';', at);
+  return cli.substring(at, end < 0 ? cli.length : end + 1);
+}
+
+/// What a `'''...'''` declaration holds between its quotes.
+String _tripleQuoted(String declaration, String name) {
+  final open = declaration.indexOf("'''");
+  final close = declaration.lastIndexOf("'''");
+  if (open < 0 || close <= open) {
+    fail('$_cliPath: `const $name` is no longer a triple-quoted string, so '
+        'there is nothing to compare the app copy against. What is '
+        'declared:\n  $declaration');
+  }
+  return declaration.substring(open + 3, close);
+}
+
+/// [sql] as SQLite reads it: runs of whitespace folded to one space, ends
+/// trimmed. Line breaks and indentation are how a file wraps a query, not
+/// part of it.
+String _asQuery(String sql) => sql.replaceAll(RegExp(r'\s+'), ' ').trim();
+
 void main() {
   group('the two shells have not drifted', () {
-    test('the CLI copy declares the identical SQL', () {
+    test('the CLI copy runs the identical query', () {
       // A query that differs between the shells is a library that differs
       // between them, and nothing else in the build would say so.
-      final cli = _cliReader();
-      expect(cli, contains(galaxyLibrarySql.trim()));
+      //
+      // Compared as SQL and not as text (T-0325). Byte-identity is what a
+      // `contains()` of the whole ten-line string happened to do, not a
+      // guarantee anything in the tree argues for, and it turns a re-indent
+      // into a red test -- the query carries a 94-column JOIN, and wrapping
+      // such a line by hand is what this project prescribes. What that gives
+      // up: two copies may now differ in layout, visibly to anyone diffing
+      // them, and this test will still call them the same query. Folding runs
+      // of whitespace folds it inside a SQL string literal too; the only
+      // literal here is `'title'` and it holds none.
+      final cliSql = _tripleQuoted(
+          _cliDeclaration('galaxyLibrarySql'), 'galaxyLibrarySql');
+      if (_asQuery(cliSql) != _asQuery(galaxyLibrarySql)) {
+        fail('$_cliPath: a source scan of the galaxyLibrarySql declaration '
+            'found a query that is not the one app/lib declares. Runs of '
+            'whitespace were folded on both sides first, so this is a '
+            'difference in the SQL itself and not in how either file wraps '
+            'it -- a column, a join or a condition has moved in one shell '
+            'and not the other. What the CLI declares:\n  '
+            '${_asQuery(cliSql)}\nWhat app/lib declares:\n  '
+            '${_asQuery(galaxyLibrarySql)}');
+      }
     });
 
     test('the CLI copy is written against the same schema version', () {
-      expect(_cliReader(),
-          contains('const galaxySchemaVersion = $galaxySchemaVersion;'));
+      // Two readers on different values refuse different databases: one shell
+      // names a moved schema and the other reads it anyway.
+      final declaration = _cliDeclaration('galaxySchemaVersion');
+      final declared =
+          RegExp(r'=\s*(\d+)\s*;').firstMatch(declaration)?.group(1);
+      if (declared != '$galaxySchemaVersion') {
+        fail('$_cliPath: a source scan of the galaxySchemaVersion '
+            'declaration read ${declared ?? 'no integer at all'} where '
+            'app/lib declares $galaxySchemaVersion. The two shells then '
+            'disagree about which databases have a moved schema, and only '
+            'one of them says so. The declaration:\n  $declaration');
+      }
     });
 
     test('both shells point at the same default path', () {
-      expect(_cliReader(), contains(galaxyDatabasePath));
+      // A default that differs is one shell reading a database the other
+      // does not, on the same machine and with nothing on screen to say so.
+      final declaration = _cliDeclaration('galaxyDatabasePath');
+      if (!declaration.contains(galaxyDatabasePath)) {
+        fail('$_cliPath: a source scan of the galaxyDatabasePath declaration '
+            "did not find app/lib's value inside it. What was looked for is "
+            'that value as a literal substring, so a CLI copy spelling the '
+            'same path with escapes instead of as a raw string fails here '
+            'too; the declaration says which of the two this is:\n  '
+            '$declaration');
+      }
     });
 
     test('both shells initialise the engine, and call what they look up', () {
@@ -75,7 +153,7 @@ void main() {
       const symbol = 'sqlite3_initialize';
       final shells = {
         'app/lib/galaxy_db.dart': _appReader(),
-        'packages/shelfscan_core/bin/galaxy_db.dart': _cliReader(),
+        _cliPath: _cliReader(),
       };
       for (final shell in shells.entries) {
         // Whitespace flattened: the two files wrap this differently, and a
