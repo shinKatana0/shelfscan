@@ -52,6 +52,7 @@ import '../bin/shelfscan.dart'
         openAiProviderFor,
         readPhotoDirectory,
         skipReport,
+        tmdbTokenFrom,
         windowsHeicToJpeg;
 
 final _signatures = <String, List<int>>{
@@ -143,9 +144,22 @@ String _binSource() =>
     File('${_repoRoot().path}/packages/shelfscan_core/bin/shelfscan.dart')
         .readAsStringSync();
 
-/// Variables the CLI looks up, read off its source in the two shapes it uses:
-/// an [envValue] call naming the variable, and a `const` holding the name for
-/// a call elsewhere.
+/// Names `bin/` reads through an imported constant instead of a literal, by
+/// the identifier it uses (T-0308).
+///
+/// `SHELFSCAN_TMDB_TOKEN` is declared beside the client that needs it, in
+/// `providers/tmdb.dart`, so `bin/` never spells the string -- which is
+/// exactly what the first two shapes below cannot see. Only the identifier is
+/// written here; the value comes from the constant, so the table cannot drift
+/// from what the CLI reads.
+const _namedByConstant = <String, String>{
+  'tmdbTokenVariable': tmdbTokenVariable,
+};
+
+/// Variables the CLI looks up, read off its source in the three shapes it
+/// uses: an [envValue] call naming the variable, a `const` holding the name
+/// for a call elsewhere, and an [envValue] call naming one of
+/// [_namedByConstant].
 Set<String> _environmentNamesIn(String source) => {
       ...RegExp(r"envValue\(\s*\w+\s*,\s*'([A-Z][A-Z0-9_]*)'\s*\)")
           .allMatches(source)
@@ -153,6 +167,13 @@ Set<String> _environmentNamesIn(String source) => {
       ...RegExp(r"=\s*'([A-Z][A-Z0-9_]{3,})'\s*;")
           .allMatches(source)
           .map((match) => match.group(1)!),
+      for (final entry in _namedByConstant.entries)
+        // Raw fragments either side of the identifier: a non-raw literal eats
+        // every backslash here and leaves a pattern that matches nothing and
+        // says nothing about it.
+        if (RegExp(r'envValue\(\s*\w+\s*,\s*' + entry.key + r'\s*\)')
+            .hasMatch(source))
+          entry.value,
     };
 
 /// Every name `.env.example` lists, commented-out entries included: the file
@@ -225,6 +246,7 @@ const _configured = {
   'SHELFSCAN_OPENAI_API_KEY': 'gsk-not-a-key',
   'IGDB_CLIENT_ID': 'twitch-id',
   'IGDB_CLIENT_SECRET': 'twitch-secret',
+  tmdbTokenVariable: 'tmdb-not-a-token',
 };
 
 /// Everything about what [build] made that a variable could have moved, as one
@@ -273,6 +295,7 @@ final _probes = <String, String Function(Map<String, String> env)>{
     name: (env) => _built(() => openAiProviderFor(env)),
   for (final name in const ['IGDB_CLIENT_ID', 'IGDB_CLIENT_SECRET'])
     name: (env) => _built(() => igdbCredentialsFrom(env)),
+  tmdbTokenVariable: (env) => _built(() => tmdbTokenFrom(env)),
 };
 
 void main() {

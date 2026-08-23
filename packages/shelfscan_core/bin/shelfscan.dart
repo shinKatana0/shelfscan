@@ -1722,11 +1722,61 @@ Map<String, String> loadTitleAliases(
   return id == null || secret == null ? null : (id: id, secret: secret);
 }
 
+/// The TMDB API Read Access Token, or null when [env] carries none.
+///
+/// Pure for the reason [igdbCredentialsFrom] is, and it spells no name: the
+/// string lives on [tmdbTokenVariable] beside the client that needs it, so
+/// there is one definition of it rather than one per shell.
+String? tmdbTokenFrom(Map<String, String> env) =>
+    envValue(env, tmdbTokenVariable);
+
+/// Stage 3 as a map from the kind of a row to the catalogue that answers it.
+///
+/// **What a kind with no catalogue gets, and it is the owner's decision rather
+/// than a fallback chosen here (T-0308): a keyless run.** A film row in a run
+/// holding IGDB credentials and no TMDB token comes back exactly as a game row
+/// does with no IGDB credentials -- the title read off the filename, CSV yes,
+/// `.xcoll` no. That is the answer that teaches nobody a new rule, since
+/// keyless already means this here.
+///
+/// So [WorkKind.game] is registered rather than left to the fallback, and the
+/// fallback is [SkipResolver]. The other arrangement -- IGDB as the fallback --
+/// is what this replaces, and it is the failure `CatalogueRouter`'s required
+/// fallback exists to make visible: one resolver for every row searches a film
+/// in the games catalogue.
+///
+/// **The TMDB branch has never been run.** No token exists on the machine this
+/// was written on, and none existed when T-0162 wrote the client, so it is
+/// tested against a fake `http.Client` and nothing else. Registering it routes
+/// a film to a catalogue nobody here has called; it does not make films
+/// resolve.
+ResolverWorker resolverFor(
+  Map<String, String> env, {
+  Map<String, String>? aliases,
+}) {
+  final credentials = igdbCredentialsFrom(env);
+  final token = tmdbTokenFrom(env);
+  final catalogues = <WorkKind, Worker<Detection, ResolvedGame>>{
+    if (credentials != null)
+      WorkKind.game: ResolverWorker(
+        IgdbClient(clientId: credentials.id, clientSecret: credentials.secret),
+        aliases: aliases,
+      ),
+    if (token != null)
+      WorkKind.movie: TmdbResolverWorker(TmdbClient(token: token)),
+  };
+  // Shared with the Flutter app, which takes the same branch when the user has
+  // entered no IGDB credentials in Settings.
+  if (catalogues.isEmpty) return SkipResolver();
+  return CatalogueRouter(catalogues: catalogues, fallback: SkipResolver());
+}
+
 /// [required] marks a command that is pointless without IGDB (`resolve`):
 /// there the missing credentials are a hard error, while `scan` degrades to
 /// unresolved entries the human fixes at review.
 ResolverWorker _makeResolver(List<String> args, {bool required = false}) {
-  final credentials = igdbCredentialsFrom(Platform.environment);
+  final env = Platform.environment;
+  final credentials = igdbCredentialsFrom(env);
   if (credentials == null) {
     if (required) {
       stderr.writeln('The "resolve" command needs IGDB credentials: set '
@@ -1737,17 +1787,22 @@ ResolverWorker _makeResolver(List<String> args, {bool required = false}) {
     }
     stdout.writeln('IGDB credentials not set -- resolve stage will be '
         'skipped, games stay unresolved (fine for vision validation).');
-    // Shared with the Flutter app, which takes the same branch when the
-    // user has entered no IGDB credentials in Settings.
-    return SkipResolver();
+    return resolverFor(env);
   }
-  final aliases = loadTitleAliases(
-    _option(args, '--aliases'),
-    onWarning: (message) => stderr.writeln('WARN: $message'),
-  );
-  return ResolverWorker(
-    IgdbClient(clientId: credentials.id, clientSecret: credentials.secret),
-    aliases: aliases,
+  // Said only on the run that can be surprised by it. With no IGDB
+  // credentials the line above already says every row stays unresolved, and
+  // repeating it per catalogue would be noise; with them, games are looked up
+  // and films are not, which is the difference a person has to be told about.
+  if (tmdbTokenFrom(env) == null) {
+    stdout.writeln('No $tmdbTokenVariable -- film rows are keyless: the title '
+        'read off the filename, CSV yes, .xcoll no. Games are unaffected.');
+  }
+  return resolverFor(
+    env,
+    aliases: loadTitleAliases(
+      _option(args, '--aliases'),
+      onWarning: (message) => stderr.writeln('WARN: $message'),
+    ),
   );
 }
 
