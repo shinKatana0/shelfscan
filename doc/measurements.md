@@ -28,10 +28,33 @@ splitting the photos, a prompt wording, a scoring threshold — or when you are
 about to quote a number. The reason these records are kept is that the
 alternative is paying twice for the same finding.
 
-## The two control sets
+## What the figures are measured on
 
-Every figure below is quoted against one of two named sets of private
-shelf photographs:
+**This archive is ordered by finding, not by subject** — one section per
+finding, headed by the task that made it, in the order they were written,
+which is what the "above", "below" and "next section" inside the sections
+point at. So the subject is a property of each section rather than of the
+archive, and each section states its own. Four kinds appear below and only the
+first is a photograph:
+
+- **the two named control sets** of private shelf photographs, defined
+  immediately below, which the earlier sections are mostly quoted against;
+- **synthetic shelf frames** generated for a task, with invented titles and
+  invented platform bands — the density ladder (T-0278) and the generation cap
+  (T-0281) are measured on nothing else, and each says so at its head;
+- **no imagery at all** — probes replayed off the shared control capture or off
+  recorded provider answers (T-0113, T-0147, T-0165), and IGDB's own public
+  catalogue listing (T-0159);
+- **private folders on a disk** (the disk sources), which photograph nothing
+  and are held to the same publication rule as the photographs.
+
+**The four are not a partition, and that is why they are not the organising
+principle**: a section can stand on two at once — T-0165 replays live IGDB
+answers against detections that came off the control capture, and the resolver
+section pairs control photographs with live IGDB. **Read the section's own rig
+line; do not assume the control sets.**
+
+**The two control sets**, which the first kind above names:
 
 - **`CONTROL-HIRES`** — three 4000×3000 photographs, HEIC
   originals converted to JPEG once by WIC (T-0031).
@@ -43,8 +66,8 @@ titles on the shelves stay in the working record beside them; this archive
 identifies each set by what it is, and each photograph by a stable label —
 `shelf-1.jpg` … `shelf-3.jpg` at 4000×3000, `lowres-1.jpg` and `lowres-2.jpg`
 at 1200×900 — so that a figure stays attached to the file it was measured on
-without the file naming itself. Every figure below was measured on those
-photographs and is quoted with the method that produced it; where a passage
+without the file naming itself. Every figure that was measured on those
+photographs is quoted with the method that produced it; where a passage
 used to show its working by listing the titles it read, the list is gone and a
 sentence saying what was measured stands in its place. **No figure here has
 been restated over invented data.**
@@ -133,8 +156,7 @@ Where a section below says "this file" it means this archive — with one
 exception: T-0106's "this file's adjacency findings" are the adjacency findings
 of [decision 0002](decisions/0002-the-prompt-is-a-measured-artifact.md), which
 is where that argument now lives because it is a standing instruction as much
-as a measurement. The sections are in the order they were written in, so the
-"next section", "above" and "below" inside them still point where they pointed.
+as a measurement.
 
 ## Validation status (T-0001, done 2026-08-13)
 

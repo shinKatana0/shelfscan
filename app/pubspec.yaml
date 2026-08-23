@@ -29,6 +29,13 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # The only way to reach the real keychain and the real preferences file:
+  # `flutter test` runs on flutter_tester, which has no platform channels, so
+  # every existing settings test is against a fake (T-0017). Ships with the
+  # SDK, adds nothing to the release graph, and drives
+  # integration_test/keychain_persistence_test.dart only.
+  integration_test:
+    sdk: flutter
   # Lets the save-dialog tests swap FileSelectorPlatform for a fake.
   file_selector_platform_interface: ^2.7.0
   # No new package in the graph -- shelfscan_core's only runtime dependency,
