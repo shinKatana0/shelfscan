@@ -81,7 +81,8 @@ void main() {
       ], title: 'regent of aurex', hint: 'PC');
       expect(resolved.best, isNull);
       // Refused, never hidden: both are still the reviewer's to pick from.
-      expect(resolved.candidates.map((c) => c.externalId), ['igdb:1100000058', 'igdb:1100000009']);
+      expect(resolved.candidates.map((c) => c.externalId),
+          ['igdb:1100000058', 'igdb:1100000009']);
       expect(resolved.candidates.map((c) => c.score), everyElement(1.0));
     });
 

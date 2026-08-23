@@ -243,7 +243,8 @@ void main() {
           _regentOfAurex, _fromName('Regent.of.Aurex.1993.DOSBox.GOG.zip'));
       // It decides between candidates; it never removes one. A filter would,
       // and that is the difference the whole choice turns on.
-      expect(resolved.candidates.map((c) => c.externalId), ['igdb:1100000058', 'igdb:1100000009']);
+      expect(resolved.candidates.map((c) => c.externalId),
+          ['igdb:1100000058', 'igdb:1100000009']);
     });
   });
 
