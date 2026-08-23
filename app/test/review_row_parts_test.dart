@@ -105,7 +105,7 @@ void main() {
           tester,
           _doc([
             _row('LANTERN COAST BOX',
-                workKind: WorkKind.anime, parts: _seasons.toList()),
+                workKind: WorkKind.animation, parts: _seasons.toList()),
             _row('HOLLOW PINE 2'),
           ]));
 
@@ -119,7 +119,7 @@ void main() {
           tester,
           _doc([
             _row('LANTERN COAST BOX',
-                workKind: WorkKind.anime, parts: _seasons.toList()),
+                workKind: WorkKind.animation, parts: _seasons.toList()),
           ]));
       await _openSheet(tester, 'LANTERN COAST BOX');
 
@@ -136,7 +136,7 @@ void main() {
         (tester) async {
       final doc = _doc([
         _row('LANTERN COAST BOX',
-            workKind: WorkKind.anime, parts: _seasons.toList()),
+            workKind: WorkKind.animation, parts: _seasons.toList()),
         _row('HOLLOW PINE 2'),
       ]);
       await _pump(tester, doc);
@@ -161,7 +161,7 @@ void main() {
         (tester) async {
       final doc = _doc([
         _row('LANTERN COAST BOX',
-            workKind: WorkKind.anime, parts: _seasons.toList()),
+            workKind: WorkKind.animation, parts: _seasons.toList()),
       ]);
       final saver = FakeExportSaver();
       await _pump(tester, doc, saver);
@@ -189,9 +189,13 @@ void main() {
 
   group('the kind is visible and correctable', () {
     testWidgets('a row states a kind that is not the default', (tester) async {
-      await _pump(tester, _doc([_row('LANTERN COAST', workKind: WorkKind.anime)]));
+      await _pump(tester,
+          _doc([_row('LANTERN COAST', workKind: WorkKind.animation)]));
 
-      expect(find.textContaining('anime'), findsOneWidget);
+      // The label, and never the wire value: `animation` is the word the
+      // export file uses and the row is read by the person holding the box.
+      expect(find.textContaining('Anime'), findsOneWidget);
+      expect(find.textContaining('animation'), findsNothing);
     });
 
     testWidgets('a game row stays quiet, as every document so far is games',
@@ -200,21 +204,23 @@ void main() {
 
       // Silent on the row and readable in the sheet: the same rule
       // `Detection.toJson` writes `work_kind` by.
-      expect(find.textContaining('game'), findsNothing);
+      expect(find.textContaining('Game'), findsNothing);
       await _openSheet(tester, 'HOLLOW PINE 2');
       expect(find.text('Kind of work'), findsOneWidget);
-      expect(find.text('game'), findsOneWidget);
-      expect(find.text('anime'), findsOneWidget);
+      expect(find.text('Game'), findsOneWidget);
+      expect(find.text('Film'), findsOneWidget);
+      expect(find.text('Anime'), findsOneWidget);
     });
 
     testWidgets('the sheet marks the kind the row is currently on',
         (tester) async {
-      await _pump(tester, _doc([_row('LANTERN COAST', workKind: WorkKind.anime)]));
+      await _pump(tester,
+          _doc([_row('LANTERN COAST', workKind: WorkKind.animation)]));
       await _openSheet(tester, 'LANTERN COAST');
 
       Icon iconOf(String kind) => tester.widget<Icon>(find.descendant(
           of: find.byKey(Key('work-kind-$kind')), matching: find.byType(Icon)));
-      expect(iconOf('anime').icon, Icons.radio_button_checked);
+      expect(iconOf('animation').icon, Icons.radio_button_checked);
       expect(iconOf('game').icon, Icons.radio_button_unchecked);
     });
 
@@ -235,11 +241,11 @@ void main() {
       expect(find.text('Lantern Coast Chronicle'), findsOneWidget);
 
       await _openSheet(tester, 'Lantern Coast Chronicle');
-      await tester.tap(find.byKey(const Key('work-kind-anime')));
+      await tester.tap(find.byKey(const Key('work-kind-animation')));
       await tester.pumpAndSettle();
 
       final row = doc.games.single;
-      expect(row.detection.workKind, WorkKind.anime);
+      expect(row.detection.workKind, WorkKind.animation);
       // Not a relabel: the match it had was against the wrong catalogue.
       expect(row.best, isNull);
       expect(row.needsReresolution, isTrue);
@@ -251,7 +257,7 @@ void main() {
       expect(find.text('LANTERN COAST'), findsOneWidget);
       expect(find.textContaining('kind corrected -- will be looked up again'),
           findsOneWidget);
-      expect(find.textContaining('anime'), findsOneWidget);
+      expect(find.textContaining('Anime'), findsOneWidget);
     });
 
     testWidgets('choosing the kind it already has keeps the match',

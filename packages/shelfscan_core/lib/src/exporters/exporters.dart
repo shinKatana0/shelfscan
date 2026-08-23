@@ -66,6 +66,33 @@ abstract class Exporter {
   List<FormulaCell> formulaCells(ReviewDocument doc) => const [];
 }
 
+/// What a `.xcoll` item's `platform_id` is, per [WorkKind].
+///
+/// Read off Tonkatsu's own published collections rather than reasoned about
+/// (T-0162): every item of its movie collection is exactly `media_type` +
+/// `external_id`, while its game and `animation` collections all carry the
+/// third key -- and in the `animation` ones the value is not a platform at
+/// all but `0` for a film and `1` for a series.
+enum _PlatformId {
+  /// The catalogue platform id the resolver matched.
+  fromMatch,
+
+  /// No key at all. A film has no platform, so writing one would invent it.
+  absent,
+
+  /// Tonkatsu's film-or-series discriminator, which this pipeline cannot
+  /// answer: no source produces an animation row -- `FilenameSource` declines
+  /// an episode outright and the vision path knows only games -- so the only
+  /// way a row reaches this state is a person correcting its kind at review,
+  /// and that correction says nothing about film or series either. `0` would
+  /// be a claim nobody made, and `0` is exactly the shape this file already
+  /// refuses elsewhere: a valid-looking id in a column other tools key on.
+  /// So the row is declined by [TonkatsuExporter.canExport] and named to the
+  /// user as dropped. Whatever teaches this pipeline the difference is what
+  /// replaces this value.
+  undecidable,
+}
+
 /// Tonkatsu Box exporter -- light .xcoll format.
 ///
 /// Format reference: https://github.com/hacan359/tonkatsu-collections
@@ -90,10 +117,10 @@ class TonkatsuExporter extends Exporter {
   @override
   String get extension => 'xcoll';
 
-  // canExport stays the default `best != null`: an item of this format IS a
-  // pair of ids, so there is nothing to write for an unmatched game. A
-  // manually added item that IGDB never resolved is excluded here and
-  // exported through CSV instead.
+  // The default `best != null` still holds and is half the rule below: an
+  // item of this format IS a pair of ids, so there is nothing to write for an
+  // unmatched game. A manually added item that IGDB never resolved is
+  // excluded here and exported through CSV instead.
 
   @override
   String render(List<ResolvedGame> games) =>
@@ -112,34 +139,42 @@ class TonkatsuExporter extends Exporter {
               // KIND of work, not the carrier the CSV column of that name
               // carries. [WorkKind] is the kind; the two are separate types
               // because they were one word (decision 0015).
-              'media_type': g.detection.workKind.name,
+              'media_type': g.detection.workKind.wire,
               // The id space is the CATALOGUE's, and which catalogue is
               // implied by `media_type` rather than stated: IGDB for a game,
               // TMDB for a film. `Candidate.igdbId` is the field it arrives in
               // whichever it came from (T-0162).
               'external_id': g.best!.igdbId,
-              // Absent for a film, and this is copied from Tonkatsu's own
-              // published collections rather than reasoned about: every item
-              // of `media/movies/top-rated-movies.xcollx` is exactly
-              // `media_type` + `external_id`, while the game and `animation`
-              // collections all carry a third key. A film has no platform, so
-              // writing this one would be inventing a value for it.
-              if (_carriesPlatform(g.detection.workKind))
+              // Present, absent or a reason to refuse the row -- [_PlatformId]
+              // holds the three answers and where each was read from.
+              if (_platformId(g.detection.workKind) == _PlatformId.fromMatch)
                 'platform_id': g.best!.platformId,
             }
         ],
       });
 
-  /// Whether Tonkatsu's item for this kind has a `platform_id` key.
+  /// An animation row is refused rather than guessed at, on top of the
+  /// default rule.
+  ///
+  /// The refusal is the whole of [_PlatformId.undecidable]: this target's
+  /// item for that kind states film-or-series in a field nothing upstream of
+  /// here can fill. The shells already name what an export drops, so the row
+  /// is visibly excluded rather than silently mis-filed.
+  @override
+  bool canExport(ResolvedGame game) =>
+      super.canExport(game) &&
+      _platformId(game.detection.workKind) != _PlatformId.undecidable;
+
+  /// What Tonkatsu's item for this kind puts in `platform_id`.
   ///
   /// A switch with no default, so a fourth [WorkKind] cannot reach the writer
   /// without someone answering this for it -- the export string is the half of
   /// a new kind that is easiest to add and forget, because a wrong one still
   /// produces a well-formed file.
-  static bool _carriesPlatform(WorkKind kind) => switch (kind) {
-        WorkKind.game => true,
-        WorkKind.anime => true,
-        WorkKind.movie => false,
+  static _PlatformId _platformId(WorkKind kind) => switch (kind) {
+        WorkKind.game => _PlatformId.fromMatch,
+        WorkKind.movie => _PlatformId.absent,
+        WorkKind.animation => _PlatformId.undecidable,
       };
 
   /// What the exported items were actually read from.

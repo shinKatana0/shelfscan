@@ -1,16 +1,23 @@
 /// The kind of work is a property of the row (T-0279, decision 0015).
 ///
-/// Two things are pinned here and the second is the reason the first is worth
-/// pinning. That a row carries its own kind, defaulting to the value the
-/// exporter used to hardcode, so nothing an existing document writes moves.
-/// And that the kind and the CARRIER stay apart, though `media_type` is the
-/// wire name of both -- Tonkatsu's field for the kind, this project's CSV
-/// column for the carrier. One word for two concepts is what decision 0015
+/// Four things are pinned here. That a row carries its own kind, defaulting
+/// to the value the exporter used to hardcode, so nothing an existing document
+/// writes moves. That the kind and the CARRIER stay apart, though `media_type`
+/// is the wire name of both -- Tonkatsu's field for the kind, this project's
+/// CSV column for the carrier. One word for two concepts is what decision 0015
 /// separates, and a half-applied separation would leave exactly the working
 /// lookup key that hides it.
+///
+/// And two that arrived with T-0290, both about the same confusion one level
+/// down: the exported spelling of each kind, against the table read off
+/// Tonkatsu's own collections, now that a Dart identifier is no longer that
+/// spelling; and that the one kind whose `platform_id` this pipeline cannot
+/// answer is refused by the target rather than filled in with a plausible
+/// number.
 library;
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:shelfscan_core/shelfscan_core.dart';
 import 'package:test/test.dart';
@@ -74,22 +81,92 @@ void main() {
     });
   });
 
+  group('the wire value is not the identifier', () {
+    // The table is Tonkatsu's, read off its published collections (T-0162),
+    // and this is the whole of what the export contract is. Written as a map
+    // over `values` rather than three separate expectations so that a fourth
+    // kind fails here until someone has looked its spelling up.
+    test('every kind spells media_type the way Tonkatsu does', () {
+      expect({for (final kind in WorkKind.values) kind: kind.wire}, {
+        WorkKind.game: 'game',
+        WorkKind.movie: 'movie',
+        WorkKind.animation: 'animation',
+      });
+    });
+
+    test('and shows a person a different word', () {
+      expect({for (final kind in WorkKind.values) kind: kind.label}, {
+        WorkKind.game: 'Game',
+        WorkKind.movie: 'Film',
+        WorkKind.animation: 'Anime',
+      });
+      for (final kind in WorkKind.values) {
+        expect(kind.label, isNot(kind.wire), reason: 'a label is not a value');
+      }
+    });
+
+    // The defect this whole task is: `TonkatsuExporter` wrote `workKind.name`,
+    // so the identifier WAS the wire value and a rename edited an exported
+    // file. `film` was caught before it shipped and `anime` was not. Cheap to
+    // reintroduce -- `.name` is the obvious thing to reach for on an enum --
+    // and invisible in a diff, since the two spellings agree today.
+    test('nothing in lib/ writes an identifier into a file', () {
+      final offenders = [
+        for (final file in Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart')))
+          if (file.readAsStringSync().contains('workKind.name')) file.path,
+      ];
+
+      expect(offenders, isEmpty,
+          reason: 'the wire value is WorkKind.wire and nothing else');
+    });
+  });
+
   group('a non-default kind reaches the file', () {
     test('the exported item carries it', () {
-      expect(_items(_document([_row(workKind: WorkKind.anime)])).single,
-          containsPair('media_type', 'anime'));
+      expect(_items(_document([_row(workKind: WorkKind.movie)])).single,
+          containsPair('media_type', 'movie'));
     });
 
     test('one document can hold both kinds, which is the point of the row', () {
-      final items = _items(_document([_row(), _row(workKind: WorkKind.anime)]));
-      expect([for (final i in items) (i as Map)['media_type']],
-          ['game', 'anime']);
+      final items =
+          _items(_document([_row(), _row(workKind: WorkKind.movie)]));
+      expect(
+          [for (final i in items) (i as Map)['media_type']], ['game', 'movie']);
     });
 
     test('it survives a review.json round trip', () {
-      final written = _detection(workKind: WorkKind.anime).toJson();
-      expect(written['work_kind'], 'anime');
-      expect(Detection.fromJson(written).workKind, WorkKind.anime);
+      final written = _detection(workKind: WorkKind.movie).toJson();
+      expect(written['work_kind'], 'movie');
+      expect(Detection.fromJson(written).workKind, WorkKind.movie);
+    });
+  });
+
+  group('an animation row is declined rather than guessed at', () {
+    test('.xcoll refuses it however well it matched', () {
+      final row = _row(workKind: WorkKind.animation);
+      expect(row.best, isNotNull);
+      expect(TonkatsuExporter().canExport(row), isFalse);
+      expect(_items(_document([row, _row()])), hasLength(1));
+    });
+
+    test('no item of it carries a 0 or a 1 anybody invented', () {
+      final items = _items(_document([_row(workKind: WorkKind.animation)]));
+      expect(items, isEmpty);
+    });
+
+    test('csv still carries it, so the row is not lost', () {
+      final doc = _document([_row(workKind: WorkKind.animation)]);
+      expect(CsvExporter().select(doc), hasLength(1));
+    });
+
+    test('the review.json round trip is unaffected: only the target refuses',
+        () {
+      final written = _detection(workKind: WorkKind.animation).toJson();
+      expect(written['work_kind'], 'animation');
+      expect(Detection.fromJson(written).workKind, WorkKind.animation);
     });
   });
 
@@ -97,9 +174,9 @@ void main() {
     test('one row, both targets, two different answers under one wire name',
         () {
       final doc = _document(
-          [_row(workKind: WorkKind.anime, mediaType: MediaType.cartridge)]);
+          [_row(workKind: WorkKind.movie, mediaType: MediaType.cartridge)]);
 
-      expect(_items(doc).single, containsPair('media_type', 'anime'));
+      expect(_items(doc).single, containsPair('media_type', 'movie'));
 
       final csv = CsvExporter().export(doc).split('\r\n');
       final columns = csv[0].split(',');
@@ -110,10 +187,10 @@ void main() {
       final row = Detection.fromJson({
         'raw_title': 'HOLLOWMERE: THE TIDE CLERK',
         'media_type': 'cartridge',
-        'work_kind': 'anime',
+        'work_kind': 'animation',
       });
       expect(row.mediaType, MediaType.cartridge);
-      expect(row.workKind, WorkKind.anime);
+      expect(row.workKind, WorkKind.animation);
     });
   });
 

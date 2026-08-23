@@ -96,32 +96,49 @@ enum MediaType {
 /// fingerprint `control_set_test.dart` pins -- and one name for two concepts
 /// is what this type exists to stop.
 ///
-/// EXTERNAL CONTRACT on the export side, and the enum NAME is the wire value:
-/// `TonkatsuExporter` writes `workKind.name` straight into `media_type`, so a
-/// value here may only be spelled the way Tonkatsu spells it.
+/// EXTERNAL CONTRACT on the export side, carried by [wire] and by nothing
+/// else. The identifier used to BE the wire value -- `TonkatsuExporter` wrote
+/// `workKind.name` straight into `media_type` -- which made a Dart rename a
+/// silent change to an exported file, and made a naturally-spelled identifier
+/// a value no importer knows. Both halves of that cost were paid: `film` was
+/// caught before it shipped and `anime` was not (T-0162, T-0290). The two are
+/// separate now, so an identifier is free to read naturally and the file
+/// moves only when [wire] is edited.
 ///
 /// Checked against Tonkatsu's own published collections (T-0162), which is the
 /// verification decision 0015 asked the first task adding a second kind to do.
 /// The four spellings that repository publishes are `game`, `movie`, `tv_show`
-/// and `animation`, and two things follow that were not assumed correctly
-/// before. `movie` is the film value -- not `film`, which is what every
-/// document here called it in prose. And `anime` below is WRONG: Tonkatsu
-/// files an anime film and an anime series alike under `animation`, telling
-/// them apart by `platform_id` rather than by the kind. Renaming it is
-/// T-0288's, not this task's -- the review screen renders this value and was
-/// being built in parallel.
+/// and `animation`; three of them are here, and `animation` covers an anime
+/// film and an anime series alike, which Tonkatsu tells apart by `platform_id`
+/// rather than by the kind.
 ///
 /// `game` is still the only value round-tripped through the importer (T-0009);
-/// `movie` is verified against the format's own files rather than an import.
+/// the other two are verified against the format's own files rather than
+/// against an import.
 enum WorkKind {
-  game,
+  game('game', 'Game'),
 
   /// Tonkatsu's spelling for a film. `external_id` for one of these is a TMDB
   /// id, not an IGDB id, and a published movie item carries no `platform_id`
   /// at all -- both are the exporter's business, not this enum's.
-  movie,
+  movie('movie', 'Film'),
 
-  anime;
+  /// One kind for an anime film and an anime series. Its `platform_id` is
+  /// Tonkatsu's discriminator between the two -- `0` film, `1` series -- and
+  /// nothing in this pipeline knows which, which is why `TonkatsuExporter`
+  /// declines the row rather than picking one.
+  animation('animation', 'Anime');
+
+  const WorkKind(this.wire, this.label);
+
+  /// The `media_type` string Tonkatsu writes for this kind. Only value in this
+  /// file that an external format reads.
+  final String wire;
+
+  /// What a person is shown. Never [wire]: the file format is somebody else's
+  /// vocabulary and a review row is read by the owner of the shelf, who calls
+  /// an anime an anime whatever the importer files it under.
+  final String label;
 
   /// Absent is [game] -- the whole collection was games before this field
   /// existed. An unrecognised value is NOT: `unknown` is an honest answer for
@@ -130,13 +147,13 @@ enum WorkKind {
   /// what the row is. `review.json` is hand-editable by design (T-0050).
   /// Both messages list [values] rather than spelling the kinds out: a third
   /// kind was added here once and the two hardcoded sentences did not move.
-  static String get _allowed => values.map((e) => e.name).join(', ');
+  static String get _allowed => values.map((e) => e.wire).join(', ');
 
   static WorkKind parse(Object? value, String path) {
     final name = _shapeOrNull<String>(value, path, 'one of $_allowed');
     if (name == null) return WorkKind.game;
     return WorkKind.values.firstWhere(
-      (e) => e.name == name,
+      (e) => e.wire == name,
       orElse: () => throw ReviewFormatException(
           path, 'is "$name"; it must be one of $_allowed'),
     );
@@ -585,7 +602,10 @@ class Detection {
         // empty, and here it covers every document anyone has yet written: a
         // scan of games writes the exact bytes it wrote before this field
         // existed.
-        if (workKind != WorkKind.game) 'work_kind': workKind.name,
+        // [WorkKind.wire], not the identifier, and the same string `.xcoll`
+        // carries: one spelling per kind across both files is what stops a
+        // hand-edited document and an export from disagreeing about a row.
+        if (workKind != WorkKind.game) 'work_kind': workKind.wire,
       };
 
   /// Every field except `raw_title` is optional, so the minimum a human has

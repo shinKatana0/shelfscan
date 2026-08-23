@@ -325,7 +325,7 @@ void main() {
         catalogues: {
           WorkKind.game: _Recording('igdb'),
           WorkKind.movie: _Recording('tmdb'),
-          WorkKind.anime: _Recording('anilist'),
+          WorkKind.animation: _Recording('anilist'),
         },
         fallback: _Recording('fallback'),
       );
@@ -334,7 +334,7 @@ void main() {
         rawTitle: 'Tidewrack Lament',
         origin: DetectionOrigin.filename,
         sourceEntry: 'a.mkv',
-        workKind: WorkKind.anime,
+        workKind: WorkKind.animation,
       );
       expect((await router.process(row)).best!.title, 'anilist');
     });

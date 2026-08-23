@@ -193,6 +193,28 @@ correctly.
   a kind it manages, but this *spelling* of it in this field is an assumption
   until an import measures it; whichever task writes the second kind verifies
   it against the importer before anything else.
+
+  **Verified, and the assumption was wrong — T-0162, corrected T-0290.**
+  Tonkatsu's published collections write `game`, `movie`, `tv_show` and
+  `animation`. It files an anime film and an anime series alike under
+  `animation`, telling them apart by `platform_id` (`0` film, `1` series)
+  rather than by the kind, so `anime` was a value no importer knows. The
+  paragraph above is left standing because the instruction in it worked: the
+  verification is what caught both this and `film`, one of them before it
+  shipped. What the correction added is the reason the wrong word travelled so
+  far — the exporter wrote the enum's *identifier* into the file, so nothing
+  distinguished a name chosen for Dart from a value owed to somebody else's
+  format. `WorkKind.wire` is that distinction, and a rename cannot reach an
+  exported file any more.
+
+  **And `animation` is the first kind this project declines to export.** Its
+  `platform_id` is a film-or-series discriminator; no stage here produces the
+  answer, and a row only becomes `animation` because a person corrected its
+  kind at review, which says nothing about which of the two it is. So
+  `TonkatsuExporter.canExport` refuses the row and the shells name it as
+  dropped, rather than writing a `0` nobody claimed — the same rule this
+  record already applies to a `work_kind` it cannot parse, one level further
+  out.
 - **An unrecognised `work_kind` is refused, not degraded.** `review.json` is
   hand-editable by design (T-0050), and `unknown` is an honest landing place
   for a carrier the model could not tell. There is no equivalent for a kind:
