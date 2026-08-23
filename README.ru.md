@@ -1,5 +1,10 @@
-<!-- Translated from 2866320 (2026-08-23). The rule, and how to check
-     whether this is still true: README.md, "Translations". -->
+<!-- Translated from 5996d9f (2026-08-23). The rule, and how to check
+     whether this is still true: README.md, "Translations".
+     One thing this file does not carry: the "Translations" section's own rule
+     text, which 2648d3e refined after the summary below it was written. The
+     summary still says a replaced command goes into all four translated files
+     in one commit; English now says wherever they carry it, and two commits
+     when you translate rather than only mark. -->
 
 [English](README.md) · **Русский** · [日本語](README.ja.md)
 
