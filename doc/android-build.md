@@ -279,6 +279,135 @@ release apk and check the warning is gone rather than assuming it. Nothing
 above has been run on a device — T-0015 is still what verifies the share sheet
 actually shares — so a green build is a green build and no more.
 
+## Three notes from the plugin upgrade, in the order they bite
+
+The section above was written while the upgrade was still ahead of this tree.
+It has since been taken — `share_plus` 13.3.0, `flutter_secure_storage` 11.0.0
+and `file_picker` 12.0.0 moved together, in T-0304, and `doc/reports/T-0304.md`
+holds the detail rather than this page. Three things came out of it that a
+reader here needs. The first fails the build the moment you pull the change;
+the second is silent and only on Android; the third does not bite at all yet.
+
+### Upgrading over an existing checkout fails inside `share_plus`'s own Kotlin
+
+**Symptom.** `flutter build apk --release` fails at
+`:share_plus:compileReleaseKotlin` with `Unresolved reference
+'SharePlusPendingIntent'` and two type errors, all three at line 185 of the
+plugin's own `Share.kt`. Everything the message names is inside the plugin, so
+it reads as the plugin being broken, and the obvious response — pin
+`share_plus` back — is the wrong one.
+
+**Fix.** `flutter clean`, then `flutter pub get`, then build again. The same
+checkout that had just failed then produced a release apk of 50.8 MB, beside
+the 50.9 MB recorded above for a release build made before the upgrade.
+
+**Cause — inferred rather than measured, and the next paragraph is part of
+this one.** This tree is on AGP 9.1.0 (`app/android/settings.gradle.kts`).
+`share_plus` 13.3.0's `android/build.gradle.kts` applies the Kotlin Android
+plugin **only when the AGP major is below 9**, so here it does not: the
+subproject relies on AGP 9's Built-in Kotlin instead, which is exactly why the
+KGP warning above went away. `share_plus` 10.1.4 applied `kotlin-android`
+unconditionally. So the same subproject, writing into the same build directory,
+changed Kotlin pipelines between the two versions — and incremental state
+written by the old pipeline and then reused by the new one is what best
+explains a partial recompile in which `Share.kt` was built without its
+neighbour `SharePlusPendingIntent.kt` visible. `internal` visibility depends on
+module membership, which is precisely what that state describes.
+
+**Nobody reproduced this deliberately.** What was observed is the failure, and
+that `flutter clean` cleared it; the mechanism above is the best explanation
+available from the two plugins' Gradle files and nothing more. Proving it means
+seeding a build directory from 10.1.4 and upgrading over it, which has not been
+done here.
+
+**Why it was not caught before the merge.** T-0304 was verified in a fresh git
+worktree, where `app/build/` is gitignored and therefore absent, so its release
+build ran from an empty build directory. That establishes that the upgrade
+builds from scratch. It says nothing about building over an existing checkout,
+which is what everybody who pulls the change has.
+
+The general case is worth one line: **a plugin changing *how* it is compiled is
+invisible in a version number**, so `flutter clean` after any plugin major is
+cheap insurance.
+
+### Android credentials from an earlier build become unreadable
+
+**Symptom.** An Android install that had keys entered from an apk built before
+this change behaves afterwards as though no key were configured. What the
+settings screen shows while it does is one of the two unknowns below.
+
+**Cause.** `flutter_secure_storage` went **9.2.4 → 11.0.0 in one step**. Its
+11.0.0 changelog says that data written with what v10 deprecated is unusable
+after the upgrade, and that you should install v10 first, which migrates it. On
+Android, 11 removes `StorageCipherAlgorithm.AES_CBC_PKCS7Padding` and
+`KeyCipherAlgorithm.RSA_ECB_PKCS1Padding` — what 9.x wrote with — and removes
+the `encryptedSharedPreferences` backend.
+
+**There is no migration path here, and this page will not imply one.** Version
+10 does not satisfy the `win32` major that `share_plus` 13 requires, which is
+the whole reason the three plugins had to move together, so the intermediate
+release cannot be resolved in this tree at all. For a published application the
+answer would be to ship v10 first and v11 after it; that option does not exist
+here.
+
+**Windows is unaffected, and that was checked rather than assumed** — worth
+saying, because a reader who hears that the storage format moved will fear for
+both platforms. `flutter_secure_storage_windows` went 3.1.2 → 4.2.2 with no
+storage-format change: 4.0.0 is an SDK, analyzer and `win32` migration, 4.2.0
+fixes the DPAPI FFI calls for `win32` 6.0.0, and 4.2.1 and 4.2.2 fix
+concurrency bugs. The encrypted-file storage introduced in 2.0.0 is untouched,
+so credentials already stored on Windows stay readable.
+
+**Fix.** Re-enter the keys on the settings screen. Nothing recovers the old
+store and nothing tries to. The damage is bounded by the project being
+bring-your-own-key: the keys belong to whoever entered them and they still have
+them, so the cost is entering them once more.
+
+**Two things nobody knows, and both need an Android device** — T-0017 is the
+task that verifies settings persistence there:
+
+- Whether the read **fails soft**, returning null so the settings screen simply
+  shows empty fields, or **throws**, which on that screen would look like the
+  application being broken rather than like a key needing re-entry.
+- Whether a partial read leaves the store in a state where **writing fresh keys
+  also fails**.
+
+### The `compileSdk` hook forces 36 onto a plugin that declares 37
+
+**Symptom.** None. The release build succeeds and produces an apk, and that is
+the reason to write this down rather than the reason not to.
+
+Trap 2's hook in `app/android/build.gradle.kts` reflectively sets `compileSdk`
+to 36 on every plugin subproject. `flutter_secure_storage` 11.0.0 declares
+`compileSdk = 37` in its own `android/build.gradle`, so the hook now overrides a
+plugin **downwards**, below the level it states it needs. Nothing exercises the
+difference today. The next plugin that does will fail with a message about aar
+metadata — trap 2's symptom — rather than with one about this hook.
+
+**The recorded reason for 36 no longer matches the graph.** Both comments, at
+the hook and above `compileSdk = 36` in `app/android/app/build.gradle.kts`, name
+`flutter_plugin_android_lifecycle`, which `file_picker` used to pull in.
+`file_picker` 12 does not, and `flutter pub get` reported that package as no
+longer depended on. So the value is explained by a package that has left the
+graph, while sitting below one that is in it.
+
+**What the check found, and what it cannot settle.** Asked whether anything
+currently in the graph still needs the hook: nothing is on record as requiring
+36, the package that did require it has gone, and the one plugin whose level is
+on record declares 37 — above the hook rather than below it. That is checked
+against this tree and against T-0304's measurements, not against every current
+plugin's own Gradle file. And it does **not** show the hook to be dead weight:
+every build since trap 2 has run with it in place, and a build with the hook
+cannot say what a build without it would do. Only a build with the hook removed
+can.
+
+**So the hook is left exactly as it is.** Removing it, or making it take the
+higher of the plugin's declared level and a floor, is a change rather than a
+note and needs a build to prove it. `flutter_secure_storage` 11.0.0 also raises
+its own `minSdk` to 24 while `app/android/app/build.gradle.kts` takes `minSdk`
+from `flutter.minSdkVersion`; whether the app's floor is now set by the plugin
+rather than by Flutter has not been checked either.
+
 ## Unresolved: `flutter doctor` reports the licence status unknown
 
 `flutter doctor` reports **Android license status unknown** on this toolchain,
