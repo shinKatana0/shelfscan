@@ -33,7 +33,7 @@ the shelf at a higher resolution.
   platform-hint rate. Nothing else changes — same model, same prompt. The
   figures are a count of a private collection and are in the working record
   rather than here (T-0246); what they show is in
-  [`doc/measurements.md`](../measurements.md), "The two control sets".
+  [`doc/measurements.md`](../measurements.md), "What the figures are measured on".
 - **A bigger *local* model does not.** A 32-billion-parameter model of the same
   family was pulled and run on the same photographs with the same prompt. It does
   not fit the available video memory, so a quarter of it runs on the CPU: nine

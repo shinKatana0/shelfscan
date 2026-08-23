@@ -9,7 +9,7 @@ record beside the photographs it describes, because the sets are named sets of
 a private home
 ([decision 0004](decisions/0004-the-control-set-is-figures-not-a-file.md)).
 What the sets are and what was measured on them is
-[`doc/measurements.md`](measurements.md), "The two control sets".
+[`doc/measurements.md`](measurements.md), "What the figures are measured on".
 
 **The control set itself is private and is not published.** The photographs are
 of a private home; neither the images, nor their original filenames, nor their
@@ -17,8 +17,8 @@ byte sizes, nor any figure stating how many spines, cases or games are on them,
 is in this repository or ever will be. That last clause was false when it was
 written: the counts were out of the manifest blocks (T-0246) and still in the
 prose of about fifty files, spelled out, as ratios and over subsets, until
-T-0253 swept them. `doc/measurements.md`, "The two control sets", says what is
-still counted anywhere and why none of it is a count of the shelf.
+T-0253 swept them. `doc/measurements.md`, "What the figures are measured on",
+says what is still counted anywhere and why none of it is a count of the shelf.
 `photos` below names each image by a stable label rather than by
 the name it was given, so a figure stays attached to the file it was measured
 on without the file naming itself.
