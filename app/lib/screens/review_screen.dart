@@ -30,6 +30,9 @@ final _xcoll = TonkatsuExporter();
 /// is set from. Only the unmatched rows pay it, and they are the ones that
 /// never carry a score or a canonical platform name, so nothing that exports
 /// gets longer.
+///
+/// The only one of the three that asks for a tap, so [_noXcollClauseFor]
+/// decides which rows have earned it.
 const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 
 /// The same slot for the OTHER reason `.xcoll` refuses a row: an animation
@@ -38,6 +41,47 @@ const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 /// help, and saying so would be the clause telling the user to do a thing that
 /// cannot work. 32 characters, inside the budget measured above.
 const _noXcollKindClause = 'not in .xcoll -- film or series?';
+
+/// The same slot again for a film row, refused for a third reason: its
+/// `media_type` implies TMDB and every candidate on it is IGDB's, IGDB being
+/// the only catalogue either shell wires, so `TonkatsuExporter` declines the
+/// id however well it matched. The row said `tap to pick a match` until
+/// T-0313 and no pick reached the file -- the person did exactly what the
+/// screen asked and the row did not move, which is the failure
+/// [_noXcollKindClause] was written one kind over to prevent.
+///
+/// It spends its width on where the row still goes rather than on why this
+/// file will not take it. A film row is refused by the whole run and not by
+/// anything about itself, so the reason buys the reader nothing they can act
+/// on, while `.xcoll` refusing a row read alone says the row is lost -- csv
+/// carries it, which is the claim [_keylessBanner] already makes
+/// unconditionally for a whole run of such rows. 31 characters.
+const _noXcollFilmClause = 'not in .xcoll -- csv carries it';
+
+/// Which of the three a refused row gets.
+///
+/// By kind, the way `TonkatsuExporter` chooses what it writes for one, and
+/// exhaustive for the same reason its switch is: a fourth [WorkKind] cannot
+/// arrive without someone answering what its refused row says.
+///
+/// The film arm is guarded rather than fixed, so a film row that does carry a
+/// match this file would take goes back to inviting the tap with no edit
+/// here -- which is what wiring a film catalogue (T-0308) would produce.
+String _noXcollClauseFor(ResolvedGame game) =>
+    switch (game.detection.workKind) {
+      WorkKind.animation => _noXcollKindClause,
+      WorkKind.movie when !_pickReachesXcoll(game) => _noXcollFilmClause,
+      WorkKind.game || WorkKind.movie => _noXcollClause,
+    };
+
+/// Whether picking one of this row's candidates would let `.xcoll` carry it.
+///
+/// Asked of the exporter on a throwaway row rather than decided here: which
+/// catalogue a kind's `external_id` must come from is `TonkatsuExporter`'s
+/// rule and is private to it, and a second copy of it on this screen is the
+/// copy [_exportableStatuses] already says rots.
+bool _pickReachesXcoll(ResolvedGame game) => game.candidates.any((candidate) =>
+    _xcoll.canExport(ResolvedGame(detection: game.detection, best: candidate)));
 
 /// What a row says when it is a box rather than a thing (T-0163).
 ///
@@ -1084,10 +1128,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         // of the review status on purpose: this is a property of the row's
         // data, true while it is still pending, and the decision the user has
         // taken is spelled out by the next clause anyway (T-0123).
-        if (notInXcoll)
-          game.detection.workKind == WorkKind.animation
-              ? _noXcollKindClause
-              : _noXcollClause,
+        if (notInXcoll) _noXcollClauseFor(game),
         if (game.status != ReviewStatus.pending) game.status.name,
         // Otherwise this row is indistinguishable from one whose branding was
         // illegible, and the value that caused it is only in the file

@@ -2,17 +2,21 @@
 /// the kind correction decision 0015 makes the mitigation for a silent wrong
 /// inference.
 ///
-/// Four things are pinned, and the last two are the ones that are not merely
+/// Five things are pinned, and the last three are the ones that are not merely
 /// cosmetic. That a box says so and can be expanded into rows that export
 /// separately. That the kind is readable on every row and changeable on every
 /// row. That changing it CLEARS the match rather than writing a new word
 /// beside the old one -- a corrected kind is a different catalogue, and a
-/// relabel would buy a right word and a wrong match. And that neither the row
+/// relabel would buy a right word and a wrong match. That neither the row
 /// nor the sheet promises the lookup that would replace it, because there is
 /// none: nothing reads `needsReresolution`, no screen re-runs the resolver
 /// over an existing row, and the app writes no `review.json` for the CLI to
-/// resolve (T-0311). Both are pinned in the negative too -- a promise is the
-/// one false statement no later moment disproves.
+/// resolve (T-0311). And that the corrected row stops asking for a tap that
+/// cannot move it: under a film kind `.xcoll` takes none of the candidates
+/// the games catalogue left on the row, so the invitation was a second
+/// promise the row could not keep (T-0313). Each of those three is pinned in
+/// the negative too -- a promise is the one false statement no later moment
+/// disproves.
 ///
 /// No network: the screen is given no resolver, and nothing here constructs a
 /// client. Every fixture is invented, catalogue ids included -- this project
@@ -61,6 +65,7 @@ ResolvedGame _row(
   WorkKind workKind = WorkKind.game,
   List<CatalogueEntry> parts = const [],
   Candidate? best,
+  List<Candidate> candidates = const [],
   ReviewStatus status = ReviewStatus.pending,
 }) =>
     ResolvedGame(
@@ -73,6 +78,7 @@ ResolvedGame _row(
         workKind: workKind,
       ),
       best: best,
+      candidates: candidates,
       parts: parts,
       status: status,
     );
@@ -335,6 +341,49 @@ void main() {
           findsOneWidget);
       expect(find.textContaining('looked up again'), findsNothing);
       expect(find.textContaining('not in .xcoll'), findsOneWidget);
+    });
+
+    // The second promise the same row used to make, and the one that survived
+    // T-0311 (T-0313). The correction leaves the candidates the games
+    // catalogue produced, and `.xcoll` will not take any of them under a film
+    // kind -- so the row asked for a tap, the person gave it, and the row
+    // came back saying exactly what it had said before. Pinned on the keyed
+    // run for the reason above: it is the only mode where this clause shows
+    // at all.
+    testWidgets('a corrected film row asks for no tap, and says csv has it',
+        (tester) async {
+      final doc = _doc([
+        _row('HARBOUR LANTERN',
+            best: Candidate(
+              externalId: 'igdb:510006',
+              title: 'Harbour Lantern',
+              platformId: 6,
+              platformName: 'PC (Microsoft Windows)',
+              score: 0.93,
+            ),
+            candidates: [
+              Candidate(
+                externalId: 'igdb:510006',
+                title: 'Harbour Lantern',
+                platformId: 6,
+                platformName: 'PC (Microsoft Windows)',
+                score: 0.93,
+              ),
+            ],
+            status: ReviewStatus.approved),
+      ]);
+      await _pump(tester, doc, keyless: false);
+      await _openSheet(tester, 'Harbour Lantern');
+      await tester.tap(find.byKey(const Key('work-kind-movie')));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Film'), findsOneWidget);
+      expect(find.textContaining('not in .xcoll -- csv carries it'),
+          findsOneWidget);
+      // In the negative, because the defect was the invitation itself: the
+      // row still holds the candidate it would have offered.
+      expect(find.textContaining('tap to pick a match'), findsNothing);
+      expect(doc.games.single.candidates, hasLength(1));
     });
   });
 }

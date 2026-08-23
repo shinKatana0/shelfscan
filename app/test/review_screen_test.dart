@@ -344,6 +344,53 @@ void main() {
       expect(find.textContaining('tap to pick a match'), findsNothing);
     });
 
+    // The third reason, and the one that looked like the first (T-0313). A
+    // film row is matched by the wrong catalogue entirely: `media_type`
+    // `movie` implies TMDB and every candidate the resolver produced is
+    // IGDB's, so picking any of them leaves the row exactly where it was.
+    // The candidates ARE there and the sheet does list them, which is why
+    // this row read as fixable and the animation one above never did.
+    testWidgets('a film row says where it still goes, and asks for no tap',
+        (tester) async {
+      final doc = _doc([
+        _game('HARBOUR LANTERN',
+            workKind: WorkKind.movie,
+            candidates: [_candidate(3, 'Harbour Lantern', score: 0.88)]),
+      ]);
+      await _pump(tester, doc, FakeExportSaver());
+
+      expect(find.textContaining('not in .xcoll -- csv carries it'),
+          findsOneWidget);
+      // In the negative as well: the row asked for a tap that could not
+      // change its outcome, and only the absence of the invitation says the
+      // defect is gone -- no later moment disproves an instruction.
+      expect(find.textContaining('tap to pick a match'), findsNothing);
+      // Not the animation reason either. This row's `platform_id` is settled
+      // (a film has none); its `external_id` is what cannot be filled.
+      expect(find.textContaining('film or series?'), findsNothing);
+    });
+
+    // The clause is chosen by whether a pick would reach the file, not by the
+    // kind, so this row needs no edit here on the day a film catalogue is
+    // wired (T-0308) -- it invites the tap again on its own.
+    testWidgets('a film row holding a reachable match invites the tap again',
+        (tester) async {
+      final doc = _doc([
+        _game('HARBOUR LANTERN', workKind: WorkKind.movie, candidates: [
+          Candidate(
+            externalId: 'tmdb:9001',
+            title: 'Harbour Lantern',
+            score: 0.88,
+          ),
+        ]),
+      ]);
+      await _pump(tester, doc, FakeExportSaver());
+
+      expect(find.textContaining('not in .xcoll -- tap to pick a match'),
+          findsOneWidget);
+      expect(find.textContaining('csv carries it'), findsNothing);
+    });
+
     testWidgets('a row that can export carries no such clause', (tester) async {
       final doc = _doc([
         _game('DUSKHOLLOWE', best: _candidate(1, 'Duskhollow', score: 0.62)),
