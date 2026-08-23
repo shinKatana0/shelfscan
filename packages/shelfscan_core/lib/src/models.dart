@@ -367,10 +367,21 @@ class Detection {
   /// [Detection] and produces a [ResolvedGame], so a kind decided after
   /// resolution would be decided too late to route anything.
   ///
-  /// Nothing sets it away from [WorkKind.game] yet: no source reads a kind and
-  /// no screen offers one. The field exists so that whichever does is a change
-  /// to one stage rather than to the shape of the document.
-  final WorkKind workKind;
+  /// Mutable, alone among this class's fields, because the review step
+  /// corrects it (decision 0015, the owner's mitigation): the kind is
+  /// INFERRED on a source that has no prompt, a filename never announces that
+  /// it is not what it looks like, and a person looking at the row is the only
+  /// party who can see that the inference was wrong. [ResolvedGame.best] and
+  /// [ResolvedGame.status] are non-final for the same reason and are the
+  /// precedent.
+  ///
+  /// Correcting it is not a rename: it changes which catalogue answers the
+  /// row, so [ResolvedGame.correctWorkKind] clears the match and marks the row
+  /// rather than writing the new word beside the old match.
+  ///
+  /// No source reads a kind yet, so nothing but review sets it away from
+  /// [WorkKind.game].
+  WorkKind workKind;
 
   /// 0..1, the vision model's own estimate.
   final double confidence;
@@ -473,6 +484,31 @@ class Detection {
   final int? sourceYear;
 
   bool get isManual => origin == DetectionOrigin.manual;
+
+  /// This detection reading one of the several entries it maps to, for
+  /// [ResolvedGame.expandParts].
+  ///
+  /// Everything but the title is kept, and [sourcePhoto] above all: the part
+  /// was read off the same photograph as the box, so it belongs in the same
+  /// group on the review screen and carries the same provenance into the csv
+  /// export. Private because a general `copyWith` on this class would be an
+  /// invitation to rewrite fields the pipeline treats as facts about where a
+  /// row came from.
+  Detection _withRawTitle(String title) => Detection(
+        rawTitle: title,
+        mediaType: mediaType,
+        confidence: confidence,
+        sourcePhoto: sourcePhoto,
+        platformHint: platformHint,
+        notes: notes,
+        origin: origin,
+        addedFromPhoto: addedFromPhoto,
+        discardedPlatformHint: discardedPlatformHint,
+        sourceEntry: sourceEntry,
+        sourceId: sourceId,
+        sourceYear: sourceYear,
+        workKind: workKind,
+      );
 
   /// Which photo this row belongs with on the review screen: the one it was
   /// read off, or failing that the one it was typed from. Empty means
@@ -794,6 +830,70 @@ class Candidate {
       );
 }
 
+/// One entry in an external catalogue, held by a row that maps to it.
+///
+/// ASSUMED SHAPE, and deliberately the smallest one that can say which entry
+/// is meant (T-0163). Nothing in this repository has yet called a catalogue
+/// that answers per season, so every field here is a guess about what such an
+/// answer contains, written as a type rather than as prose so that the task
+/// building the catalogue seam reconciles against it instead of discovering it
+/// disagrees. Widen it when a real call measures what comes back.
+///
+/// NOT a [Candidate], and the distinction is the whole point of this class.
+/// A candidate is a scored GUESS at what one row is, drawn from IGDB, and
+/// picking one discards the others. An entry here is not scored and not a
+/// guess: it is an entry the row maps to, and where a row maps to several they
+/// are all true at once.
+class CatalogueEntry {
+  const CatalogueEntry({
+    required this.title,
+    required this.ref,
+    this.ordinal,
+  });
+
+  /// What the catalogue calls this entry.
+  final String title;
+
+  /// The entry's id in the form `catalogue:id`, which is the convention
+  /// [Detection.sourceId] already uses for a store's own id -- a consumer
+  /// splits at the first `:` rather than guessing which service answered.
+  ///
+  /// A string rather than an int because the catalogue is not fixed here.
+  /// [Candidate.igdbId] is an int precisely because it is only ever IGDB's;
+  /// this field's whole job is to be answerable by a service nobody has
+  /// chosen yet.
+  final String ref;
+
+  /// Season or volume number AS THE CATALOGUE PRINTS IT, null where it prints
+  /// none.
+  ///
+  /// Never inferred from a digit in [title]. This project refuses to read a
+  /// sequel number out of a title (T-0055, T-0059) and a season number is
+  /// exactly that shape, so the refusal applies unchanged: the number is here
+  /// only when something that knows the answer supplied it.
+  final int? ordinal;
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'ref': ref,
+        if (ordinal != null) 'ordinal': ordinal,
+      };
+
+  factory CatalogueEntry.fromJson(Map<String, dynamic> json,
+          {String path = ''}) =>
+      CatalogueEntry(
+        title: _shape<String>(json['title'], _at(path, 'title'),
+            "the catalogue entry's title"),
+        ref: _shape<String>(
+            json['ref'], _at(path, 'ref'), 'an entry id, as catalogue:id'),
+        // [Candidate.releaseYear]'s treatment: never model-written text, so a
+        // string here is a broken file rather than a "none" to heal.
+        ordinal: _shapeOrNull<num>(json['ordinal'], _at(path, 'ordinal'),
+                'a season or volume number')
+            ?.toInt(),
+      );
+}
+
 /// A detection with its best IGDB match and alternatives.
 class ResolvedGame {
   ResolvedGame({
@@ -801,6 +901,8 @@ class ResolvedGame {
     this.best,
     this.candidates = const [],
     this.status = ReviewStatus.pending,
+    this.parts = const [],
+    this.needsReresolution = false,
   });
 
   final Detection detection;
@@ -810,16 +912,104 @@ class ResolvedGame {
   final List<Candidate> candidates;
   ReviewStatus status;
 
+  /// The catalogue entries this one row maps to (T-0163).
+  ///
+  /// A DIFFERENT RELATION from [candidates], and naming it by that name would
+  /// have been wrong: candidates compete and parts coexist. Picking a
+  /// candidate discards the rest, because only one of them can be what this
+  /// row is; picking one part and discarding the rest would throw away seasons
+  /// the person owns. A candidate is also scored and a part is not -- there is
+  /// nothing to rank when all of them are true.
+  ///
+  /// Read by length, which is what makes expansion idempotent:
+  ///
+  /// - empty -- nobody looked, or the row is an ordinary IGDB game row;
+  /// - one -- the row is one entry and there is nothing to offer;
+  /// - several -- the row is a BOX and these are its contents, which is the
+  ///   case [expandParts] exists for.
+  ///
+  /// The unit question this settles, and the owner settled it rather than this
+  /// type: `.xcoll` carries one `external_id` per item and a catalogue that
+  /// answers per season answers several, so a box set of three seasons is one
+  /// object on a shelf and three entries in a catalogue. Making the row the
+  /// box breaks the export, making it the entry stops the list matching the
+  /// shelf, and making it the series loses which seasons are owned. So the row
+  /// stays the box, carries what it maps to, and the person holding the box
+  /// decides at review.
+  final List<CatalogueEntry> parts;
+
+  /// The row's kind was corrected at review, so whatever it was matched
+  /// against was the wrong catalogue (decision 0015).
+  ///
+  /// A mark, not a match: the client that would answer the other catalogue is
+  /// another task's, so what this records is that the row is OWED a lookup.
+  /// Set with [correctWorkKind], which clears the stale match at the same
+  /// time -- a correction that kept the old match would buy a right word and a
+  /// wrong match, which is the failure the correction exists to prevent.
+  bool needsReresolution;
+
+  /// True when this row is a box rather than a thing -- see [parts].
+  bool get mapsToSeveral => parts.length > 1;
+
+  /// The N rows this one becomes when the person holding the box says to
+  /// expand it; itself, unchanged, when there is nothing to expand.
+  ///
+  /// Each row carries exactly one [CatalogueEntry], so none of them offers to
+  /// expand again and running this twice changes nothing.
+  ///
+  /// [best] and [candidates] do not survive: both were answers about the box,
+  /// and a part inheriting the box's IGDB match would export every part as the
+  /// same item. The detection is copied rather than shared so that correcting
+  /// one part's kind cannot move its siblings.
+  List<ResolvedGame> expandParts() {
+    if (!mapsToSeveral) return [this];
+    return [
+      for (final part in parts)
+        ResolvedGame(
+          detection: detection._withRawTitle(part.title),
+          parts: [part],
+          status: ReviewStatus.pending,
+        ),
+    ];
+  }
+
+  /// Correct what kind of work this row is a copy of, and route it again.
+  ///
+  /// Not a relabel, which is the half decision 0015 says is not optional: a
+  /// row corrected from one kind to another has to resolve against the other
+  /// catalogue. Clearing [best] is what makes that true today -- the row stops
+  /// claiming a match it no longer has any reason to hold -- and
+  /// [needsReresolution] is what a resolver pass reads to know the row is
+  /// owed one.
+  ///
+  /// Correcting a row back to the kind it already had does nothing, so
+  /// tapping the value it is already on cannot silently drop a good match.
+  void correctWorkKind(WorkKind kind) {
+    if (detection.workKind == kind) return;
+    detection.workKind = kind;
+    best = null;
+    needsReresolution = true;
+    status = ReviewStatus.pending;
+  }
+
   Map<String, dynamic> toJson() => {
         'detection': detection.toJson(),
         'best': best?.toJson(),
         'candidates': candidates.map((c) => c.toJson()).toList(),
         'status': status.name,
+        // Absent at the default, for the reason `source_entry` and
+        // `work_kind` are absent when empty: a scan that maps every row to one
+        // thing writes the bytes it wrote before either field existed, and the
+        // document version stays 1 because nothing about the old shape moved.
+        if (parts.isNotEmpty)
+          'parts': parts.map((p) => p.toJson()).toList(),
+        if (needsReresolution) 'needs_reresolution': true,
       };
 
   factory ResolvedGame.fromJson(Map<String, dynamic> json,
       {String path = ''}) {
     final candidatesPath = _at(path, 'candidates');
+    final partsPath = _at(path, 'parts');
     final best = _shapeOrNull<Map<String, dynamic>>(json['best'],
         _at(path, 'best'), 'the chosen IGDB match, or null for no match');
     return ResolvedGame(
@@ -844,6 +1034,20 @@ class ResolvedGame {
       ],
       status: ReviewStatus.parse(_shapeOrNull<String>(json['status'],
           _at(path, 'status'), 'pending, approved, rejected or edited')),
+      parts: [
+        for (final (index, part) in (_shapeOrNull<List<dynamic>>(json['parts'],
+                    partsPath, 'a list of catalogue entries') ??
+                const [])
+            .indexed)
+          CatalogueEntry.fromJson(
+              _shape<Map<String, dynamic>>(
+                  part, '$partsPath[$index]', 'a catalogue entry'),
+              path: '$partsPath[$index]'),
+      ],
+      needsReresolution: _shapeOrNull<bool>(json['needs_reresolution'],
+              _at(path, 'needs_reresolution'),
+              'true when the row is owed a lookup') ??
+          false,
     );
   }
 }
