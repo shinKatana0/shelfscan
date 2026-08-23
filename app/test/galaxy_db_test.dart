@@ -37,6 +37,17 @@ String _cliReader() =>
 /// engine that machine happens to load.
 String _appReader() => File('lib/galaxy_db.dart').readAsStringSync();
 
+/// The flattened source around [needle], so a failure can quote the shape that
+/// is there instead of claiming the shape is absent (T-0321).
+String _flattenedAround(String flattened, String needle) {
+  final at = flattened.indexOf(needle);
+  if (at < 0) return '(not present)';
+  final from = at > 140 ? at - 140 : 0;
+  var to = at + needle.length + 20;
+  if (to > flattened.length) to = flattened.length;
+  return '...${flattened.substring(from, to)}...';
+}
+
 void main() {
   group('the two shells have not drifted', () {
     test('the CLI copy declares the identical SQL', () {
@@ -61,19 +72,47 @@ void main() {
       // SQLITE_OMIT_AUTOINIT, which is what a GitHub runner loads (T-0240).
       // A lookup that is never invoked is the defect, so what is asserted is
       // the call and not the symbol.
-      final shells = {'app/lib': _appReader(), 'core/bin': _cliReader()};
+      const symbol = 'sqlite3_initialize';
+      final shells = {
+        'app/lib/galaxy_db.dart': _appReader(),
+        'packages/shelfscan_core/bin/galaxy_db.dart': _cliReader(),
+      };
       for (final shell in shells.entries) {
         // Whitespace flattened: the two files wrap this differently, and a
         // CRLF checkout would otherwise read as a missing call.
         final source = shell.value.replaceAll(RegExp(r'\s+'), ' ');
-        final lookup = RegExp(
-                r"""(\w+) = \w+\.lookupFunction<[^;]*'sqlite3_initialize'\);""")
-            .firstMatch(source);
-        expect(lookup, isNotNull,
-            reason: '${shell.key} never looks up sqlite3_initialize');
-        expect(source, contains('${lookup!.group(1)}();'),
-            reason:
-                '${shell.key} looks sqlite3_initialize up and never calls it');
+        // The optional space is a line break before the dot -- what a
+        // hand-wrap of this line produces, and what the flatten turns into a
+        // space. Admitted rather than reported as a missing binding (T-0321).
+        final binding =
+            RegExp(r"(\w+) = \w+ ?\.lookupFunction<[^;]*'" + symbol + r"'\);");
+        final lookup = binding.firstMatch(source);
+        if (lookup == null) {
+          // A deleted binding and a moved line break send a reader to
+          // opposite ends of the tree, so they do not share a sentence. The
+          // discriminator is the quoted literal: the symbol also appears
+          // unquoted in the failure message a few lines below the binding,
+          // and a bare substring search cannot tell those apart (T-0321).
+          fail(source.contains("'$symbol'")
+              ? '${shell.key}: no binding of the shape ${binding.pattern} in '
+                  "the whitespace-flattened source, but the literal '$symbol' "
+                  'IS in the file. The lookup is written in a shape this guard '
+                  'does not admit -- a line break has moved. Check the shape, '
+                  'not the existence. What is there:\n  '
+                  '${_flattenedAround(source, symbol)}'
+              : "${shell.key}: no string literal '$symbol' occurs in this "
+                  'file, so nothing looks the symbol up. The engine is never '
+                  'initialised and the process dies without a message on a '
+                  'SQLITE_OMIT_AUTOINIT build (T-0240).');
+        }
+        final name = lookup.group(1)!;
+        // fail() rather than expect(): a matcher against `source` prints the
+        // whole flattened file as its Actual and buries the one sentence that
+        // says what is wrong (T-0321).
+        if (!RegExp(r'(?<!\w)' + name + r' ?\(\);').hasMatch(source)) {
+          fail('${shell.key} looks $symbol up and never calls it: the result '
+              'is bound to `$name` and `$name();` never occurs.');
+        }
       }
     });
   });
