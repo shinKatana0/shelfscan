@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Flutter declares this in src/debug and src/profile only, so a release
+         build ships without it and every provider call fails on the device
+         with no error the app can distinguish from a dead network. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="shelfscan_app"
+        android:label="shelfscan"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
