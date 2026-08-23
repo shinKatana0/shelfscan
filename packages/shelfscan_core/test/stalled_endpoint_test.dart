@@ -485,7 +485,13 @@ void main() {
   });
 
   group('every outbound call is bounded', () {
-    test('no request in lib/ posts outside boundedPost', () {
+    // Counts GETs as well as POSTs since T-0162. It counted only POSTs until
+    // then, which was complete while every request in lib/ was one -- TMDB's
+    // search is the first GET, and it would have passed this test by being
+    // invisible to it rather than by being bounded. `boundedPost` takes the
+    // send as a callback and does not care which verb it is; only the name
+    // still says post.
+    test('no request in lib/ leaves outside boundedPost', () {
       final offenders = <String>[];
       for (final file in Directory('lib')
           .listSync(recursive: true)
@@ -493,10 +499,11 @@ void main() {
           .where((f) => f.path.endsWith('.dart'))) {
         final source = file.readAsStringSync();
         if (file.path.endsWith('http_timeout.dart')) continue;
-        final posts = 'client.post('.allMatches(source).length;
+        final requests = 'client.post('.allMatches(source).length +
+            'client.get('.allMatches(source).length;
         final bounded = 'boundedPost('.allMatches(source).length;
-        if (posts != bounded) {
-          offenders.add('${file.path}: $posts post(s), $bounded bounded');
+        if (requests != bounded) {
+          offenders.add('${file.path}: $requests request(s), $bounded bounded');
         }
       }
 
