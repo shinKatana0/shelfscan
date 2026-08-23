@@ -1,5 +1,12 @@
-<!-- Translated from f291393 (2026-08-23). The rule, and how to check
-     whether this is still true: README.md, "Translations". -->
+<!-- STALE. This translation stands at f291393 (2026-08-23); the English
+     README.md has moved on past 33927c2 and this file has not followed.
+     Two claims below are now wrong and one of them is dangerous: "What it
+     cannot do" and "Setup -> The app" still say Android has never been built
+     and that the platform folders are generated rather than committed, and
+     they still give `flutter create --platforms=windows,android .` as the
+     setup step. That command regenerates committed, hand-edited folders and
+     destroys the release identity. Follow README.md, not this file.
+     The rule, and how to check: README.md, "Translations". -->
 
 [English](README.md) · **Русский** · [日本語](README.ja.md)
 

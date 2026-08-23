@@ -33,9 +33,9 @@ It is not affiliated with any of the apps it feeds ([disclaimer](#disclaimer)).
 The honest half, up front. Every line here is measured, and the section it
 links to has the numbers.
 
-- **Windows today.** The app is built and run on Windows only; Android has
-  never been built or run at all — treat it as untested, not supported. Two things are
-  Windows-only by construction: HEIC photos from a phone are converted through
+- **Android is the thinner of the two platforms.** Both Windows and Android
+  are built and run from this tree, but two things are Windows-only by
+  construction: HEIC photos from a phone are converted through
   the Windows Imaging Component, and the GOG Galaxy library is read from
   Galaxy's own database, and Galaxy is a Windows program. There is no
   installer and no published binary — you build it from source
@@ -414,34 +414,51 @@ keychain, never in a file inside the repository.
 
 ### The app
 
-**Windows is the only target that has been built and run.** The Android half
-of the commands below is written and its provider policy is in place, but
-none of it has ever been built or executed — treat it as untested rather than
-supported.
+Both targets have been built and run from this tree. Neither builds on a
+`flutter doctor` that prints green, and the prerequisites each one is missing
+are written down rather than left to be rediscovered: **Windows** immediately
+below, **Android** in [`doc/android-build.md`](doc/android-build.md) — the
+toolchain, and four failures, three of which name something other than the
+missing step and one of which does not fail the build at all. Android Studio
+is not required for either.
 
-Platform folders are generated, not committed:
+**The platform folders are committed.** `flutter create` scaffolded
+`app/windows/` and `app/android/` once; ever since they have been hand-edited
+source carrying the release identity — `Runner.rc`, the `AndroidManifest.xml`,
+the `applicationId`, the icons — and they are reviewed like any other file.
+What is genuinely generated inside one is ignored by the `.gitignore` that
+`flutter create` writes into that folder, and build output is a different path
+again. The [`.gitignore`](.gitignore) comment at the entry says the same at
+more length.
+
+So a clone already has them, and setup is:
 
 ```
 cd app
-flutter create --platforms=windows,android .
-rm test/widget_test.dart README.md
 flutter pub get
 flutter run -d windows   # or: flutter run -d <android-device>
 ```
 
-Alongside the platform folders, `flutter create` writes two files from the
-default counter template that are not part of this project — hence the
-delete on line 3, which is part of the step rather than housekeeping.
-`test/widget_test.dart` pumps a `MyApp` that does not exist here (this app
-is `ShelfscanApp`), so leaving it in place makes `flutter test` fail on a
-file nobody wrote:
+**Do not run `flutter create` over this checkout.** It regenerates those
+folders and hands back `com.example` in place of the identity above, and on
+Android it also drops the `INTERNET` permission that a release build has no
+other way to get — a loss no build fails on and no debug build reproduces. If
+you have already run it, `git status` names every file it touched and
+`git checkout --` on those files puts them back.
+
+`flutter create` also writes two files from the default counter template that
+are not part of this project and are not tracked here: `app/README.md` and
+`app/test/widget_test.dart`. Delete both. The test pumps a `MyApp` that does
+not exist here (this app is `ShelfscanApp`), so leaving it in place makes
+`flutter test` fail on a file nobody wrote:
 
 ```
 test/widget_test.dart:16:35: Error: Couldn't find constructor 'MyApp'.
 ```
 
-Neither file is gitignored, deliberately: any later `flutter create` brings
-them back, and `git status` naming them is the only warning you get.
+Neither is gitignored, deliberately: being untracked and unignored is what
+makes `git status` name them, and that is the only warning you get that the
+command ran at all.
 
 #### Windows: two prerequisites `flutter doctor` will not tell you about
 
