@@ -113,11 +113,34 @@ class TonkatsuExporter extends Exporter {
               // carries. [WorkKind] is the kind; the two are separate types
               // because they were one word (decision 0015).
               'media_type': g.detection.workKind.name,
+              // The id space is the CATALOGUE's, and which catalogue is
+              // implied by `media_type` rather than stated: IGDB for a game,
+              // TMDB for a film. `Candidate.igdbId` is the field it arrives in
+              // whichever it came from (T-0162).
               'external_id': g.best!.igdbId,
-              'platform_id': g.best!.platformId,
+              // Absent for a film, and this is copied from Tonkatsu's own
+              // published collections rather than reasoned about: every item
+              // of `media/movies/top-rated-movies.xcollx` is exactly
+              // `media_type` + `external_id`, while the game and `animation`
+              // collections all carry a third key. A film has no platform, so
+              // writing this one would be inventing a value for it.
+              if (_carriesPlatform(g.detection.workKind))
+                'platform_id': g.best!.platformId,
             }
         ],
       });
+
+  /// Whether Tonkatsu's item for this kind has a `platform_id` key.
+  ///
+  /// A switch with no default, so a fourth [WorkKind] cannot reach the writer
+  /// without someone answering this for it -- the export string is the half of
+  /// a new kind that is easiest to add and forget, because a wrong one still
+  /// produces a well-formed file.
+  static bool _carriesPlatform(WorkKind kind) => switch (kind) {
+        WorkKind.game => true,
+        WorkKind.anime => true,
+        WorkKind.movie => false,
+      };
 
   /// What the exported items were actually read from.
   ///

@@ -62,6 +62,7 @@ class FilenameSource implements DetectionSource {
         origin: DetectionOrigin.filename,
         sourceEntry: entry.name,
         platformHint: parse.platformHint,
+        workKind: parse.workKind,
         // Carried as its own field and never near the title: folding it back
         // in scores 0.750 bare and 0.682 bracketed, both under `minAutoScore`,
         // and `volumeNumbersAgree` disagrees as well (T-0165).
@@ -73,14 +74,14 @@ class FilenameSource implements DetectionSource {
 
 /// Why an entry produced no row.
 ///
-/// A closed set of five, because `Orchestrator._warnDeclined` groups its
-/// warnings by this exact string: a games folder declines more entries than it
+/// A closed set of seven, because `Orchestrator._warnDeclined` groups its
+/// warnings by this exact string: a media folder declines more entries than it
 /// accepts, and a reason carrying the offending extension would turn 40
 /// skipped files into 40 warning lines.
 ///
-/// **All five are [Severity.exclusion]** (T-0222). This source is handed a
+/// **All seven are [Severity.exclusion]** (T-0222). This source is handed a
 /// name and nothing else, so it has no promised shape to be disappointed by:
-/// every one of these is a name that was read and held no game this collection
+/// every one of these is a name that was read and held nothing this collection
 /// wants. The class is still stated at each `return` rather than once here --
 /// see [FileNameParse.declinedSeverity].
 abstract final class DeclineReason {
@@ -120,6 +121,23 @@ abstract final class DeclineReason {
   /// the class T-0174 opened and is overridden by any one file inside that does
   /// name a game.
   static const numberedCopy = 'a numbered copy of another name, not a title';
+
+  /// A video name whose grammar says series episode rather than film (T-0162).
+  ///
+  /// An exclusion and not a failure, and the distinction is worth stating
+  /// because it will change. A series is a real thing this collection could
+  /// hold -- Tonkatsu files one -- but a row for it is not one row (T-0163),
+  /// so nothing here can emit it yet. Whichever task teaches this source
+  /// series will turn this decline into rows, not into a different reason.
+  static const seriesEpisode = 'a series episode, not a film';
+
+  /// A video name carrying neither a year nor a resolution (T-0162).
+  ///
+  /// The decline decision 0015 asks for by name: where the extension narrowed
+  /// the kind to video and the grammar settled nothing, the source declines
+  /// instead of guessing. A holiday clip and a game's cutscene are both `.mkv`
+  /// and a name is all this reader gets.
+  static const noWorkKind = 'a video file that names no film';
 }
 
 /// What [parseGameFileName] made of one name.
@@ -135,6 +153,7 @@ class FileNameParse {
         version = null,
         fromContainer = false,
         setupPrefix = false,
+        workKind = WorkKind.game,
         platformHint = filenamePlatformHint;
 
   const FileNameParse.title(
@@ -144,20 +163,35 @@ class FileNameParse {
     this.fromContainer = false,
     this.setupPrefix = false,
     this.platformHint = filenamePlatformHint,
+    this.workKind = WorkKind.game,
   })  : declined = null,
         declinedSeverity = null;
 
   /// Null exactly when [declined] is not.
   final String? title;
 
+  /// What the name says this row is a copy of, inferred from the extension and
+  /// then the grammar (decision 0015, T-0162).
+  ///
+  /// [WorkKind.game] for everything the installer grammar reads, and it is
+  /// what the whole of this file produced before films. A kind the name does
+  /// not settle is a decline, never a default -- so this field is never a
+  /// guess, which is what makes it safe to route on.
+  final WorkKind workKind;
+
   /// The `platformIds` key this name earned: [filenamePlatformHint] unless it
   /// printed a console container ([consolePlatformHints]).
   ///
-  /// Never null and never a spelling the gate cannot honour, which is the whole
-  /// point of the field -- a hint matching no platform name comes back
-  /// `mismatch` on every candidate the row has (T-0156), so a name whose
-  /// container names no single platform declines instead of carrying one.
-  final String platformHint;
+  /// Never a spelling the gate cannot honour, which is the whole point of the
+  /// field -- a hint matching no platform name comes back `mismatch` on every
+  /// candidate the row has (T-0156), so a name whose container names no single
+  /// platform declines instead of carrying one.
+  ///
+  /// Null only for a kind that has no platforms at all: a film is not on `PC`,
+  /// and TMDB has nothing to gate. Null and `PC` are therefore different
+  /// answers -- "this kind has no platform" against "this game is on the
+  /// default one" -- and the resolver each row routes to reads only its own.
+  final String? platformHint;
 
   /// The [DeclineReason] this name got, or null when [title] has a value.
   final String? declined;
@@ -378,6 +412,10 @@ FileNameParse _parseOne(String raw) {
     return const FileNameParse.declined(
         DeclineReason.notAGameFile, Severity.exclusion);
   }
+  // The kind fork, and it is the whole of the extension half of the inference
+  // (decision 0015). Everything below this line is the installer grammar and
+  // reads a game; nothing below it has to test the kind again.
+  if (stem.video) return _parseVideoName(stem.text);
   // Every console mark the name carries, gathered before any of them is
   // honoured: one is a hint, none is `PC`, and two disagreeing ones are the
   // same failure as an unnameable container.
@@ -640,6 +678,13 @@ _Stem? _stripExtensions(String raw) {
     final dot = text.lastIndexOf('.');
     if (dot <= 0 || dot == text.length - 1) break;
     final ext = _fold(text.substring(dot + 1));
+    // Before [_neverAGame] and before the carrier list, and it stops the loop
+    // rather than going round again: what precedes a video extension is the
+    // release name, whose last dot-separated word is a release group and not
+    // an inner extension to strip.
+    if (_videoExtensions.contains(ext)) {
+      return _Stem(text.substring(0, dot), console, consoleHint, video: true);
+    }
     if (_neverAGame.contains(ext)) return null;
     if (consolePlatformHints.containsKey(ext)) {
       console = true;
@@ -659,8 +704,145 @@ _Stem? _stripExtensions(String raw) {
   return _Stem(text, console, consoleHint);
 }
 
+/// A video name to a film row, or to a decline (T-0162, decision 0015).
+///
+/// The grammar half of the kind inference. The extension narrowed the entry to
+/// video; what is left is to tell a film from a series episode, and to refuse
+/// a name that is neither.
+///
+/// **A second grammar beside the installer one, not a flag on it.** The two
+/// share [_clean], [_isYear] and [_bracketGroups] and nothing else, because
+/// what they read is genuinely different: an installer name prints a version,
+/// a build and an architecture, a release name prints a year, a resolution, a
+/// source and a codec. Running one over the other is how `1080p` becomes a
+/// version and `x264` becomes a title.
+///
+/// The film shape is `Name.Year.1080p.Source-GROUP`, and its markers are the
+/// year and the resolution. **Either alone is enough; neither is a decline.**
+/// That asymmetry is the point of the rule rather than a slack in it -- the
+/// two markers are what separates a published film from the other things a
+/// folder of `.mkv` holds, and a name carrying no marker at all is exactly the
+/// case 0015 says to decline instead of guessing.
+FileNameParse _parseVideoName(String raw) {
+  if (_looksEpisodic(raw)) {
+    return const FileNameParse.declined(
+        DeclineReason.seriesEpisode, Severity.exclusion);
+  }
+  final resolution = _videoResolution.hasMatch(raw);
+  var year = _yearInBrackets(raw);
+
+  var text = raw;
+  for (final group in _bracketGroups.allMatches(text).toList().reversed) {
+    text = text.replaceRange(group.start, group.end, ' ');
+  }
+  text = text.replaceAll(RegExp(r'[._~]+'), ' ');
+  final tokens = text.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+
+  final cut = _videoCut(tokens);
+  year ??= cut < tokens.length && _isYear(tokens[cut])
+      ? int.parse(tokens[cut])
+      : null;
+  if (year == null && !resolution) {
+    return const FileNameParse.declined(
+        DeclineReason.noWorkKind, Severity.exclusion);
+  }
+  final title = _clean(tokens.take(cut).join(' '));
+  if (title == null) {
+    return const FileNameParse.declined(
+        DeclineReason.noTitle, Severity.exclusion);
+  }
+  return FileNameParse.title(
+    title,
+    year: year,
+    workKind: WorkKind.movie,
+    platformHint: null,
+  );
+}
+
+/// Where the title stops in a release name.
+///
+/// The release metadata starts at the first [_videoTags] token; the title is
+/// what precedes the **last** year before it.
+///
+/// Last, not first, and this is the one rule here that a first-match version
+/// gets wrong on a whole class of real films: a title may end in a number that
+/// reads as a year. `Harbour Lantern 2049 2017 1080p` carries two, and only
+/// the one nearer the metadata is the release year -- taking the first
+/// truncates the title. The installer grammar's [_metadataCut] takes
+/// the first because it has the opposite problem: `MOOR 2016` ends in a year
+/// that IS the title, and nothing follows it.
+int _videoCut(List<String> tokens) {
+  var limit = tokens.length;
+  for (var i = 0; i < tokens.length; i++) {
+    if (_isVideoTag(tokens[i])) {
+      limit = i;
+      break;
+    }
+  }
+  for (var i = limit - 1; i > 0; i--) {
+    if (_isYear(tokens[i])) return i;
+  }
+  return limit;
+}
+
+/// Split on `-` and `+` like the console marks are: a release group is glued
+/// to the codec (`x264-GROUP`) and only the left half is the tag.
+bool _isVideoTag(String token) {
+  if (_videoResolution.hasMatch(token)) return true;
+  return _fold(token).split(RegExp(r'[-+]')).any(_videoTags.contains);
+}
+
+/// Whether the name numbers an episode, which makes it a series and not a film.
+///
+/// Three unambiguous shapes and one guarded one. `S01E04`, `1x04` and a spelt
+/// `Season 2` say series and nothing else does; the bare ` - 04 ` of the
+/// fansub shape is read as an episode **only when the name also carries a
+/// bracket group**, because a spaced hyphen before a number is otherwise a
+/// subtitle, and reading `Some Film - 2 1999 1080p` as an episode would lose a
+/// film to a rule written for a series.
+bool _looksEpisodic(String raw) =>
+    _seasonEpisode.hasMatch(raw) ||
+    _episodeWord.hasMatch(raw) ||
+    (_bracketGroups.hasMatch(raw) && _dashEpisode.hasMatch(raw));
+
+final _seasonEpisode = RegExp(
+    r'(?<![a-z0-9])(?:s\d{1,2}[\s._-]?e\d{1,3}|\d{1,2}x\d{2})(?![0-9])',
+    caseSensitive: false);
+
+/// `episode` and `season` spelt out. A bare `ep` is deliberately absent: it
+/// appears inside ordinary words and the guard would have to be longer than
+/// the rule.
+final _episodeWord = RegExp(r'(?<![a-z])(?:season|episode)[\s._-]?\d{1,3}(?![0-9])',
+    caseSensitive: false);
+
+final _dashEpisode =
+    RegExp(r'\s-\s\d{1,4}(?:v\d)?(?:\s|$)', caseSensitive: false);
+
+/// A scan resolution as a release name prints it, plus the two marketing
+/// spellings that carry no number.
+final _videoResolution = RegExp(
+    r'(?<![a-z0-9])(?:(?:240|360|480|576|720|1080|1440|2160|4320)[pi]|4k|uhd)'
+    r'(?![a-z0-9])',
+    caseSensitive: false);
+
+/// The source, codec and audio words a release name prints after the year.
+///
+/// Deliberately NOT folded into [_releaseTags]. That set is the installer
+/// grammar's and the two overlap only where the word means the same thing in
+/// both; `web` and `proper` are in both sets on purpose, and `rip` is in
+/// neither shape's set by itself because `dvdrip` and `webrip` are one token.
+const _videoTags = {
+  'bluray', 'bdrip', 'brrip', 'bdremux', 'remux', 'webrip', 'webdl', 'web',
+  'hdtv', 'pdtv', 'dvdrip', 'dvdscr', 'hdrip', 'camrip', 'telesync', 'hdcam',
+  'x264', 'x265', 'h264', 'h265', 'hevc', 'avc', 'xvid', 'divx', 'av1',
+  'aac', 'ac3', 'dts', 'ddp', 'ddp5', 'ddp2', 'dd5', 'flac', 'atmos', 'truehd',
+  'hdr', 'hdr10', 'sdr', 'dv', '10bit', '8bit',
+  'extended', 'uncut', 'unrated', 'imax', 'remastered', 'proper', 'repack',
+  'dubbed', 'subbed', 'multisub', 'dual',
+};
+
 class _Stem {
-  const _Stem(this.text, this.console, this.consoleHint);
+  const _Stem(this.text, this.console, this.consoleHint, {this.video = false});
   final String text;
 
   /// Whether a console extension came off, which is the question the decline
@@ -668,6 +850,10 @@ class _Stem {
   /// that names no single platform.
   final bool console;
   final String? consoleHint;
+
+  /// Whether a [_videoExtensions] extension came off, which sends the stem to
+  /// [_parseVideoName] instead of the installer grammar.
+  final bool video;
 }
 
 /// A floor, deliberately, and not a filter: at least two characters and at
@@ -902,6 +1088,21 @@ const _carrierExtensions = {
   'mdf', 'mds', 'cue', 'img', 'daa', 'nrg', 'tar', 'gz', 'msix', 'appx',
 };
 
+/// Extensions that carry VIDEO, which is the first half of the kind inference
+/// (decision 0015): the extension separates most of it, the grammar of the
+/// name separates the rest, and a name neither settles declines.
+///
+/// `mkv`, `mp4` and `avi` were in [_neverAGame] until T-0162 and are the whole
+/// of what moved: under that set a film declined as `not a game file`, which
+/// was the right answer while a game was the only kind there was.
+///
+/// Audio stays where it was. A `.mp3` is not a copy of a work this collection
+/// holds, and nothing in a music filename resembles the release grammar below.
+const _videoExtensions = {
+  'mkv', 'mp4', 'avi', 'm4v', 'mov', 'wmv', 'mpg', 'mpeg', 'm2ts', 'divx',
+  'ogm', 'rmvb', 'vob', 'webm',
+};
+
 /// Extensions that are never a game, declining the entry before a title is
 /// parsed out of a name that may read exactly like one.
 ///
@@ -920,6 +1121,6 @@ const _neverAGame = {
   'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'bmp', 'ico', 'svg',
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'md', 'html',
   'json', 'xml', 'yml', 'yaml', 'dll', 'bat', 'ps1', 'reg', 'sys', 'dat',
-  'mp3', 'mp4', 'mkv', 'avi', 'flac', 'wav', 'ttf', 'otf', 'apk', 'ipa',
+  'mp3', 'flac', 'wav', 'ttf', 'otf', 'apk', 'ipa',
   'winmd', 'safetensors', 'vbox-extpack', 'db', 'cfg', 'conf',
 };
