@@ -81,8 +81,10 @@ links to has the numbers.
 - **Films are read, and the film half stops at review.** A video file whose
   name is release-shaped becomes a film row rather than a game row, and the
   kind is shown and correctable at review. The lookup is the part that is not
-  wired up: nothing in either shell calls TMDB, so a film matches nothing,
-  exports to CSV and never to `.xcoll`
+  wired up: nothing in either shell calls TMDB, so without IGDB credentials a
+  film matches nothing, and with them it is searched in the games catalogue
+  and can come back matched to a game. `.xcoll` refuses that row and names it;
+  CSV writes it out with nothing on it marking a film
   ([how far that goes](#films-are-read-as-films-and-how-far-that-goes)).
 - **A folder of installers is not a games folder.** Names alone cannot tell
   `NoteWellSetup.exe` from `setup_moor_1.9.exe` — measured on a real `Downloads`
@@ -113,11 +115,29 @@ otherwise read as a promise.** A film is meant to be looked up in TMDB rather
 than IGDB, and the client that would do it is written and covered by tests —
 against a fake server. **No run calls TMDB today:** neither shell wires that
 client up, and no TMDB credential has ever been used here, so whether TMDB
-answers real release names well is unmeasured rather than measured and poor. A
-film row therefore reaches review carrying the title read off its filename,
-matches nothing, and exports to CSV but not to `.xcoll`, which is a file of
-catalogue ids and has nothing to put in one — the same way any row behaves when
-the catalogue it needs is out of reach.
+answers real release names well is unmeasured rather than measured and poor.
+
+**What the film row does then depends on the credentials you already have, and
+the second case is the one to watch.** Without IGDB credentials it reaches
+review carrying the title read off its filename, matches nothing, and exports
+to CSV but not to `.xcoll`, which is a file of catalogue ids and has nothing to
+put in one — the same way any row behaves when the catalogue it needs is out of
+reach. **With IGDB credentials it is searched in the games catalogue**, because
+each shell builds one resolver, it is the IGDB one, and nothing tells it what
+kind of row it was handed. A film whose title is also a game's — and an
+adaptation shares its title almost by definition — can come back holding that
+game's canonical title, its platform and a confidence score, reading like a row
+that went right.
+
+**The export is the last place that can catch that, and only one of the two
+does.** `.xcoll` requires the id to come from the catalogue the kind implies,
+so it refuses the row and names it among the ones the export dropped. CSV has
+no column for the kind at all — its `media_type` is the physical carrier,
+`cartridge`/`disc`/`unknown` — so the row goes out carrying the game's title,
+the game's platform and the game's id, with nothing on it saying film. That is
+what *review every row* is for, and the kind shown beside the title is what
+gives it away. The full account is in
+[the guide](doc/guide.md#it-reads-films-too-now-and-that-widens-the-contract-rather-than-fixing-it).
 
 **Anime is not a working kind.** The review screen offers the value and a
 person may correct a row to it, but no source produces one, no catalogue
