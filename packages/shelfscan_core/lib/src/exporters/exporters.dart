@@ -89,7 +89,9 @@ enum _PlatformId {
   /// refuses elsewhere: a valid-looking id in a column other tools key on.
   /// So the row is declined by [TonkatsuExporter.canExport] and named to the
   /// user as dropped. Whatever teaches this pipeline the difference is what
-  /// replaces this value.
+  /// replaces this value -- and since [WorkKind.wire] is a field rather than
+  /// the identifier, two kinds may share the string `animation` and differ
+  /// only in the number they put here.
   undecidable,
 }
 

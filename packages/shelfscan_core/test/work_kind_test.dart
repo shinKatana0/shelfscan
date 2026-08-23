@@ -111,16 +111,28 @@ void main() {
     // reintroduce -- `.name` is the obvious thing to reach for on an enum --
     // and invisible in a diff, since the two spellings agree today.
     test('nothing in lib/ writes an identifier into a file', () {
-      final offenders = [
-        for (final file in Directory('lib')
-            .listSync(recursive: true)
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.dart')))
-          if (file.readAsStringSync().contains('workKind.name')) file.path,
-      ];
+      // Comment lines are dropped first, and that is not a convenience: the
+      // paragraph in `models.dart` explaining the defect quotes it, so the
+      // first run of this test found its own subject.
+      List<String> codeNaming(String needle) => [
+            for (final file in Directory('lib')
+                .listSync(recursive: true)
+                .whereType<File>()
+                .where((f) => f.path.endsWith('.dart')))
+              if (file
+                  .readAsLinesSync()
+                  .where((l) => !l.trimLeft().startsWith('//'))
+                  .any((l) => l.contains(needle)))
+                file.path,
+          ];
 
-      expect(offenders, isEmpty,
+      expect(codeNaming('workKind.name'), isEmpty,
           reason: 'the wire value is WorkKind.wire and nothing else');
+
+      // The other direction, because a scan that cannot match anything
+      // reports zero just as confidently as a clean tree: the two writers
+      // this rule exists for must both be found by the same pass.
+      expect(codeNaming('workKind.wire'), hasLength(2));
     });
   });
 
