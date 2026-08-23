@@ -260,7 +260,7 @@ void main() {
 
       expect(
           find.text('PS5 - raw: "HOLLOW PINE 2" - '
-              'not in .xcoll -- tap to pick a match - '
+              'not in .xcoll -- csv carries it - '
               'note: "label worn, partially occluded"'),
           findsOneWidget);
     });
@@ -270,7 +270,7 @@ void main() {
 
       expect(
           find.text('PS4 - raw: "HOLLOW PINE 2" - '
-              'not in .xcoll -- tap to pick a match'),
+              'not in .xcoll -- csv carries it'),
           findsOneWidget);
       expect(find.textContaining('note:'), findsNothing);
     });
@@ -294,7 +294,7 @@ void main() {
       expect(find.byIcon(Icons.edit_note), findsOneWidget);
       expect(
           find.text('PS4 - added by hand - '
-              'not in .xcoll -- tap to pick a match - '
+              'not in .xcoll -- csv carries it - '
               'note: "logo-only spine, no text to read"'),
           findsOneWidget);
     });
@@ -307,12 +307,38 @@ void main() {
   group('rows that cannot reach .xcoll (T-0123)', () {
     testWidgets('an unmatched row says so, and says what to do about it',
         (tester) async {
-      await _pump(tester, _doc([_game('JP SPINE')]), FakeExportSaver());
+      // The candidate is the whole reason the instruction is honest: this is
+      // the commonest unresolved row, one IGDB answered with hits none of
+      // which scored, and picking any of them puts it in the file. The
+      // wording is the owner's (T-0123) and is unchanged.
+      final doc = _doc([
+        _game('JP SPINE', candidates: [_candidate(4, 'Duskhollow Reach')]),
+      ]);
+      await _pump(tester, doc, FakeExportSaver());
 
       expect(
           find.text('PS4 - raw: "JP SPINE" - '
               'not in .xcoll -- tap to pick a match'),
           findsOneWidget);
+    });
+
+    // The same row with an empty candidate list, which is where the
+    // instruction ran out: the resolver was asked the RIGHT catalogue and it
+    // answered nothing, so the sheet the tap opens says `The resolver found
+    // no candidates` and the only other things it offers -- No match, the
+    // kind, Expand -- put no row in `.xcoll` (T-0318). The clause T-0313
+    // wrote for a row nothing on it can rescue is exactly this row's too.
+    testWidgets('an unmatched row with nothing to pick asks for no tap',
+        (tester) async {
+      await _pump(tester, _doc([_game('JP SPINE')]), FakeExportSaver());
+
+      expect(
+          find.text('PS4 - raw: "JP SPINE" - '
+              'not in .xcoll -- csv carries it'),
+          findsOneWidget);
+      // In the negative, because the defect is an instruction: no later
+      // moment disproves one, and only its absence says it is gone.
+      expect(find.textContaining('tap to pick a match'), findsNothing);
     });
 
     testWidgets('it is said before the row is approved, and after',

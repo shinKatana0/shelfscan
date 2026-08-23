@@ -32,7 +32,10 @@ final _xcoll = TonkatsuExporter();
 /// gets longer.
 ///
 /// The only one of the three that asks for a tap, so [_noXcollClauseFor]
-/// decides which rows have earned it.
+/// decides which rows have earned it: the ones holding a candidate this file
+/// would take. The wording is T-0123's and the owner's own, so it is not
+/// re-decided here -- it is withheld from the rows that cannot follow it,
+/// which is the third narrowing of it and the first that is not about a kind.
 const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 
 /// The same slot for the OTHER reason `.xcoll` refuses a row: an animation
@@ -42,21 +45,26 @@ const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 /// cannot work. 32 characters, inside the budget measured above.
 const _noXcollKindClause = 'not in .xcoll -- film or series?';
 
-/// The same slot again for a film row, refused for a third reason: its
-/// `media_type` implies TMDB and every candidate on it is IGDB's, IGDB being
-/// the only catalogue either shell wires, so `TonkatsuExporter` declines the
-/// id however well it matched. The row said `tap to pick a match` until
-/// T-0313 and no pick reached the file -- the person did exactly what the
-/// screen asked and the row did not move, which is the failure
-/// [_noXcollKindClause] was written one kind over to prevent.
+/// The same slot again for a row no pick can rescue, whatever its kind.
+///
+/// Two routes reach it, refused for different reasons, which is why the guard
+/// asks the exporter rather than the kind. A film row's `media_type` implies
+/// TMDB and every candidate on it is IGDB's, IGDB being the only catalogue
+/// either shell wires, so `TonkatsuExporter` declines the id however well it
+/// matched (T-0313). A row the resolver answered with nothing has no
+/// candidate to offer at all, and only the sheet said so, after the tap had
+/// been spent (T-0318). Both rows said `tap to pick a match`, and in both the
+/// person did exactly what the screen asked and the row did not move -- the
+/// failure [_noXcollKindClause] was written one kind over to prevent.
 ///
 /// It spends its width on where the row still goes rather than on why this
-/// file will not take it. A film row is refused by the whole run and not by
-/// anything about itself, so the reason buys the reader nothing they can act
-/// on, while `.xcoll` refusing a row read alone says the row is lost -- csv
-/// carries it, which is the claim [_keylessBanner] already makes
-/// unconditionally for a whole run of such rows. 31 characters.
-const _noXcollFilmClause = 'not in .xcoll -- csv carries it';
+/// file will not take it. Neither reason is one the reader can act on: a film
+/// row is refused by the whole run rather than by anything about itself, and
+/// an empty candidate list is a search that has already happened. Meanwhile
+/// `.xcoll` refusing a row, read alone, says the row is lost -- csv carries
+/// it, which is the claim [_keylessBanner] already makes unconditionally for
+/// a whole run of such rows. 31 characters.
+const _noXcollCsvClause = 'not in .xcoll -- csv carries it';
 
 /// Which of the three a refused row gets.
 ///
@@ -64,13 +72,15 @@ const _noXcollFilmClause = 'not in .xcoll -- csv carries it';
 /// exhaustive for the same reason its switch is: a fourth [WorkKind] cannot
 /// arrive without someone answering what its refused row says.
 ///
-/// The film arm is guarded rather than fixed, so a film row that does carry a
-/// match this file would take goes back to inviting the tap with no edit
-/// here -- which is what wiring a film catalogue (T-0308) would produce.
+/// The invitation is guarded rather than fixed to a kind, so a row that does
+/// carry a match this file would take goes back to inviting the tap with no
+/// edit here -- which is what wiring a film catalogue (T-0308) would produce.
+/// Animation is outside the guard because its refusal is not about the
+/// candidates: `platform_id` is unanswerable there whatever the row matched.
 String _noXcollClauseFor(ResolvedGame game) =>
     switch (game.detection.workKind) {
       WorkKind.animation => _noXcollKindClause,
-      WorkKind.movie when !_pickReachesXcoll(game) => _noXcollFilmClause,
+      _ when !_pickReachesXcoll(game) => _noXcollCsvClause,
       WorkKind.game || WorkKind.movie => _noXcollClause,
     };
 
