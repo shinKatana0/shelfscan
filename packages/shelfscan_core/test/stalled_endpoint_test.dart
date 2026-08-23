@@ -21,6 +21,13 @@
 /// answer that must NOT be aborted -- that provider is constructed with no
 /// timeout argument at all.
 ///
+/// That answer is the file's floor -- 35.0 s of the 60.4 s this file used to
+/// take, against 25.4 s for every other wait in it together -- so since T-0273
+/// it is started before the first test and awaited by the last, and the rest
+/// runs inside it. Nothing was shortened to get there: a socket read costs
+/// wall clock and no CPU, and the tests are independent, so the only thing
+/// that changed is that they no longer queue behind it.
+///
 /// The file budget is the axe for a hang, not a claim about any duration: no
 /// test here can legitimately outlast the 35 s answer plus the shipped 120 s
 /// bound, so 155 s is the ceiling and 6 minutes is 2.3x it. It was 4 minutes
@@ -55,6 +62,10 @@ typedef _Reply = String? Function(String path);
 
 final _closers = <Future<void> Function()>[];
 
+/// What is held open across the whole file, closed once at the end: [_closers]
+/// is emptied after every test and the 35 s answer outlives most of them.
+final _wholeFile = <Future<void> Function()>[];
+
 /// A loopback server that replies per [reply] and holds the connection open
 /// forever when it returns null.
 ///
@@ -62,7 +73,8 @@ final _closers = <Future<void> Function()>[];
 /// being reproduced is a socket that completes the handshake, reads the
 /// request and then writes nothing, which is what a stalled proxy or a wedged
 /// model runner leaves behind.
-Future<int> _stallServer(_Reply reply, {Duration? after}) async {
+Future<int> _stallServer(_Reply reply,
+    {Duration? after, List<Future<void> Function()>? closeWith}) async {
   final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
   final live = <Socket>[];
   server.listen((socket) {
@@ -85,7 +97,7 @@ Future<int> _stallServer(_Reply reply, {Duration? after}) async {
       }
     }, onError: (_) {}, cancelOnError: true);
   });
-  _closers.add(() async {
+  (closeWith ?? _closers).add(() async {
     for (final socket in live) {
       socket.destroy();
     }
@@ -181,6 +193,28 @@ void _readsAsASentence(String message) {
 }
 
 void main() {
+  // The 35 s answer, running from before the first test. Errors are carried
+  // as a value so a failure is reported by the test that awaits it rather than
+  // as an uncaught error in setUpAll's zone.
+  late Future<({Object outcome, Duration waited})> slowAnswer;
+
+  setUpAll(() async {
+    final port = await _stallServer((_) => _ollamaBody,
+        after: const Duration(seconds: 35), closeWith: _wholeFile);
+    final clock = Stopwatch()..start();
+    slowAnswer = OllamaVisionProvider(baseUrl: 'http://127.0.0.1:$port')
+        .analyze(_photo)
+        .then<Object>((a) => a, onError: (Object e) => e)
+        .then((outcome) => (outcome: outcome, waited: clock.elapsed));
+  });
+
+  tearDownAll(() async {
+    for (final close in _wholeFile.reversed) {
+      await close();
+    }
+    _wholeFile.clear();
+  });
+
   tearDown(() async {
     for (final close in _closers.reversed) {
       await close();
@@ -397,50 +431,6 @@ void main() {
     });
   });
 
-  group('a slow answer is not a stall', () {
-    test('a 35 s vision call succeeds under the shipped budget', () async {
-      // The provider takes no timeout argument here on purpose: what is being
-      // proven is that the number this package ships tolerates a read longer
-      // than any this project has measured (34.5 s, T-0090).
-      final port = await _stallServer((_) => _ollamaBody,
-          after: const Duration(seconds: 35));
-      final clock = Stopwatch()..start();
-      final analysis = await OllamaVisionProvider(
-        baseUrl: 'http://127.0.0.1:$port',
-      ).analyze(_photo);
-
-      expect(analysis.items.single.rawTitle, 'Duskhollow');
-      expect(clock.elapsed, greaterThan(const Duration(seconds: 34)));
-      expect(visionCallTimeout, greaterThan(const Duration(seconds: 35)));
-    });
-
-    test('IGDB is bounded far tighter, and that is a different measurement',
-        () async {
-      expect(igdbCallTimeout, lessThan(visionCallTimeout));
-      expect(igdbCallTimeout, greaterThan(const Duration(seconds: 10)));
-    });
-
-    test('the rate limiter\'s own wait is not part of the budget', () async {
-      // 8 searches at 4 rps means the last lane waits ~1 s for a slot; with the
-      // bound around waitForSlot rather than the request, a tight timeout would
-      // abort a request that had not been sent yet.
-      final port = await _stallServer((path) => path.contains('token')
-          ? '{"access_token":"t","expires_in":3600}'
-          : '[]');
-      final client = IgdbClient(
-        clientId: 'id',
-        clientSecret: 'secret',
-        timeout: _fast,
-        client: _redirected(port),
-      );
-
-      final hits = await Future.wait(
-          [for (var i = 0; i < 8; i++) client.search('game $i')]);
-
-      expect(hits, everyElement(isEmpty));
-    });
-  });
-
   group('a stalled photo is not retried', () {
     test('one call and one budget, not four of each', () async {
       final port = await _stallServer((_) => null);
@@ -512,6 +502,51 @@ void main() {
 
       expect(offenders, isEmpty,
           reason: 'an unbounded request is the whole of T-0104');
+    });
+  });
+
+  // Last, not third: the answer it awaits was started before the first test,
+  // so every wait above ran inside it.
+  group('a slow answer is not a stall', () {
+    test('IGDB is bounded far tighter, and that is a different measurement',
+        () async {
+      expect(igdbCallTimeout, lessThan(visionCallTimeout));
+      expect(igdbCallTimeout, greaterThan(const Duration(seconds: 10)));
+    });
+
+    test('the rate limiter\'s own wait is not part of the budget', () async {
+      // 8 searches at 4 rps means the last lane waits ~1 s for a slot; with the
+      // bound around waitForSlot rather than the request, a tight timeout would
+      // abort a request that had not been sent yet.
+      final port = await _stallServer((path) => path.contains('token')
+          ? '{"access_token":"t","expires_in":3600}'
+          : '[]');
+      final client = IgdbClient(
+        clientId: 'id',
+        clientSecret: 'secret',
+        timeout: _fast,
+        client: _redirected(port),
+      );
+
+      final hits = await Future.wait(
+          [for (var i = 0; i < 8; i++) client.search('game $i')]);
+
+      expect(hits, everyElement(isEmpty));
+    });
+
+    test('a 35 s vision call succeeds under the shipped budget', () async {
+      // The call takes no timeout argument on purpose: what is being proven is
+      // that the number this package ships tolerates a read longer than any
+      // this project has measured (34.5 s, T-0090). [slowAnswer] times the
+      // call itself, so the wait asserted below is the read's and not this
+      // test's position in the file.
+      final answered = await slowAnswer;
+      final analysis = answered.outcome;
+
+      expect(analysis, isA<PhotoAnalysis>(), reason: '$analysis');
+      expect((analysis as PhotoAnalysis).items.single.rawTitle, 'Duskhollow');
+      expect(answered.waited, greaterThan(const Duration(seconds: 34)));
+      expect(visionCallTimeout, greaterThan(const Duration(seconds: 35)));
     });
   });
 }
