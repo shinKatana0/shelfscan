@@ -20,6 +20,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shelfscan_app/export_saver.dart';
 
+/// The flattened source around [needle], so a failure can quote the shape that
+/// is there instead of printing the whole file as its `Actual` (T-0324).
+String _flattenedAround(String flattened, String needle) {
+  final at = flattened.indexOf(needle);
+  if (at < 0) return '(not present)';
+  final from = at > 140 ? at - 140 : 0;
+  var to = at + needle.length + 40;
+  if (to > flattened.length) to = flattened.length;
+  return '...${flattened.substring(from, to)}...';
+}
+
 class FakeFileSelector extends FileSelectorPlatform {
   FakeFileSelector(this.chosenPath);
 
@@ -125,12 +136,41 @@ void main() {
       // Read as text: the branch is behind Platform.isAndroid, so a host test
       // cannot enter it, and pinning the mapping proves nothing unless the
       // branch is what uses it.
-      final source = File('lib/export_saver.dart').readAsStringSync();
+      const path = 'app/lib/export_saver.dart';
+      // Flattened: what is asserted below is a sequence of tokens, and a line
+      // break between two of them is the one difference Dart does not carry.
+      // Unflattened, a hand-rewrap of the call failed this with the whole file
+      // as the matcher's Actual and no sentence saying a source scan had run
+      // (T-0324).
+      final source = File('lib/export_saver.dart')
+          .readAsStringSync()
+          .replaceAll(RegExp(r'\s+'), ' ');
 
-      expect(source, contains('SharePlus.instance.share('),
-          reason: 'the source scan found no share call, so the check below '
-              'would pass on a file that shares nothing');
-      expect(source, contains('return shareOutcome(result, file.path);'));
+      if (!source.contains('SharePlus.instance.share(')) {
+        fail('$path: a source scan of the whitespace-flattened file found no '
+            'SharePlus.instance.share(, so nothing here opens the share sheet '
+            'and the routing checked below would pass on a file that shares '
+            'nothing.');
+      }
+      // The optional space is a line break after the paren, which the flatten
+      // turns into a space -- the only wrap of this statement that survives
+      // the flatten. A changed argument still fails, on purpose.
+      final routed = RegExp(r'return shareOutcome\( ?result, file\.path\);');
+      if (!routed.hasMatch(source)) {
+        // A branch that maps the result itself and one that merely wraps the
+        // call differently send a reader to opposite ends of the file, so they
+        // do not share a sentence.
+        fail(source.contains('return shareOutcome(')
+            ? '$path: a source scan found return shareOutcome( but not the '
+                'shape ${routed.pattern} in the whitespace-flattened file, so '
+                'the sheet result reaches the mapping under other arguments. '
+                'What is there:\n  '
+                '${_flattenedAround(source, 'return shareOutcome(')}'
+            : '$path: a source scan of the whitespace-flattened file found no '
+                'return shareOutcome(, so the Android branch decides saved '
+                'from cancelled itself and the three tests above pin a '
+                'function that branch does not use.');
+      }
     });
   });
 }
