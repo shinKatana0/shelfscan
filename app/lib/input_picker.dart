@@ -46,20 +46,23 @@ class PlatformInputPicker extends InputPicker {
     // FileType.custom rather than FileType.image: the Windows dialog's own
     // image filter hides .heic, so the phone's HEIC photos could not even be
     // selected (T-0039).
-    final result = await FilePicker.platform.pickFiles(
+    final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: pickerExtensions,
-      allowMultiple: true,
-      withData: true, // bytes, not paths: Android may not expose real paths
     );
-    if (result == null) return null;
+    // file_picker 12 answers a cancelled dialog with an empty list, so the two
+    // cases this interface keeps apart arrive as one. Empty is read as
+    // cancelled, which is the safe direction: the screen leaves the previous
+    // pick's rejections on screen (T-0138) rather than clearing them.
+    if (files.isEmpty) return null;
     return [
-      for (final file in result.files)
-        if (file.bytes case final bytes?) (name: file.name, bytes: bytes)
+      // Bytes, not paths: Android may not expose a real path.
+      for (final file in files)
+        (name: file.name, bytes: await file.readAsBytes())
     ];
   }
 
   @override
   Future<String?> pickFolder({required String prompt}) =>
-      FilePicker.platform.getDirectoryPath(dialogTitle: prompt);
+      FilePicker.getDirectoryPath(dialogTitle: prompt);
 }

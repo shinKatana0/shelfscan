@@ -97,16 +97,26 @@ class PlatformExportSaver extends ExportSaver {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}${Platform.pathSeparator}$suggestedName');
     await file.writeAsString(content, flush: true);
-    final result = await Share.shareXFiles(
-      [XFile(file.path, mimeType: mimeTypeFor(extension))],
+    final result = await SharePlus.instance.share(ShareParams(
+      files: [XFile(file.path, mimeType: mimeTypeFor(extension))],
       subject: suggestedName,
-    );
-    if (result.status == ShareResultStatus.dismissed) {
-      return const SaveOutcome.cancelled();
-    }
-    return SaveOutcome.shared(file.path);
+    ));
+    return shareOutcome(result, file.path);
   }
 }
+
+/// A dismissed share sheet is a cancelled export, never a saved one.
+///
+/// Named rather than inlined so a test can pin it without a device: the
+/// Android path is the one place where claiming success for an export the
+/// user backed out of is possible, and nothing else here can check it.
+/// [ShareResultStatus.unavailable] stays on the shared side deliberately --
+/// it means the sheet could not report what happened, not that the user
+/// declined, and only [ShareResultStatus.dismissed] is a definite refusal.
+SaveOutcome shareOutcome(ShareResult result, String path) =>
+    result.status == ShareResultStatus.dismissed
+        ? const SaveOutcome.cancelled()
+        : SaveOutcome.shared(path);
 
 /// `.xcoll` is JSON (external contract, see TonkatsuExporter).
 String mimeTypeFor(String extension) => switch (extension) {

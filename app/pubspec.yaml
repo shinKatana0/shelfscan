@@ -11,18 +11,18 @@ dependencies:
     sdk: flutter
   shelfscan_core:
     path: ../packages/shelfscan_core
-  file_picker: ^8.0.0
+  file_picker: ^12.0.0
   # HEIC decoding calls the Windows Imaging Component over dart:ffi, and
   # dart:ffi ships no allocator (see heic_wic.dart for the alternatives).
   ffi: ^2.1.0
   # Export saving lives in the shell (ARCHITECTURE.md platform boundary):
   # file_selector = Windows save dialog, share_plus = Android share sheet.
   file_selector: ^1.0.3
-  share_plus: ^10.0.0
+  share_plus: ^13.2.0
   path_provider: ^2.1.0 # temp file for the Android share sheet
   # Settings persistence, split by sensitivity (BYOK, decision 0011):
   # secrets go to the OS keychain, plain preferences to shared_preferences.
-  flutter_secure_storage: ^9.2.2
+  flutter_secure_storage: ^11.0.0
   shared_preferences: ^2.3.2
   # TODO: image_picker (camera capture)
 
