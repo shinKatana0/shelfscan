@@ -1551,12 +1551,20 @@ const _apiUrl = 'https://api.anthropic.com/v1/messages';
 /// timeout. They are not one constant and should not become one -- three
 /// different models, three different things being bounded.
 ///
-/// What 4096 is worth flagging for is arithmetic, not a measurement: this
-/// answer is ~48 tokens a row whatever writes it, so 4096 is about 85 rows,
-/// and T-0278's ladder puts an 84-spine frame at 3023 tokens and a 120-spine
-/// one at 5504. A dense frame would therefore stop here. Carried across models
-/// and never run -- no key for this provider has ever been available, which is
-/// the same reason the class comment below gives for every other number on it.
+/// What 4096 is worth flagging for is arithmetic and **not a measurement**
+/// (T-0284). T-0278's ladder ran at ~48 output tokens a row, which would put
+/// this at about 85 rows, with an 84-spine frame at 3023 tokens and a
+/// 120-spine one at 5504 -- but that ladder is `qwen2.5vl:7b` through Ollama,
+/// and tokeniser, verbosity and how many optional fields a model fills all
+/// move tokens per row. No key for this provider has ever been available to
+/// check it, which is the same reason the class comment below gives for every
+/// other number on it.
+///
+/// **Left at 4096 because reaching it is not silent**: `stop_reason:
+/// max_tokens` is read below and raised as [visionTruncatedFailure] before the
+/// answer is parsed, so a dense frame is declined with the advice to shoot the
+/// shelf in sections rather than accepted short. Moving the number wants one
+/// key, one dense frame, one call, and that model's own tokens per row.
 const _anthropicMaxOutputTokens = 4096;
 
 /// Vision provider backed by the Anthropic Messages API.
