@@ -425,9 +425,14 @@ void main() {
                 'field in Settings means, and the field hint is the string '
                 'itself, so a second copy changes what clearing it does: '
                 '$copies');
-        expect(File(copies.single).readAsStringSync(), contains('const $name'),
-            reason: 'the only file holding $value does not declare $name, so '
-                'the constant has been inlined somewhere');
+        // fail() rather than expect(): a matcher against the file's text
+        // prints the whole file as its Actual and buries the sentence that
+        // says what is wrong (T-0324).
+        if (!File(copies.single).readAsStringSync().contains('const $name')) {
+          fail('${copies.single}: a source scan found no `const $name` in the '
+              'one shipped file holding $value, so the constant has been '
+              'inlined there rather than referenced.');
+        }
       });
     }
 

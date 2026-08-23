@@ -18,6 +18,19 @@ import 'package:test/test.dart';
 
 final _photo = PhotoInput(name: 'shelf.jpg', bytes: Uint8List.fromList([1, 2]));
 
+/// The source around [needle], so a failure can quote the shape that is there
+/// instead of printing the whole file as its `Actual` (T-0324). The window is
+/// flattened rather than the file: this scan matches against the source as
+/// written, and only the quote needs to fit on a reporter line.
+String _flattenedAround(String source, String needle) {
+  final at = source.indexOf(needle);
+  if (at < 0) return '(not present)';
+  final from = at > 60 ? at - 60 : 0;
+  var to = at + needle.length + 120;
+  if (to > source.length) to = source.length;
+  return '...${source.substring(from, to).replaceAll(RegExp(r'\s+'), ' ')}...';
+}
+
 /// Captures the outgoing request body instead of hitting a real endpoint.
 ({http.Client client, List<Map<String, dynamic>> sent}) _capturing(
     String responseBody) {
@@ -298,17 +311,30 @@ void main() {
     });
 
     test('ollama_vision.dart carries no prompt text of its own', () {
-      final source = File('lib/src/providers/ollama_vision.dart')
-          .readAsStringSync();
+      const path = 'lib/src/providers/ollama_vision.dart';
+      final source = File(path).readAsStringSync();
 
-      expect(source, contains('detectionPrompt'),
-          reason: 'the Ollama provider must compose from the shared const');
+      // fail() rather than expect(): a matcher against `source` prints the
+      // whole file as its Actual and buries the one sentence that says what
+      // is wrong (T-0324). Nothing here is flattened -- none of the three
+      // shapes below can be broken by a rewrap, and the line number is worth
+      // more than the tolerance would be.
+      if (!source.contains('detectionPrompt')) {
+        fail('$path: a source scan found no detectionPrompt, so the Ollama '
+            'provider names no shared const and its request is built from '
+            'text of its own.');
+      }
       // The old duplicate was a multi-line string literal; the file needs
       // none of its own. (Doc comments are free to mention anything.)
-      expect(source, isNot(contains("'''")),
-          reason: 'prompt text looks duplicated into the Ollama provider');
-      expect(source, isNot(contains('You identify video games')),
-          reason: 'prompt text duplicated into the Ollama provider');
+      for (final duplicate in const ["'''", 'You identify video games']) {
+        final at = source.indexOf(duplicate);
+        if (at < 0) continue;
+        final line = '\n'.allMatches(source.substring(0, at)).length + 1;
+        fail('$path line $line: a source scan found `$duplicate`, which is '
+            'prompt text carried in this file rather than composed from the '
+            'const in vision.dart. What is there:\n  '
+            '${_flattenedAround(source, duplicate)}');
+      }
     });
   });
 }
