@@ -32,6 +32,40 @@ bound trips, and then reads its own log: any file named `did not complete` is
 re-run on its own, because a file whose host died comes back green and a real
 defect does not.
 
+## Formatting — do not run `dart format`
+
+This tree is **not formatter-managed**. Every line in it was wrapped by hand,
+no formatter produced it, and no combination of formatter settings reproduces
+it. On the toolchain this is developed against, a bare `dart format` over the
+two packages rewrites **136 files**. On a fresh clone it is worse and it is the
+same command: before `pub get` the formatter cannot read the package's language
+version, falls back to a newer default style, and rewrites more still.
+
+So, before your first edit, **turn format-on-save off for Dart** — in VS Code
+that is `editor.formatOnSave` under `[dart]`, in IntelliJ and Android Studio
+the "Reformat code" save action. It is the setting that runs the command for
+you without asking, and it is the likeliest way this happens to somebody.
+
+That belongs beside the four commands above rather than in passing, because
+none of them will tell you it happened. `dart analyze` and `flutter analyze` do
+not judge formatting, `tool/check-suites.sh` runs the two suites and no format
+check, and there is deliberately no format check anywhere — installing one
+would mean reformatting the tree first. What a reformatted tree does produce is
+a single failing test whose message reads as something else entirely: a
+source-text assertion in `app/test/galaxy_db_test.dart` reporting that
+`app/lib` never looks up `sqlite3_initialize`, when that call is still there
+and only its line break moved. Your own change is a rounding error inside a
+diff that size, and the rest of it is invisible unless you read `git status`
+file by file.
+
+**When an edit pushes a line past 80 columns, wrap it by hand** the way the
+lines around it are already wrapped, and change nothing else on the screen.
+That is the whole of the rule. 80 is the preference here and not a gate —
+several hundred lines in the tree are already over it — so a line you cannot
+wrap without making it harder to read stays long. `dart format -o show` on the
+one file you touched is not a way around this either: it reformats the whole
+file, not your line.
+
 ## Building the app
 
 Neither platform builds on a `flutter doctor` that prints green, and the
