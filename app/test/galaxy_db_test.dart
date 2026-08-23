@@ -95,20 +95,24 @@ void main() {
           // and a bare substring search cannot tell those apart (T-0321).
           fail(source.contains("'$symbol'")
               ? '${shell.key}: no binding of the shape ${binding.pattern} in '
-                  "the whitespace-flattened source, but '$symbol' IS in the "
-                  'file. The lookup is written in a shape this guard does not '
-                  'admit -- a line break has moved. Check the shape, not the '
-                  'existence. What is there:\n  '
+                  "the whitespace-flattened source, but the literal '$symbol' "
+                  'IS in the file. The lookup is written in a shape this guard '
+                  'does not admit -- a line break has moved. Check the shape, '
+                  'not the existence. What is there:\n  '
                   '${_flattenedAround(source, symbol)}'
-              : "${shell.key}: '$symbol' does not occur in this file at all, "
-                  'so nothing looks the symbol up. The engine is then never '
+              : "${shell.key}: no string literal '$symbol' occurs in this "
+                  'file, so nothing looks the symbol up. The engine is never '
                   'initialised and the process dies without a message on a '
                   'SQLITE_OMIT_AUTOINIT build (T-0240).');
         }
         final name = lookup.group(1)!;
-        expect(source, matches(RegExp(r'(?<!\w)' + name + r' ?\(\);')),
-            reason: '${shell.key} looks $symbol up and never calls it: the '
-                'result is bound to `$name` and `$name();` never occurs.');
+        // fail() rather than expect(): a matcher against `source` prints the
+        // whole flattened file as its Actual and buries the one sentence that
+        // says what is wrong (T-0321).
+        if (!RegExp(r'(?<!\w)' + name + r' ?\(\);').hasMatch(source)) {
+          fail('${shell.key} looks $symbol up and never calls it: the result '
+              'is bound to `$name` and `$name();` never occurs.');
+        }
       }
     });
   });
