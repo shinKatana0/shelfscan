@@ -385,15 +385,48 @@ class ResolverWorker extends Worker<Detection, ResolvedGame> {
         return b.candidate.score.compareTo(a.candidate.score);
       });
 
+    final best = _best(scored,
+        fromFallbackQuery: fromFallbackQuery, sourceYear: task.sourceYear);
     return ResolvedGame(
       detection: task,
-      best: _best(scored,
-          fromFallbackQuery: fromFallbackQuery, sourceYear: task.sourceYear),
-      candidates: [for (final entry in scored.take(5)) entry.candidate],
+      best: best,
+      candidates: _window([for (final entry in scored) entry.candidate], best),
     );
   }
 
   // ------------------------------------------------------------------ //
+
+  /// The rows the review sheet is built around -- the first five -- plus
+  /// [best] where those five would have cut it (T-0322).
+  ///
+  /// The pick is drawn from the whole scored list while the window is its
+  /// first five, and [_separatedBySourceYear] searches every entry tied at
+  /// the top score rather than the window, so a tie more than five deep can
+  /// name a row outside it. The window is what gives way and not the pick:
+  /// among identically scoring entries the order is IGDB's, and T-0165
+  /// measured that order changing under this project with nothing here
+  /// changed -- so confining the pick to an index would decide an auto-match
+  /// by a third party's arrangement, which is what the tie rule exists to
+  /// refuse.
+  ///
+  /// It widens rather than evicting. In the only case it fires, the five it
+  /// joins are all rows agreeing with the hint and tied at the top score --
+  /// every one of them something the human is being asked to choose between
+  /// -- and nothing is removed, so T-0008's sunk-but-never-dropped ordering
+  /// is reached exactly as before.
+  static List<Candidate> _window(List<Candidate> ordered, Candidate? best) {
+    final window = ordered.take(5).toList();
+    if (best == null || window.any((row) => _sameMatch(row, best))) {
+      return window;
+    }
+    return [...window, best];
+  }
+
+  /// The key the review sheet marks the pick by: a candidate is a (catalogue
+  /// entry, platform) pair, so one game on two consoles is two of them and
+  /// the id alone does not identify a row.
+  static bool _sameMatch(Candidate a, Candidate b) =>
+      a.externalId == b.externalId && a.platformId == b.platformId;
 
   /// The store product id joined to IGDB, or null for "carry on as usual"
   /// (T-0159).
@@ -473,10 +506,11 @@ class ResolverWorker extends Worker<Detection, ResolvedGame> {
         (null, _) => -1,
         (_, null) => 1,
       });
+    final best = onHint.length == 1 ? candidates.single : null;
     return ResolvedGame(
       detection: task,
-      best: onHint.length == 1 ? candidates.single : null,
-      candidates: candidates.take(5).toList(),
+      best: best,
+      candidates: _window(candidates, best),
     );
   }
 
