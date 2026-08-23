@@ -48,7 +48,7 @@ Candidate _candidate(int id, String title,
         double score = 0.7,
         String? matchedAlternativeName}) =>
     Candidate(
-      igdbId: id,
+      externalId: 'igdb:$id',
       title: title,
       platformId: id * 10,
       platformName: platform,
@@ -217,8 +217,9 @@ void main() {
     // T-0163 the sheet carries a second one-of-N group, for the kind of work,
     // so a bare count no longer says which candidate is marked -- which is
     // this test's actual claim.
-    Icon iconOf(int igdbId) => tester.widget<Icon>(find.descendant(
-        of: find.byKey(Key('candidate-$igdbId')), matching: find.byType(Icon)));
+    Icon iconOf(int id) => tester.widget<Icon>(find.descendant(
+        of: find.byKey(Key('candidate-igdb:$id')),
+        matching: find.byType(Icon)));
     expect(iconOf(1).icon, Icons.radio_button_checked);
     expect(iconOf(2).icon, Icons.radio_button_unchecked);
   });
@@ -361,7 +362,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('review-row-0')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('candidate-1')));
+      await tester.tap(find.byKey(const Key('candidate-igdb:1')));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('not in .xcoll'), findsNothing);
@@ -436,7 +437,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('review-row-0')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('candidate-1')));
+      await tester.tap(find.byKey(const Key('candidate-igdb:1')));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('not in .xcoll'), findsNothing);
@@ -626,7 +627,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('review-row-0')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('candidate-2')));
+    await tester.tap(find.byKey(const Key('candidate-igdb:2')));
     await tester.pumpAndSettle();
 
     expect(game.best, same(other));
@@ -878,7 +879,7 @@ void main() {
       // and the T-0005 picker works on it like on any other row
       await tester.tap(find.byKey(const Key('review-row-0')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('candidate-1100000016')));
+      await tester.tap(find.byKey(const Key('candidate-igdb:1100000016')));
       await tester.pumpAndSettle();
 
       expect(doc.games.single.best, same(vanilla));
@@ -1337,5 +1338,25 @@ void main() {
       expect(find.byKey(const Key('photo-group-add-')), findsNothing);
       expect(find.byIcon(Icons.playlist_add), findsNothing);
     });
+  });
+
+  testWidgets('a row whose kind has no platform shows none, not the hint',
+      (tester) async {
+    // The review-screen half of decision 0016's one behaviour change, and the
+    // same rule the CSV's platform column follows: the hint is a guess about a
+    // console, so a film must not wear one. `correctWorkKind` clears the match
+    // and not the detection, so this row still carries the `PS4` its spine
+    // gave it -- which is exactly why the fallback may not be reached when
+    // something matched.
+    final doc = _doc([
+      _game('HARBOUR LIGHTS',
+          workKind: WorkKind.movie,
+          best: Candidate(
+              externalId: 'tmdb:1100000091', title: 'Harbour Lights', score: 1.0))
+    ]);
+    await _pump(tester, doc, FakeExportSaver());
+
+    expect(find.textContaining('PS4'), findsNothing);
+    expect(find.textContaining('score 100%'), findsOneWidget);
   });
 }

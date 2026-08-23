@@ -293,8 +293,8 @@ void main() {
       expect(ok.exitCode, 0);
       expect(
           File(out).readAsStringSync(),
-          'title,platform,media_type,igdb_id,source_photo\r\n'
-          'Crown of Tidefall,PlayStation 5,disc,1100000048,shelf_b.jpg\r\n');
+          'title,platform,media_type,external_id,source_photo\r\n'
+          'Crown of Tidefall,PlayStation 5,disc,igdb:1100000048,shelf_b.jpg\r\n');
     });
 
     test('an existing output file is still overwritten in place', () async {

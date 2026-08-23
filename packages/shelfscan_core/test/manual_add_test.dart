@@ -90,7 +90,7 @@ const _igdbHits = <String, String>{
 
 Candidate _match(int id, String title, int platformId, String platformName) =>
     Candidate(
-      igdbId: id,
+      externalId: 'igdb:${id}',
       title: title,
       platformId: platformId,
       platformName: platformName,
@@ -291,7 +291,7 @@ void main() {
 
       final nocturne =
           resolved.firstWhere((g) => g.detection.rawTitle == 'Nocturne 5 Gold');
-      expect(nocturne.best?.igdbId, 1100000015);
+      expect(nocturne.best?.externalId, 'igdb:1100000015');
       expect(nocturne.best?.platformId, 48,
           reason: 'the typed platform hint constrains the search');
       expect(nocturne.candidates, isNotEmpty);
@@ -349,10 +349,10 @@ void main() {
           .toList();
 
       expect(rows, hasLength(3), reason: 'header + both approved items');
-      expect(rows[0], 'title,platform,media_type,igdb_id,source_photo');
+      expect(rows[0], 'title,platform,media_type,external_id,source_photo');
       // No IGDB id and no source photo, and the platform is the typed hint.
       expect(rows[1], 'Nocturne 5 Gold,PS4,disc,,');
-      expect(rows[2], 'MOOR,PlayStation 4,disc,7,shelf_a.jpg');
+      expect(rows[2], 'MOOR,PlayStation 4,disc,igdb:7,shelf_a.jpg');
     });
 
     test('csv leaves source_photo empty even for an item typed from a photo',
@@ -375,7 +375,7 @@ void main() {
           .where((l) => l.isNotEmpty)
           .toList();
 
-      expect(rows[0], 'title,platform,media_type,igdb_id,source_photo');
+      expect(rows[0], 'title,platform,media_type,external_id,source_photo');
       expect(rows[1], 'Nocturne 5 Gold,PS4,disc,,');
       // ... and no new column appeared: the exporters did not have to change.
       expect(rows[1].split(',').length, 5);

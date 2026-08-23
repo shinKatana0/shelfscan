@@ -116,7 +116,7 @@ void main() {
         _game(3011, 'Sample Game S', [_switch2], year: 2025),
       ]);
       expect(resolved.best?.platformId, 508);
-      expect(resolved.best?.igdbId, 3011);
+      expect(resolved.best?.externalId, 'igdb:3011');
     });
   });
 
@@ -145,7 +145,7 @@ void main() {
         _game(42, 'Sample Game U', [(24, 'Game Boy Advance')], year: 2011),
       ]);
       expect(resolved.detection.platformHint, 'GBA');
-      expect(resolved.best?.igdbId, 41);
+      expect(resolved.best?.externalId, 'igdb:41');
     });
   });
 

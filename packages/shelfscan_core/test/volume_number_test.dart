@@ -161,7 +161,7 @@ void main() {
           .process(_detection('そらのは 真2', hint: 'SWITCH2'));
 
       expect(resolved.best, isNull);
-      expect(resolved.candidates.first.igdbId, 1100000003);
+      expect(resolved.candidates.first.externalId, 'igdb:1100000003');
       expect(resolved.candidates.first.score, closeTo(0.857, 0.001));
       expect(resolved.candidates.first.score, greaterThan(minAutoScore));
     });
@@ -174,7 +174,7 @@ void main() {
       final resolved = await ResolverWorker(_igdb({'そらのは': _emberOnSwitch}))
           .process(_detection('そらのは 真2', hint: 'SWITCH2'));
 
-      expect(resolved.candidates.map((c) => c.igdbId), [1100000003, 1100000004]);
+      expect(resolved.candidates.map((c) => c.externalId), ['igdb:1100000003', 'igdb:1100000004']);
       expect(resolved.best, isNull);
     });
   });
@@ -190,7 +190,7 @@ void main() {
       final resolved = await ResolverWorker(igdb)
           .process(_detection('そらのは 真3 そらのは3 別伝 Grey Tides', hint: 'SWITCH2'));
 
-      expect(resolved.best?.igdbId, 1100000004);
+      expect(resolved.best?.externalId, 'igdb:1100000004');
       expect(resolved.best!.score, closeTo(0.852, 0.001));
     });
 
@@ -198,7 +198,7 @@ void main() {
       final resolved = await ResolverWorker(_igdb({'そらのは': _emberOnSwitch}))
           .process(_detection('そらのは 真', hint: 'SWITCH2'));
 
-      expect(resolved.best?.igdbId, 1100000003);
+      expect(resolved.best?.externalId, 'igdb:1100000003');
       expect(resolved.best!.score, 1.0);
     });
   });

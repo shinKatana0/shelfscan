@@ -35,18 +35,23 @@ Detection _detection({
       workKind: workKind ?? WorkKind.game,
     );
 
-ResolvedGame _row({WorkKind? workKind, MediaType mediaType = MediaType.disc}) =>
-    ResolvedGame(
-      detection: _detection(workKind: workKind, mediaType: mediaType),
-      best: Candidate(
-        igdbId: 424242,
-        title: 'Hollowmere: The Tide Clerk',
-        platformId: 167,
-        platformName: 'PlayStation 5',
-        score: 1.0,
-      ),
-      status: ReviewStatus.approved,
-    );
+ResolvedGame _row({WorkKind? workKind, MediaType mediaType = MediaType.disc}) {
+  // A film's id is TMDB's and a game's is IGDB's. The namespace has to agree
+  // with what the kind implies or `.xcoll` declines the row, which is decision
+  // 0016's check and not an incidental property of this fixture.
+  final film = workKind == WorkKind.movie;
+  return ResolvedGame(
+    detection: _detection(workKind: workKind, mediaType: mediaType),
+    best: Candidate(
+      externalId: film ? 'tmdb:424242' : 'igdb:424242',
+      title: 'Hollowmere: The Tide Clerk',
+      platformId: film ? null : 167,
+      platformName: film ? null : 'PlayStation 5',
+      score: 1.0,
+    ),
+    status: ReviewStatus.approved,
+  );
+}
 
 ReviewDocument _document(List<ResolvedGame> games) => ReviewDocument(
       version: 1,

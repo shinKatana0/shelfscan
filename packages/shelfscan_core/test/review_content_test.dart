@@ -126,7 +126,7 @@ void main() {
       final doc = ReviewDocument.parse(jsonEncode(_reviewFixture()));
       expect(doc.version, 1);
       expect(doc.games, hasLength(1));
-      expect(doc.games.single.best?.igdbId, 1100000048);
+      expect(doc.games.single.best?.externalId, 'igdb:1100000048');
     });
 
     test('a hand-added entry with only a title parses', () {
@@ -222,8 +222,8 @@ void main() {
                 ],
               },
             ],
-          path: 'games[0].candidates[0].igdb_id',
-          must: 'an IGDB game id',
+          path: 'games[0].candidates[0].external_id',
+          must: "a catalogue's id for this entry, as catalogue:id",
         ),
         'confidence is text': (
           document: _reviewFixture()
@@ -401,8 +401,8 @@ void main() {
       expect(result.stdout, contains('Exported 1 of 1 approved game(s)'));
       expect(
           File(out).readAsStringSync(),
-          'title,platform,media_type,igdb_id,source_photo\r\n'
-          'Crown of Tidefall,PlayStation 5,disc,1100000048,shelf_b.jpg\r\n');
+          'title,platform,media_type,external_id,source_photo\r\n'
+          'Crown of Tidefall,PlayStation 5,disc,igdb:1100000048,shelf_b.jpg\r\n');
     });
   });
 

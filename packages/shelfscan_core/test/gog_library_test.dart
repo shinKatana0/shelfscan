@@ -314,7 +314,7 @@ void main() {
 
       expect(calls.single, contains('external_game_source = 5'));
       expect(calls.single, contains('uid = "1100000013"'));
-      expect(resolved.best?.igdbId, 1100000019);
+      expect(resolved.best?.externalId, 'igdb:1100000019');
       expect(resolved.best?.platformId, 6);
     });
   });

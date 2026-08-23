@@ -354,7 +354,7 @@ class ResolverWorker extends Worker<Detection, ResolvedGame> {
       }
       return (
         candidate: Candidate(
-          igdbId: h.igdbId,
+          externalId: '$igdbCatalogue:${h.igdbId}',
           title: h.title,
           platformId: h.platformId,
           platformName: h.platformName,
@@ -459,7 +459,7 @@ class ResolverWorker extends Worker<Detection, ResolvedGame> {
     final candidates = [
       for (final hit in chosen)
         Candidate(
-          igdbId: hit.igdbId,
+          externalId: '$igdbCatalogue:${hit.igdbId}',
           title: hit.title,
           platformId: hit.platformId,
           platformName: hit.platformName,
@@ -467,7 +467,12 @@ class ResolverWorker extends Worker<Detection, ResolvedGame> {
           releaseYear: hit.releaseYear,
           matchMethod: MatchMethod.externalId,
         ),
-    ]..sort((a, b) => a.platformId.compareTo(b.platformId));
+    ]..sort((a, b) => switch ((a.platformId, b.platformId)) {
+        (final x?, final y?) => x.compareTo(y),
+        (null, null) => 0,
+        (null, _) => -1,
+        (_, null) => 1,
+      });
     return ResolvedGame(
       detection: task,
       best: onHint.length == 1 ? candidates.single : null,
@@ -833,24 +838,6 @@ class CatalogueRouter extends ResolverWorker {
       (catalogues[task.workKind] ?? fallback).process(task);
 }
 
-/// A film has no platform, and [Candidate] requires one because it was written
-/// when IGDB was the only catalogue.
-///
-/// These two are the shape of that mismatch rather than values anybody
-/// measured. Neither reaches either export target: `TonkatsuExporter` omits
-/// `platform_id` for a film, and the CSV's `platform` column takes
-/// [filmPlatformName], where empty is the honest answer and is already what
-/// the column writes for an unmatched row.
-///
-/// [filmPlatformId] is the one placeholder here sitting in a field other code
-/// could read, and `exporters.dart` states this project's rule about exactly
-/// that: *0 is a valid-looking id and would be a lie in a column other tools
-/// may key on*. It survives only because nothing writes it. The real fix is a
-/// nullable platform on [Candidate], which changes the review-document
-/// contract and the review screen, and so is not this task's.
-const filmPlatformId = 0;
-const filmPlatformName = '';
-
 /// A film detection to a TMDB match (T-0162).
 ///
 /// Reuses [ResolverWorker]'s scorer and [minAutoScore] deliberately: the
@@ -921,10 +908,8 @@ class TmdbResolverWorker extends Worker<Detection, ResolvedGame> {
   static Candidate _candidate(TmdbHit hit, double score,
           {String? alternative}) =>
       Candidate(
-        igdbId: hit.tmdbId,
+        externalId: '$tmdbCatalogue:${hit.tmdbId}',
         title: hit.title,
-        platformId: filmPlatformId,
-        platformName: filmPlatformName,
         score: score,
         matchedAlternativeName: alternative,
         releaseYear: hit.releaseYear,

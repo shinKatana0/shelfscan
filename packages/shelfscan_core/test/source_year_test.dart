@@ -210,7 +210,7 @@ void main() {
     test('Regent of Aurex, 1993 against the 2016 remake', () async {
       final resolved = await _resolve(
           _regentOfAurex, _fromName('Regent.of.Aurex.1993.DOSBox.GOG.zip'));
-      expect(resolved.best?.igdbId, 67);
+      expect(resolved.best?.externalId, 'igdb:1100000058');
       expect(resolved.best?.releaseYear, 1993);
       // Refused for the human without it, which is what this replaces.
       expect(
@@ -224,7 +224,7 @@ void main() {
         _game(1100000059, 'Cabalists', [_pc], year: 1993),
         _game(1100000010, 'Cabalists', [_pc], year: 2012),
       ], _fromName('Cabalists.1993.GOG-Razor1911.iso'));
-      expect(resolved.best?.igdbId, 49);
+      expect(resolved.best?.externalId, 'igdb:1100000059');
     });
 
     test('the third measured collision stays refused: its name prints no year',
@@ -243,7 +243,7 @@ void main() {
           _regentOfAurex, _fromName('Regent.of.Aurex.1993.DOSBox.GOG.zip'));
       // It decides between candidates; it never removes one. A filter would,
       // and that is the difference the whole choice turns on.
-      expect(resolved.candidates.map((c) => c.igdbId), [67, 1100000009]);
+      expect(resolved.candidates.map((c) => c.externalId), ['igdb:1100000058', 'igdb:1100000009']);
     });
   });
 
@@ -311,8 +311,8 @@ void main() {
             platformHint: 'PC',
             sourceYear: 2016,
           ));
-      expect(without.best?.igdbId, 1100000049);
-      expect(with2016.best?.igdbId, 1100000049);
+      expect(without.best?.externalId, 'igdb:1100000049');
+      expect(with2016.best?.externalId, 'igdb:1100000049');
     });
 
     test('a photographed row is decided exactly as before', () async {

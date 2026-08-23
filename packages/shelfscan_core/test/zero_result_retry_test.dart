@@ -263,7 +263,7 @@ void main() {
       // identity gate refused the row it exists to admit.
       final resolved = await resolveOnSwitch('そらのは 真');
 
-      expect(resolved.candidates.first.igdbId, 1100000003);
+      expect(resolved.candidates.first.externalId, 'igdb:1100000003');
       expect(resolved.candidates.first.score, 1.0);
       expect(resolved.candidates.first.matchedAlternativeName, ' そらのは 真',
           reason: 'the stored name is reported as stored, not as compared');
@@ -278,7 +278,7 @@ void main() {
           await ResolverWorker(_spyIgdb({'そらのは': _emberOnSwitch}).client)
               .process(_detection('そらのは 真', hint: 'SWITCH2'));
 
-      expect(resolved.best?.igdbId, 1100000003);
+      expect(resolved.best?.externalId, 'igdb:1100000003');
       expect(resolved.best!.score, 1.0);
     });
 
@@ -333,7 +333,7 @@ void main() {
           _detection("そらのは０ 約束の丘 Director's Cut", hint: 'SWITCH'));
 
       expect(igdb.searched, hasLength(3));
-      expect(resolved.best?.igdbId, 1100000020);
+      expect(resolved.best?.externalId, 'igdb:1100000020');
       expect(resolved.best!.score, 1.0);
     });
   });

@@ -200,7 +200,7 @@ void main() {
           .process(_detection(_spine, hint: 'SWITCH2'));
 
       expect(igdb.asked, ['search $_needle']);
-      expect(resolved.best?.igdbId, 1100000020);
+      expect(resolved.best?.externalId, 'igdb:1100000020');
     });
   });
 
@@ -215,7 +215,7 @@ void main() {
 
       expect(igdb.asked, ['search $_needle', 'alt $_needle'],
           reason: 'one extra request, and no rung of the ladder');
-      expect(resolved.best?.igdbId, 1100000020);
+      expect(resolved.best?.externalId, 'igdb:1100000020');
       expect(resolved.best!.score, 1.0);
       expect(resolved.best!.matchedAlternativeName,
           "そらのは０ 約束の丘 Director's Cut");

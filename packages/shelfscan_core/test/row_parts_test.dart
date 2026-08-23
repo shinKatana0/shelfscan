@@ -70,7 +70,7 @@ void main() {
         detection: _detection(),
         candidates: [
           Candidate(
-            igdbId: 510001,
+            externalId: 'igdb:510001',
             title: 'Lantern Coast Chronicle',
             platformId: 6,
             platformName: 'PC (Microsoft Windows)',
@@ -107,7 +107,7 @@ void main() {
     test('a part inherits the provenance but not the box match', () {
       final box = _box()
         ..best = Candidate(
-          igdbId: 510002,
+          externalId: 'igdb:510002',
           title: 'Lantern Coast Chronicle Complete Box',
           platformId: 6,
           platformName: 'PC (Microsoft Windows)',
@@ -166,7 +166,7 @@ void main() {
     ResolvedGame matchedRow() => ResolvedGame(
           detection: _detection(workKind: WorkKind.game),
           best: Candidate(
-            igdbId: 510003,
+            externalId: 'igdb:510003',
             title: 'Lantern Coast Chronicle',
             platformId: 6,
             platformName: 'PC (Microsoft Windows)',

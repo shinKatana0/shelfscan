@@ -50,6 +50,23 @@ T? _shapeOrNull<T>(Object? value, String path, String expected) =>
 
 String _at(String path, String key) => path.isEmpty ? key : '$path.$key';
 
+/// [Candidate.externalId] from `external_id`, or from the bare integer a
+/// document written before decision 0016 carries under `igdb_id`.
+///
+/// The legacy key means `igdb:<that integer>` because IGDB was the only
+/// catalogue that could answer when it was written. This is the one widening
+/// read the namespace costs: every such document loads unchanged and the
+/// document version stays 1. Checked first, so a document carrying neither key
+/// is reported against the key it should have had.
+String _candidateExternalId(Map<String, dynamic> json, String path) {
+  final legacy =
+      _shapeOrNull<int>(json['igdb_id'], _at(path, 'igdb_id'), 'an IGDB id');
+  return legacy != null
+      ? '$igdbCatalogue:$legacy'
+      : _shape<String>(json['external_id'], _at(path, 'external_id'),
+          "a catalogue's id for this entry, as catalogue:id");
+}
+
 /// An optional list of photo file names: absent is an empty list, wrong at
 /// either level is a [ReviewFormatException] naming the level that is wrong.
 List<String> _optionalPhotoNames(Object? value, String path, String expected) =>
@@ -790,26 +807,65 @@ enum MatchMethod {
       );
 }
 
-/// One possible IGDB match for a detection.
+/// The catalogue half of a [Candidate.externalId], one per catalogue this
+/// project can ask.
+///
+/// Constants rather than literals at each site because the exporter compares
+/// against the string the resolver wrote: a namespace that drifted on one side
+/// would decline every row of one kind, and decline it silently.
+const igdbCatalogue = 'igdb';
+const tmdbCatalogue = 'tmdb';
+
+/// One possible catalogue match for a detection.
 class Candidate {
   Candidate({
-    required this.igdbId,
+    required this.externalId,
     required this.title,
-    required this.platformId,
-    required this.platformName,
     required this.score,
+    this.platformId,
+    this.platformName,
     this.matchedAlternativeName,
     this.releaseYear,
     this.matchMethod = MatchMethod.fuzzy,
   });
 
-  final int igdbId;
+  /// Which catalogue answered and what that catalogue calls the entry, as
+  /// `catalogue:id` (decision 0016).
+  ///
+  /// Namespaced for the reason [Detection.sourceId] and [CatalogueEntry.ref]
+  /// are, and this is the third use of that convention rather than a new one:
+  /// the number alone is only unique inside one catalogue, so a consumer
+  /// splits at the first `:` rather than guessing which service answered.
+  /// It was `igdbId`, an int, until a film's TMDB id started travelling in it
+  /// under a name that said IGDB (T-0162).
+  ///
+  /// The catalogue is STATED, never derived from [Detection.workKind]:
+  /// `CatalogueRouter`'s kind-to-worker map is built by the shell on purpose,
+  /// so a kind names whatever the shell registered for it and not a catalogue.
+  final String externalId;
 
-  /// Canonical IGDB name -- what gets exported and what the target app
+  /// Canonical catalogue name -- what gets exported and what the target app
   /// shows, even when [matchedAlternativeName] is what actually matched.
   final String title;
-  final int platformId;
-  final String platformName;
+
+  /// The catalogue's platform, or null where this kind of work has no platform
+  /// at all.
+  ///
+  /// Null rather than a placeholder, and that is the whole of decision 0016's
+  /// second answer: a film has no platform, and the `0` this field held for one
+  /// was the shape of a required field rather than anything measured. `0` is
+  /// also a valid-looking id, which is the lie `exporters.dart` refuses by name
+  /// one column over.
+  ///
+  /// NOT split into per-kind types. A carve by *has a platform* puts a game on
+  /// one side and a film on the other and leaves an animation nowhere, because
+  /// what an animation needs in that wire position is not a platform at all but
+  /// a film-or-series bit. That bit belongs to the kind, where `WorkKind.wire`
+  /// already makes room for it.
+  final int? platformId;
+
+  /// The platform's name, null exactly when [platformId] is.
+  final String? platformName;
 
   /// 0..1 fuzzy match score.
   final double score;
@@ -840,10 +896,13 @@ class Candidate {
   final MatchMethod matchMethod;
 
   Map<String, dynamic> toJson() => {
-        'igdb_id': igdbId,
+        'external_id': externalId,
         'title': title,
-        'platform_id': platformId,
-        'platform_name': platformName,
+        // Absent when null, the treatment `source_entry` and `work_kind`
+        // already get: a scan of a game shelf writes the bytes it wrote before
+        // the field became optional, and the document version stays 1.
+        if (platformId != null) 'platform_id': platformId,
+        if (platformName != null) 'platform_name': platformName,
         'score': score,
         'matched_alternative_name': matchedAlternativeName,
         'release_year': releaseYear,
@@ -852,13 +911,12 @@ class Candidate {
 
   factory Candidate.fromJson(Map<String, dynamic> json, {String path = ''}) =>
       Candidate(
-        igdbId: _shape<int>(
-            json['igdb_id'], _at(path, 'igdb_id'), 'an IGDB game id'),
-        title: _shape<String>(
-            json['title'], _at(path, 'title'), 'the canonical IGDB title'),
-        platformId: _shape<int>(json['platform_id'], _at(path, 'platform_id'),
-            'an IGDB platform id'),
-        platformName: _shape<String>(json['platform_name'],
+        externalId: _candidateExternalId(json, path),
+        title: _shape<String>(json['title'], _at(path, 'title'),
+            "the catalogue's canonical title"),
+        platformId: _shapeOrNull<int>(json['platform_id'],
+            _at(path, 'platform_id'), 'a catalogue platform id'),
+        platformName: _shapeOrNull<String>(json['platform_name'],
             _at(path, 'platform_name'), 'the platform name'),
         score: _shape<num>(json['score'], _at(path, 'score'),
                 'a number between 0 and 1')
@@ -905,9 +963,10 @@ class CatalogueEntry {
   /// splits at the first `:` rather than guessing which service answered.
   ///
   /// A string rather than an int because the catalogue is not fixed here.
-  /// [Candidate.igdbId] is an int precisely because it is only ever IGDB's;
-  /// this field's whole job is to be answerable by a service nobody has
-  /// chosen yet.
+  /// [Candidate.externalId] was an int called `igdbId` when this field was
+  /// written, and citing it as the counter-example is what decision 0016 then
+  /// acted on: this field's whole job is to be answerable by a service nobody
+  /// has chosen yet, and that turned out to be true of a candidate's id too.
   final String ref;
 
   /// Season or volume number AS THE CATALOGUE PRINTS IT, null where it prints

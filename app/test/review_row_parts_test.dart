@@ -229,7 +229,7 @@ void main() {
       final doc = _doc([
         _row('LANTERN COAST',
             best: Candidate(
-              igdbId: 510003,
+              externalId: 'igdb:510003',
               title: 'Lantern Coast Chronicle',
               platformId: 6,
               platformName: 'PC (Microsoft Windows)',
@@ -265,7 +265,7 @@ void main() {
       final doc = _doc([
         _row('HOLLOW PINE 2',
             best: Candidate(
-              igdbId: 510004,
+              externalId: 'igdb:510004',
               title: 'Hollow Pine 2',
               platformId: 167,
               platformName: 'PlayStation 5',

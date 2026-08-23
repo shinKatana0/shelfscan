@@ -153,15 +153,15 @@ void main() {
           .firstWhere((g) => g.detection.rawTitle == 'CROWN OF TIDEFALL');
 
       // The stale approved match is gone, not merged with the new one.
-      expect(tidefall.candidates.map((c) => c.igdbId), isNot(contains(999)));
-      expect(tidefall.best?.igdbId, 1100000048);
+      expect(tidefall.candidates.map((c) => c.externalId), isNot(contains('igdb:999')));
+      expect(tidefall.best?.externalId, 'igdb:1100000048');
       expect(tidefall.best?.platformId, 167,
           reason: 'the PS5 hint must constrain the platform');
       expect(tidefall.best?.score, 1.0);
 
       final cobalt =
           resolved.firstWhere((g) => g.detection.rawTitle == 'COBALT CHIME');
-      expect(cobalt.best?.igdbId, 1100000047);
+      expect(cobalt.best?.externalId, 'igdb:1100000047');
       expect(cobalt.candidates, hasLength(1));
     });
 

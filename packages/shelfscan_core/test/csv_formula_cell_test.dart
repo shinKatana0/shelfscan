@@ -133,10 +133,12 @@ void main() {
       });
     }
 
-    test('media_type, igdb_id and origin cannot carry one', () {
-      // They bypass `_cell` entirely (T-0182) and are two enums and an int, so
-      // the decision above never has to cover them. Walked rather than
-      // asserted, so a value added later fails here.
+    test('media_type and origin cannot carry one', () {
+      // They bypass `_cell` entirely (T-0182) and are two enums, so the
+      // decision above never has to cover them. Walked rather than asserted,
+      // so a value added later fails here. `external_id` left this pair when
+      // it became a namespaced string (decision 0016): it goes through `_cell`
+      // now, and a catalogue name cannot begin with a formula leader anyway.
       for (final name in [
         ...MediaType.values.map((v) => v.name),
         ...DetectionOrigin.values.map((v) => v.name),
@@ -183,7 +185,7 @@ void main() {
           sourcePhoto: 'shelf_a.jpg',
         )),
       ])),
-      'title,platform,media_type,igdb_id,source_photo\r\n'
+      'title,platform,media_type,external_id,source_photo\r\n'
       'DUSKHOLLOWE,PS4,disc,,shelf_a.jpg\r\n',
     );
   });
