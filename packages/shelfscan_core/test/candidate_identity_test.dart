@@ -132,7 +132,7 @@ void main() {
         () async {
       // A small fraction of the games one control run touches (T-0165).
       final resolved = await _resolve(_spine('cabalists'), games: [
-        _game(1, 'Cabalists', [_pc]),
+        _game(1100000060, 'Cabalists', [_pc]),
       ]);
       expect(resolved.candidates.single.releaseYear, isNull);
       expect(resolved.candidates.single.toJson()['release_year'], isNull);
@@ -167,7 +167,8 @@ void main() {
       final joined = await _resolve(
         _gogInstall('Regent of Aurex', 'gog:1100000028'),
         externalRows: [
-          _external('1100000028', _game(1100000058, 'Regent of Aurex', [_pc], year: 1993)),
+          _external('1100000028',
+              _game(1100000058, 'Regent of Aurex', [_pc], year: 1993)),
         ],
       );
       expect(joined.best!.releaseYear, 1993);
