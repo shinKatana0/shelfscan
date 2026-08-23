@@ -804,10 +804,14 @@ ever will.
 
 Since T-0162 this command also reads **films**. A video file whose name is
 release-shaped — `Some.Title.1999.1080p.BluRay.x264-GROUP.mkv` — becomes a film
-row and is looked up in TMDB instead of IGDB; a game installer beside it is
-still a game row and still goes to IGDB. The kind is decided per file, so one
-folder holding both is read once and produces both, and you do not choose a
-mode before the run.
+row rather than a game row; a game installer beside it stays a game row. The
+kind is decided per file, so one folder holding both is read once and produces
+both, and you do not choose a mode before the run.
+
+**Films are read, and the film half stops at review.** Deciding that a name is
+a film is the part that works. Identifying that film against a film catalogue
+is the part that is not connected to either shell, and what that costs you is
+below, because it is not what you would guess.
 
 **The contract above gets weaker, not stronger.** It used to be *point this at
 a games folder only*. It is now:
@@ -832,13 +836,40 @@ Two things keep that honest, and neither is automatic:
 - **The kind is shown on the review screen and you can change it.** That is the
   only thing that turns a silent wrong guess into a visible one, so the
   instruction to *review every row* now means the kind as well as the title.
-  Correcting it re-runs the lookup against the other catalogue.
+  Correcting it throws away whatever match the row was holding — a match found
+  under the wrong kind is not evidence for the right one — and marks the row as
+  owed a fresh one. **Nothing performs that fresh lookup.** The review screen
+  says the row will be looked up again, and then nothing looks it up; running
+  `resolve` over the saved document re-runs every row, but it re-runs them
+  against IGDB, which is the wrong catalogue for a film. So a corrected film row
+  reaches your export carrying the title read off its filename and nothing else.
 
-**TMDB needs its own credential**, a third after IGDB and the vision model.
-Without it, film rows behave exactly like game rows without IGDB credentials:
-they reach review carrying the title read off the filename, match nothing, and
-export to CSV but not to `.xcoll`, which is a file of catalogue ids and has
-nothing to put in one.
+**No run calls TMDB today.** Neither shell wires that client up, and no TMDB
+credential has ever been used here, so whether TMDB answers real release names
+well is unmeasured rather than measured and poor. The client is written and
+covered by tests — against a fake server. Connecting it is its own task
+(T-0308) and has not been done; if it ever is, it will want its own credential,
+a third after IGDB and the vision model, and what a run should do when that one
+is missing while the IGDB one is present has not been settled.
+
+So what a film row does depends on the credentials you already have, and it is
+the second case that should worry you:
+
+- **Without IGDB credentials**, a film row behaves exactly like a game row
+  without them: it reaches review carrying the title read off its filename,
+  matches nothing, and exports to CSV but not to `.xcoll`, which is a file of
+  catalogue ids and has nothing to put in one.
+- **With IGDB credentials, the film row is searched in the games catalogue.**
+  Each shell builds exactly one resolver, it is the IGDB one, and nothing tells
+  it what kind of row it was handed. A film whose title is also a game's — and
+  an adaptation shares its title almost by definition — can come back matched
+  to that game, carrying that game's canonical title, its platform and a
+  confidence score, and reading on the review screen exactly like a row that
+  went right. `.xcoll` catches it at the last moment and only there: a film row
+  holding a games-catalogue id is refused, and named among the rows the export
+  dropped. **CSV does not catch it** — the row goes out with the game's title,
+  the game's platform and the game's id. This is the case *review every row* is
+  for, and the kind shown beside the title is the thing that gives it away.
 
 So a short, closed list of well-known personal and system directories is
 refused outright:
