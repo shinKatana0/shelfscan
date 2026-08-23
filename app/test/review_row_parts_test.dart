@@ -2,12 +2,17 @@
 /// the kind correction decision 0015 makes the mitigation for a silent wrong
 /// inference.
 ///
-/// Three things are pinned, and the third is the one that is not merely
+/// Four things are pinned, and the last two are the ones that are not merely
 /// cosmetic. That a box says so and can be expanded into rows that export
 /// separately. That the kind is readable on every row and changeable on every
-/// row. And that changing it CLEARS the match rather than writing a new word
+/// row. That changing it CLEARS the match rather than writing a new word
 /// beside the old one -- a corrected kind is a different catalogue, and a
-/// relabel would buy a right word and a wrong match.
+/// relabel would buy a right word and a wrong match. And that neither the row
+/// nor the sheet promises the lookup that would replace it, because there is
+/// none: nothing reads `needsReresolution`, no screen re-runs the resolver
+/// over an existing row, and the app writes no `review.json` for the CLI to
+/// resolve (T-0311). Both are pinned in the negative too -- a promise is the
+/// one false statement no later moment disproves.
 ///
 /// No network: the screen is given no resolver, and nothing here constructs a
 /// client. Every fixture is invented, catalogue ids included -- this project
@@ -80,10 +85,10 @@ ReviewDocument _doc(List<ResolvedGame> games) => ReviewDocument(
     );
 
 Future<void> _pump(WidgetTester tester, ReviewDocument doc,
-        [ExportSaver? saver]) =>
+        {ExportSaver? saver, bool keyless = true}) =>
     tester.pumpWidget(MaterialApp(
       home: ReviewScreen(
-          document: doc, saver: saver ?? FakeExportSaver(), keyless: true),
+          document: doc, saver: saver ?? FakeExportSaver(), keyless: keyless),
     ));
 
 Future<void> _openSheet(WidgetTester tester, String rawTitle) async {
@@ -164,7 +169,7 @@ void main() {
             workKind: WorkKind.animation, parts: _seasons.toList()),
       ]);
       final saver = FakeExportSaver();
-      await _pump(tester, doc, saver);
+      await _pump(tester, doc, saver: saver);
       await _openSheet(tester, 'LANTERN COAST BOX');
       await tester.tap(find.byKey(const Key('expand-parts')));
       await tester.pumpAndSettle();
@@ -255,9 +260,14 @@ void main() {
       // explained rather than merely gone.
       expect(find.text('Lantern Coast Chronicle'), findsNothing);
       expect(find.text('LANTERN COAST'), findsOneWidget);
-      expect(find.textContaining('kind corrected -- will be looked up again'),
+      expect(find.textContaining('kind corrected -- nothing looks it up'),
           findsOneWidget);
       expect(find.textContaining('Anime'), findsOneWidget);
+      // The clause said `will be looked up again` until T-0311 and nothing
+      // ever did (`needsReresolution` has no reader). Pinned in the negative
+      // as well as the positive, because the defect is a promise: it reads
+      // like the row is mid-flight, and no later moment disproves it.
+      expect(find.textContaining('looked up again'), findsNothing);
     });
 
     testWidgets('choosing the kind it already has keeps the match',
@@ -281,6 +291,50 @@ void main() {
       expect(doc.games.single.best, isNotNull);
       expect(doc.games.single.needsReresolution, isFalse);
       expect(doc.games.single.status, ReviewStatus.approved);
+    });
+
+    testWidgets('the sheet states the cost before the tap, not after',
+        (tester) async {
+      await _pump(tester, _doc([_row('HOLLOW PINE 2')]));
+      await _openSheet(tester, 'HOLLOW PINE 2');
+
+      // The one place a person reads about the correction BEFORE making it,
+      // so it is where the whole cost belongs: the match goes and nothing
+      // brings one back. It said `asks again` until T-0311, which invited
+      // the tap on the strength of a lookup that does not exist.
+      expect(
+          find.textContaining(
+              'clears the match, and nothing looks the row up again'),
+          findsOneWidget);
+      expect(find.textContaining('asks again'), findsNothing);
+    });
+
+    testWidgets('a keyed run says the same thing, beside what it cannot export',
+        (tester) async {
+      final doc = _doc([
+        _row('HOLLOW PINE 2',
+            best: Candidate(
+              externalId: 'igdb:510005',
+              title: 'Hollow Pine 2',
+              platformId: 167,
+              platformName: 'PlayStation 5',
+              score: 0.99,
+            ),
+            status: ReviewStatus.approved),
+      ]);
+      await _pump(tester, doc, keyless: false);
+      await _openSheet(tester, 'Hollow Pine 2');
+      await tester.tap(find.byKey(const Key('work-kind-movie')));
+      await tester.pumpAndSettle();
+
+      // The run that HAD a lookup is the one where the promise was most
+      // believable, and it is the case the keyless fixtures above cannot
+      // reach: there the frame and the `.xcoll` clause are suppressed for the
+      // whole run (T-0230), so this row carries the clause alone.
+      expect(find.textContaining('kind corrected -- nothing looks it up'),
+          findsOneWidget);
+      expect(find.textContaining('looked up again'), findsNothing);
+      expect(find.textContaining('not in .xcoll'), findsOneWidget);
     });
   });
 }

@@ -52,9 +52,23 @@ String _boxClause(int count) => 'maps to $count entries -- tap to expand';
 ///
 /// The correction cleared the match on purpose (`correctWorkKind`), so this
 /// clause is the row explaining a match that just disappeared. Without it the
-/// screen would look like the correction had thrown the match away for nothing
-/// -- which is exactly what it did, and why, and neither half is guessable.
-const _reresolveClause = 'kind corrected -- will be looked up again';
+/// screen would look like the correction had thrown the match away for
+/// nothing, and neither what it did nor why is guessable from the row.
+///
+/// It said `will be looked up again` until T-0311, and nothing ever looked it
+/// up: `needsReresolution` is a mark with no reader, no screen re-runs the
+/// resolver over an existing row, and the app writes no `review.json` for the
+/// CLI's `resolve` to take. A promise about the future is the one kind of
+/// false statement the software never visibly breaks -- the row simply stays
+/// as it is -- so the person concludes a lookup ran and found nothing.
+///
+/// A statement and not an instruction, for the reason [_noXcollKindClause]
+/// gives one clause over: there is nothing to tap that would help, and a
+/// clause telling the user to do a thing that cannot work costs more than a
+/// plain one. True on a keyless run too, where there was no match to clear
+/// and still no lookup. 37 characters against the 41 it replaces, so no row
+/// grows.
+const _reresolveClause = 'kind corrected -- nothing looks it up';
 
 /// What a row says instead of `score N%` when nothing scored it (T-0172).
 ///
@@ -1486,7 +1500,7 @@ class _RowSheet extends StatelessWidget {
           const ListTile(
             title: Text('Kind of work'),
             subtitle: Text('The wrong kind is the wrong catalogue. Changing '
-                'it clears the match and asks again.'),
+                'it clears the match, and nothing looks the row up again.'),
           ),
           for (final kind in WorkKind.values)
             ListTile(
