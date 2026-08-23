@@ -112,6 +112,16 @@ String _boxClause(int count) => 'maps to $count entries -- tap to expand';
 /// plain one. True on a keyless run too, where there was no match to clear
 /// and still no lookup. 37 characters against the 41 it replaces, so no row
 /// grows.
+///
+/// Shown while the match is ABSENT, not while `needsReresolution` is set
+/// (T-0317). The two came apart once the correction turned out to be
+/// undoable: `correctWorkKind` clears [ResolvedGame.best] and leaves
+/// [ResolvedGame.candidates] alone, so the match it took is still in the
+/// row's sheet and picking it puts the row back. The flag keeps its own
+/// meaning -- the row is owed a lookup, and it still is -- but the clause's
+/// job is explaining a match that disappeared, and it is spent the moment
+/// one is there. Left unguarded it becomes the scar of an undone action, on
+/// a row that once more holds the match it was matched to.
 const _reresolveClause = 'kind corrected -- nothing looks it up';
 
 /// What a row says instead of `score N%` when nothing scored it (T-0172).
@@ -1123,7 +1133,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         // Ahead of the status: this is what the row IS, and the box is the
         // reason the row has not been decided yet.
         if (game.mapsToSeveral) _boxClause(game.parts.length),
-        if (game.needsReresolution) _reresolveClause,
+        if (game.needsReresolution && best == null) _reresolveClause,
         // The row's only positive statement of what it cannot do. Independent
         // of the review status on purpose: this is a property of the row's
         // data, true while it is still pending, and the decision the user has
@@ -1538,10 +1548,26 @@ class _RowSheet extends StatelessWidget {
           // (decision 0015), and the row itself stays silent at `game`
           // because every document written so far is games. So this is the
           // one place the value is always readable.
-          const ListTile(
-            title: Text('Kind of work'),
-            subtitle: Text('The wrong kind is the wrong catalogue. Changing '
-                'it clears the match, and nothing looks the row up again.'),
+          ListTile(
+            title: const Text('Kind of work'),
+            // The cost sentence is T-0311's, unchanged. What T-0317 adds is
+            // the half that was true all along and was stated nowhere:
+            // `correctWorkKind` clears `best` and leaves `candidates`, so the
+            // match it took is still in the list above this tile and one tap
+            // puts it back. Unsaid, the control is a one-way door wearing the
+            // clothes of a toggle -- the person who taps it to find out what
+            // it does spends a good match and cannot know it is recoverable.
+            //
+            // Conditional, because on a row the resolver left nothing on
+            // there is nothing to pick back, and a recovery that does not
+            // exist is the promise this screen has now removed three times.
+            subtitle: Text([
+              'The wrong kind is the wrong catalogue. Changing it clears the '
+                  'match, and nothing looks the row up again.',
+              if (game.candidates.isNotEmpty)
+                'It does not clear the candidates above, so a match can be '
+                    'picked back from them.',
+            ].join(' ')),
           ),
           for (final kind in WorkKind.values)
             ListTile(
