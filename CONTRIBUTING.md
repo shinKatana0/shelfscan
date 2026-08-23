@@ -32,6 +32,22 @@ bound trips, and then reads its own log: any file named `did not complete` is
 re-run on its own, because a file whose host died comes back green and a real
 defect does not.
 
+## Building the app
+
+Neither platform builds on a `flutter doctor` that prints green, and the
+prerequisites each one is missing are written down rather than left to be
+rediscovered:
+
+- **Windows** — two things `flutter doctor` does not check at all:
+  [`README.md`](README.md), *Setup → The app*.
+- **Android** — the toolchain, and three failures that each name something
+  other than the missing step: [`doc/android-build.md`](doc/android-build.md).
+  **Android Studio is not required**; the command-line SDK is enough, and that
+  page is the shortest route from a bare Windows machine to an apk.
+
+Neither is needed to run the suites, review a change, or work on
+`shelfscan_core`.
+
 ## What a change must not break
 
 - **The platform boundary.** Photos travel as bytes (`PhotoInput`), never
