@@ -580,12 +580,22 @@ void main() {
       expect(parseGameFileName('Neonwatch.2077.v2.1.CODEX.iso').year, isNull);
     });
 
-    test('nothing downstream carries it yet', () {
-      // Detection has no year field, so the parse result is where it stops
-      // today. T-0165 is the live task on the tie it would break -- three of
-      // T-0156's fourteen replayed titles return a second candidate at the
-      // identical top score on platform 6, and a game and its remake differ by
-      // release year and by nothing else the resolver can see.
+    test('the lower bound is 1970 here, and did not move with the film one',
+        () {
+      // T-0335 split the two floors. This grammar keeps 1970; the film grammar
+      // needed most of a century more, and sharing one floor is what kept the
+      // year inside every pre-1970 film's title.
+      const old = 'Cabalists.1966.GOG-Razor1911.iso';
+      expect(parseGameFileName(old).year, isNull);
+      expect(parseGameFileName(old).title, 'Cabalists 1966');
+      expect(parseGameFileName('Cabalists.1970.GOG-Razor1911.iso').year, 1970);
+    });
+
+    test('it reaches the row as sourceYear, never as part of the title', () {
+      // T-0171 gave Detection the field this test was written before: the
+      // parse result is no longer where the year stops. What the JSON key
+      // assertion pins is that it is `source_year` and not `year` -- a fact
+      // about the string the shell handed over, not about the game.
       final row = const FilenameSource()
           .read(const SourceEntry(name: 'Regent.of.Aurex.1993.DOSBox.GOG.zip'))
           .items
@@ -594,7 +604,7 @@ void main() {
           1993);
       expect(row.rawTitle, 'Regent of Aurex');
       expect(row.toJson().containsKey('year'), isFalse);
-      // It is not lost, only unusable: the name is on the row.
+      expect(row.sourceYear, 1993);
       expect(row.sourceEntry, contains('1993'));
     });
   });

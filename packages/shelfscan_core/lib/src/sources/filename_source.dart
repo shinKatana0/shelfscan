@@ -589,10 +589,10 @@ int? _yearAt(List<String> tokens, int cut) {
   return null;
 }
 
-int? _yearInBrackets(String text) {
+int? _yearInBrackets(String text, {int notBefore = _installerYearFloor}) {
   for (final match in _bracketGroups.allMatches(text)) {
     final inner = _inner(match[0]!);
-    if (_isYear(inner)) return int.parse(inner);
+    if (_isYear(inner, notBefore: notBefore)) return int.parse(inner);
   }
   return null;
 }
@@ -603,11 +603,34 @@ String _inner(String group) => group.substring(1, group.length - 1).trim();
 /// the clock rather than being pinned, because a pinned one goes stale in
 /// silence; it is the one place this parser is allowed to know the date, and
 /// the corpus stays clear of it by carrying no year past the current one.
-bool _isYear(String token) {
+///
+/// The lower bound is [_installerYearFloor] unless the caller says otherwise,
+/// and the two grammars do not agree on it.
+bool _isYear(String token, {int notBefore = _installerYearFloor}) {
   if (token.length != 4) return false;
   final value = int.tryParse(token);
-  return value != null && value >= 1970 && value <= DateTime.now().year + 1;
+  return value != null &&
+      value >= notBefore &&
+      value <= DateTime.now().year + 1;
 }
+
+/// The earliest a four-digit token is a year, per medium -- and the two differ
+/// by most of a century, which is the whole of T-0335.
+///
+/// A floor is what stops a number IN a title being read as a release year, so
+/// it wants to sit just under the medium and no lower. 1970 is right for a PC
+/// installer (T-0158) and was shared with the film grammar because both read
+/// four digits. Applied to a film it fails silently and in the worst
+/// direction: `_isYear` answers false for everything made before 1970, so the
+/// cut never moves, the year stays in the title, and the string TMDB is asked
+/// for is `Title Year` -- which the live catalogue answers with zero results,
+/// for every such film. Nothing declines and nothing warns; the row simply
+/// never matches.
+const _installerYearFloor = 1970;
+
+/// Under the oldest film anybody catalogues. Below it a four-digit token in a
+/// video name is a number in a title (`Tidewrack 1404`), not a release year.
+const _filmYearFloor = 1888;
 
 /// A version is two or more dot-separated numbers, or any number behind a `v`.
 ///
@@ -729,7 +752,7 @@ FileNameParse _parseVideoName(String raw) {
         DeclineReason.seriesEpisode, Severity.exclusion);
   }
   final resolution = _videoResolution.hasMatch(raw);
-  var year = _yearInBrackets(raw);
+  var year = _yearInBrackets(raw, notBefore: _filmYearFloor);
 
   var text = raw;
   for (final group in _bracketGroups.allMatches(text).toList().reversed) {
@@ -739,7 +762,8 @@ FileNameParse _parseVideoName(String raw) {
   final tokens = text.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
 
   final cut = _videoCut(tokens);
-  year ??= cut < tokens.length && _isYear(tokens[cut])
+  year ??= cut < tokens.length &&
+          _isYear(tokens[cut], notBefore: _filmYearFloor)
       ? int.parse(tokens[cut])
       : null;
   if (year == null && !resolution) {
@@ -780,7 +804,7 @@ int _videoCut(List<String> tokens) {
     }
   }
   for (var i = limit - 1; i > 0; i--) {
-    if (_isYear(tokens[i])) return i;
+    if (_isYear(tokens[i], notBefore: _filmYearFloor)) return i;
   }
   return limit;
 }

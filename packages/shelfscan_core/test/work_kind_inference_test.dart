@@ -105,6 +105,65 @@ void main() {
     });
   });
 
+  group('the year floor is the film medium, not the installer one (T-0335)',
+      () {
+    // The two grammars shared one floor at 1970, which is right for a PC
+    // installer and wrong by most of a century for a film. The failure was
+    // silent and in the worst direction: for every film made before 1970 the
+    // cut never moved, so the year stayed in the title and the string TMDB was
+    // asked for was `Title Year` -- which the live catalogue answers with zero
+    // results. Nothing declined and nothing warned.
+    test('a pre-1970 scene year leaves the title and lands on the row', () {
+      final row = _row('Pale.Anchor.1927.1080p.BluRay.x264-GROUP.mkv');
+      expect(row.workKind, WorkKind.movie);
+      expect(row.rawTitle, 'Pale Anchor');
+      expect(row.sourceYear, 1927);
+    });
+
+    test('the floor holds either side of 1970 and at the film bound', () {
+      for (final year in [1888, 1922, 1969, 1970, 2004]) {
+        final row = _row('Tidewrack Lament $year 1080p BluRay.mkv');
+        expect(row.rawTitle, 'Tidewrack Lament', reason: '$year');
+        expect(row.sourceYear, year, reason: '$year');
+      }
+    });
+
+    test('a number under the film floor is title, which is what a floor is for',
+        () {
+      final row = _row('Tidewrack 1404 1080p BluRay.mkv');
+      expect(row.rawTitle, 'Tidewrack 1404');
+      expect(row.sourceYear, isNull);
+      final below = _row('Tidewrack Lament 1887 1080p BluRay.mkv');
+      expect(below.rawTitle, 'Tidewrack Lament 1887');
+      expect(below.sourceYear, isNull);
+    });
+
+    test('a pre-1970 year alone still MARKS the film before it leaves', () {
+      // The ordering the fix had to keep: the year is one of the two markers
+      // the film shape is recognised by, so extracting it cannot happen before
+      // the kind is settled. With no resolution in the name the year is the
+      // only marker there is, and the row exists because of it.
+      final row = _row('Pale Anchor 1927.mkv');
+      expect(row.workKind, WorkKind.movie);
+      expect(row.rawTitle, 'Pale Anchor');
+      expect(row.sourceYear, 1927);
+    });
+
+    test('a bracketed pre-1970 year is read as well', () {
+      final row = _row('Pale Anchor (1927) 1080p.mkv');
+      expect(row.rawTitle, 'Pale Anchor');
+      expect(row.sourceYear, 1927);
+    });
+
+    test('the LAST year is still the release year when the first is old', () {
+      // The two-year rule at the new floor: lowering it puts a second token in
+      // range, and taking the first would truncate the title.
+      final row = _row('Harbour Lantern 1949 2017 1080p BluRay x264-GROUP.mkv');
+      expect(row.rawTitle, 'Harbour Lantern 1949');
+      expect(row.sourceYear, 2017);
+    });
+  });
+
   group('a film carries no platform, and that is not the same as PC', () {
     test('the hint is null rather than the filename default', () {
       expect(_row('Pale.Anchor.1987.1080p.BluRay.mkv').platformHint, isNull);
