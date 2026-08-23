@@ -261,6 +261,17 @@ void main() {
       expect(jsonEncode(again.toJson()), jsonEncode(document.toJson()));
     });
 
+    test('a film found without its year round-trips as what it is', () {
+      // T-0336. The one fact that separates two otherwise identical film rows
+      // -- one corroborated by the year, one reached only after the year was
+      // dropped -- has to survive `review.json`, or the reviewer who opens the
+      // file sees the same row twice.
+      final candidate = _plain(matchMethod: MatchMethod.yearlessRetry);
+      expect(candidate.toJson()['match_method'], 'yearlessRetry');
+      expect(Candidate.fromJson(candidate.toJson()).matchMethod,
+          MatchMethod.yearlessRetry);
+    });
+
     test('an unknown method reads as fuzzy rather than throwing', () {
       // A document written by a newer build, seen from this one.
       final candidate = Candidate.fromJson({
