@@ -32,6 +32,23 @@ final _xcoll = TonkatsuExporter();
 /// gets longer.
 const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 
+/// What a row says when it is a box rather than a thing (T-0163).
+///
+/// It states the count and offers the choice, because the choice is not one
+/// this screen can make: which of the entries in a box a person owns is
+/// printed on the box, and they are the only party holding it. The row is left
+/// as the box until they say otherwise -- that is the state the shelf is
+/// actually in.
+String _boxClause(int count) => 'maps to $count entries -- tap to expand';
+
+/// What a row says after its kind was corrected.
+///
+/// The correction cleared the match on purpose (`correctWorkKind`), so this
+/// clause is the row explaining a match that just disappeared. Without it the
+/// screen would look like the correction had thrown the match away for nothing
+/// -- which is exactly what it did, and why, and neither half is guessable.
+const _reresolveClause = 'kind corrected -- will be looked up again';
+
 /// What a row says instead of `score N%` when nothing scored it (T-0172).
 ///
 /// It replaces the percentage rather than sitting beside it: an exact join
@@ -645,22 +662,38 @@ class _ReviewScreenState extends State<ReviewScreen> {
       );
 
   /// Tap on a row -> pick a different match, or declare there is none.
-  Future<void> _pickCandidate(ResolvedGame game) async {
+  /// Open the row's sheet and apply whatever came back.
+  ///
+  /// Takes the index rather than the row, because expanding replaces the row
+  /// with several and the list has to be written at the position the box was
+  /// in -- the parts then sit where their box sat, under the same photo, which
+  /// is where the person looking for them will look.
+  Future<void> _correctRow(int index) async {
+    final game = widget.document.games[index];
     final choice = await showModalBottomSheet<_Choice>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _CandidateSheet(game: game),
+      builder: (context) => _RowSheet(game: game),
     );
     if (choice == null || !mounted) return;
     setState(() {
-      if (choice.noMatch) {
-        // An unresolved item must not reach .xcoll -- rejecting it keeps
-        // it out of both exports.
-        game.best = null;
-        game.status = ReviewStatus.rejected;
-      } else {
-        game.best = choice.candidate;
-        game.status = ReviewStatus.edited;
+      switch (choice) {
+        case _PickMatch(:final candidate):
+          game.best = candidate;
+          game.status = ReviewStatus.edited;
+        case _NoMatch():
+          // An unresolved item must not reach .xcoll -- rejecting it keeps
+          // it out of both exports.
+          game.best = null;
+          game.status = ReviewStatus.rejected;
+        case _CorrectKind(:final kind):
+          game.correctWorkKind(kind);
+        case _ExpandParts():
+          // In place, into the one list the exporters read: from here the
+          // parts are ordinary rows, each marked, exported and counted on its
+          // own, which is the whole of what expanding means.
+          widget.document.games
+              .replaceRange(index, index + 1, game.expandParts());
       }
     });
   }
@@ -998,7 +1031,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final needsAMatch = !widget.keyless && !_xcoll.canExport(game);
     final tile = ListTile(
       key: Key('review-row-$index'),
-      onTap: () => _pickCandidate(game),
+      onTap: () => _correctRow(index),
       // A typed title is not OCR output; marking it keeps the human from
       // re-checking their own input against a photo.
       leading: game.detection.isManual ? const Icon(Icons.edit_note) : null,
@@ -1010,6 +1043,18 @@ class _ReviewScreenState extends State<ReviewScreen> {
         else
           'raw: "${game.detection.rawTitle}"',
         if (best != null) ..._identity(best),
+        // Shown when it is a CLAIM and silent at the default, which is the
+        // same rule `Detection.toJson` writes `work_kind` by: every document
+        // anyone has written is games, so a "game" clause on every row would
+        // cost the whole list a word to say nothing. The value is always
+        // visible and always correctable in the row's sheet, and a row whose
+        // kind was corrected says so through the clause below (0015).
+        if (game.detection.workKind != WorkKind.game)
+          game.detection.workKind.name,
+        // Ahead of the status: this is what the row IS, and the box is the
+        // reason the row has not been decided yet.
+        if (game.mapsToSeveral) _boxClause(game.parts.length),
+        if (game.needsReresolution) _reresolveClause,
         // The row's only positive statement of what it cannot do. Independent
         // of the review status on purpose: this is a property of the row's
         // data, true while it is still pending, and the decision the user has
@@ -1323,18 +1368,44 @@ class _ManualItemDialogState extends State<_ManualItemDialog> {
 }
 
 /// Result of the picker sheet: either a candidate, or "there is no match".
-class _Choice {
-  const _Choice.candidate(this.candidate) : noMatch = false;
-  const _Choice.noMatch()
-      : candidate = null,
-        noMatch = true;
-
-  final Candidate? candidate;
-  final bool noMatch;
+/// What the row sheet came back with.
+///
+/// Sealed rather than one class with a flag per action: the four differ in
+/// what they carry, and a bag of nullable fields lets a caller read the
+/// candidate of a kind correction -- which is null -- without the compiler
+/// saying anything.
+sealed class _Choice {
+  const _Choice();
 }
 
-class _CandidateSheet extends StatelessWidget {
-  const _CandidateSheet({required this.game});
+class _PickMatch extends _Choice {
+  const _PickMatch(this.candidate);
+
+  final Candidate candidate;
+}
+
+class _NoMatch extends _Choice {
+  const _NoMatch();
+}
+
+class _CorrectKind extends _Choice {
+  const _CorrectKind(this.kind);
+
+  final WorkKind kind;
+}
+
+class _ExpandParts extends _Choice {
+  const _ExpandParts();
+}
+
+/// Everything about one row that a person can be wrong about, in one place.
+///
+/// Named for the row and not for the candidates it used to hold alone: since
+/// T-0163 it also corrects the kind of work and expands a box, and a sheet
+/// called the candidate sheet holding a kind control is the one-name-two-
+/// concepts shape decision 0015 spends a paragraph on.
+class _RowSheet extends StatelessWidget {
+  const _RowSheet({required this.game});
 
   final ResolvedGame game;
 
@@ -1347,10 +1418,27 @@ class _CandidateSheet extends StatelessWidget {
         children: [
           ListTile(
             title: Text('raw: "${game.detection.rawTitle}"'),
-            subtitle: Text(game.candidates.isEmpty
-                ? 'The resolver found no candidates'
-                : 'Pick the right match'),
+            subtitle: Text(switch (game) {
+              _ when game.mapsToSeveral =>
+                'This box maps to ${game.parts.length} catalogue entries',
+              _ when game.candidates.isEmpty =>
+                'The resolver found no candidates',
+              _ => 'Pick the right match',
+            }),
           ),
+          // Above the candidates because it is the bigger question: a
+          // candidate is which thing this row is, and this is whether it is
+          // one row at all.
+          if (game.mapsToSeveral) ...[
+            const Divider(height: 1),
+            ListTile(
+              key: const Key('expand-parts'),
+              leading: const Icon(Icons.call_split),
+              title: Text('Expand into ${game.parts.length} items'),
+              subtitle: Text(game.parts.map(_partLabel).join(', ')),
+              onTap: () => Navigator.of(context).pop(const _ExpandParts()),
+            ),
+          ],
           const Divider(height: 1),
           for (final candidate in game.candidates)
             ListTile(
@@ -1365,8 +1453,7 @@ class _CandidateSheet extends StatelessWidget {
                 candidate.platformName,
                 ..._identity(candidate),
               ].join(' - ')),
-              onTap: () =>
-                  Navigator.of(context).pop(_Choice.candidate(candidate)),
+              onTap: () => Navigator.of(context).pop(_PickMatch(candidate)),
             ),
           const Divider(height: 1),
           ListTile(
@@ -1374,12 +1461,37 @@ class _CandidateSheet extends StatelessWidget {
             leading: const Icon(Icons.block),
             title: const Text('No match'),
             subtitle: const Text('Clears the match and rejects the item'),
-            onTap: () => Navigator.of(context).pop(const _Choice.noMatch()),
+            onTap: () => Navigator.of(context).pop(const _NoMatch()),
           ),
+          const Divider(height: 1),
+          // Last, and present on every row including the ones already on the
+          // default: a kind nobody can see is a kind nobody can correct
+          // (decision 0015), and the row itself stays silent at `game`
+          // because every document written so far is games. So this is the
+          // one place the value is always readable.
+          const ListTile(
+            title: Text('Kind of work'),
+            subtitle: Text('The wrong kind is the wrong catalogue. Changing '
+                'it clears the match and asks again.'),
+          ),
+          for (final kind in WorkKind.values)
+            ListTile(
+              key: Key('work-kind-${kind.name}'),
+              leading: Icon(kind == game.detection.workKind
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked),
+              title: Text(kind.name),
+              onTap: () => Navigator.of(context).pop(_CorrectKind(kind)),
+            ),
         ],
       ),
     );
   }
+
+  /// A part named by its title, with the number the catalogue printed when it
+  /// printed one -- never a number read out of the title (T-0055, T-0059).
+  static String _partLabel(CatalogueEntry part) =>
+      part.ordinal == null ? part.title : '${part.ordinal}. ${part.title}';
 
   static bool _isBest(Candidate candidate, Candidate? best) =>
       best != null &&
