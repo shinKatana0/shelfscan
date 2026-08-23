@@ -126,6 +126,16 @@ a name to be read as the wrong thing instead of one. The failure stays silent,
 because a filename never announces that it is not what it looks like. Any task
 that adds a second kind to a disk source owns that sentence in the guide.
 
+**And the mitigation, decided by the owner 2026-08-23 in the same breath: the
+kind is correctable at review.** A person looking at the list can change a
+row's kind, which is the only thing that turns a silent wrong inference into a
+visible one. Two consequences follow and neither is optional. **The row has to
+SHOW its kind** — a value you cannot see is one you cannot correct, and the
+review screen is where every other uncertain thing in this pipeline is already
+shown. And **changing it has to re-route**, not just relabel: a row corrected
+from film to anime must resolve against the other catalogue, or the correction
+buys a right word and a wrong match.
+
 ## What this gives up
 
 There is a cost, and the first two items are the ones that were weighed.
