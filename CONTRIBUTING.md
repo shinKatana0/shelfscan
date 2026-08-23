@@ -49,14 +49,12 @@ you without asking, and it is the likeliest way this happens to somebody.
 That belongs beside the four commands above rather than in passing, because
 none of them will tell you it happened. `dart analyze` and `flutter analyze` do
 not judge formatting, `tool/check-suites.sh` runs the two suites and no format
-check, and there is deliberately no format check anywhere — installing one
-would mean reformatting the tree first. What a reformatted tree does produce is
-a single failing test whose message reads as something else entirely: a
-source-text assertion in `app/test/galaxy_db_test.dart` reporting that
-`app/lib` never looks up `sqlite3_initialize`, when that call is still there
-and only its line break moved. Your own change is a rounding error inside a
-diff that size, and the rest of it is invisible unless you read `git status`
-file by file.
+check, and there is deliberately no format check anywhere. Nor does a
+reformatted tree simply pass: one test asserts against the source text of
+`app/lib` and fails when a line break moves there, with a message about the
+code rather than about the formatting. Your own change is a rounding error
+inside a diff that size, and the rest of it is invisible unless you read
+`git status` file by file.
 
 **When an edit pushes a line past 80 columns, wrap it by hand** the way the
 lines around it are already wrapped, and change nothing else on the screen.
