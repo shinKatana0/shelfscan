@@ -274,5 +274,15 @@ void main() {
       expect(_analyzeOpenAi(_openAi(_wholeJson, finish: 'length')),
           throwsA(isA<VisionApiException>()));
     });
+
+    test('anthropic: a cut-off answer that still parses is reported too',
+        () async {
+      // The same assertion on the provider T-0284 asked about, because its cap
+      // is the lowest of the three and nobody has ever held a key for it: the
+      // `stop_reason` branch has to run BEFORE the parse, or a document the cap
+      // happened to cut on a closing brace arrives looking complete.
+      expect(_analyzeAnthropic(_anthropic(_wholeJson, stop: 'max_tokens')),
+          throwsA(isA<VisionApiException>()));
+    });
   });
 }

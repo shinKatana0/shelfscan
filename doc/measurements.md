@@ -1109,10 +1109,24 @@ them**, so nothing here is a resolution effect.
 
 **The model starts dropping spines between 40 and 60 and says nothing.**
 `unreadable` is `[]` on every honest run in that table, so at 84 spines a
-fifth of the frame is missing from an answer that parses cleanly and reports
-no omission. Not one invented title at any density — the anti-invention
-guarantee holds the whole way up — which makes this the decision 0012 class
-rather than the T-0007 class: a quiet loss, not a wrong answer.
+quarter of the frame is missing from an answer that parses cleanly and reports
+no omission. Not one invented title on any rung of this ladder that answered,
+and the densest of those is 120 spines — which makes what is measured here the
+decision 0012 class rather than the T-0007 class: a quiet loss, not a wrong
+answer.
+
+**Above 120 the guarantee is not established, and the 176 rung is why.** It
+looped on the first ask (below) and was never scored for invention at all, so
+the top of this ladder is blank rather than clean. T-0281 scored it afterwards
+on the one state in which that density answers — a warm image prefix, which a
+real scan never has — and **8 of the 122 distinct rows are titles that are not
+on the frame**, each continuing the two-word series past where it stops. What
+that establishes is a limit on the range of the sentence above: past the
+ceiling a frame can return rows that parse and read like spines. What it does
+not establish is a rate, or anything about real spine titles — these frames'
+titles are a regular series, which is itself the invitation to continue one —
+or that the cold ask a real scan makes does the same, because that ask does
+not answer at all. Numbers and method in "The generation cap" below.
 
 **It is not legibility.** At 120 spines three quarters of the titles were
 rendered in small type and 108 of 120 came back correct. What the ceiling
@@ -1312,12 +1326,12 @@ else, which is what makes the comparison above a comparison.
 
 ### One thing past the ladder's end: the anti-invention guarantee has a density
 
-T-0278 records not one invented title at any density, and its ladder's densest
-*answering* rung was 120 spines. At 176, on the warm prefix that answers, **8 of
-the 122 distinct rows are titles that are not on the frame** — and they are not
-misreads. Every one of them pairs a first word taken from elsewhere in the
-frame with the last row's second word, continuing the series past where it
-stops.
+T-0278's ladder shows no invented title on any rung that answered, and its
+densest *answering* rung is 120 spines. At 176, on the warm prefix that
+answers, **8 of the 122 distinct rows are titles that are not on the frame** —
+and they are not misreads. Every one of them pairs a first word taken from
+elsewhere in the frame with the last row's second word, continuing the series
+past where it stops.
 
 **Read this narrowly.** These synthetic titles are a regular two-word
 combinatorial series, which is an invitation to continue a pattern that real
