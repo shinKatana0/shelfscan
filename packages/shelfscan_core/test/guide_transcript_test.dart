@@ -83,8 +83,9 @@ import 'cli_snapshot.dart';
 const _guides = ['doc/guide.md', 'doc/guide.ru.md', 'doc/guide.ja.md'];
 
 /// What a declared run-local value is replaced by before the two runs are
-/// compared. Not a character any transcript can contain.
-const _hole = '\u0000';
+/// compared. Printable, because failure messages quote it, and asserted
+/// absent from the program's own output before it is used.
+const _hole = '[[run]]';
 
 /// One case: what it prints, and which of the two fixtures printed it.
 typedef _Producer = Future<_Emission> Function(_Fixture fixture);
@@ -393,6 +394,9 @@ void main() {
       test(entry.key, () async {
         final a = await entry.value(first);
         final b = await entry.value(second);
+        expect(a.text, isNot(contains(_hole)),
+            reason: 'the program prints the token this test substitutes '
+                'with; give `_hole` another value');
         expect(b.blanked, a.blanked,
             reason: 'two runs of `${entry.key}` differ outside the values it '
                 'declares as its own. Something in this transcript belongs to '
