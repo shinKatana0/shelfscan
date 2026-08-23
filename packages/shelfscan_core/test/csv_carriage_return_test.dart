@@ -20,7 +20,7 @@ library;
 import 'package:shelfscan_core/shelfscan_core.dart';
 import 'package:test/test.dart';
 
-const _baseHeader = 'title,platform,media_type,igdb_id,source_photo';
+const _baseHeader = 'title,platform,media_type,external_id,source_photo';
 const _fullHeader = '$_baseHeader,source_entry,origin,source_id';
 
 ReviewDocument _doc(List<ResolvedGame> games) => ReviewDocument(
@@ -115,7 +115,7 @@ void main() {
             sourcePhoto: 'shelf\ra.jpg',
           ),
           best: Candidate(
-            igdbId: 7,
+            externalId: 'igdb:7',
             title: 'Dusk\rhollow',
             platformId: 48,
             platformName: 'PlayStation\r4',
@@ -229,7 +229,7 @@ void main() {
             sourcePhoto: 'shelf_a.jpg',
           ),
           best: Candidate(
-            igdbId: 7,
+            externalId: 'igdb:7',
             title: 'Duskhollow',
             platformId: 48,
             platformName: 'PlayStation 4',
@@ -241,7 +241,7 @@ void main() {
       expect(
           text,
           '$_baseHeader\r\n'
-          'Duskhollow,PlayStation 4,disc,7,shelf_a.jpg\r\n');
+          'Duskhollow,PlayStation 4,disc,igdb:7,shelf_a.jpg\r\n');
     });
 
     test('the unquoted columns cannot carry the class', () {

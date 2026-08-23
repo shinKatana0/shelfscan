@@ -128,7 +128,7 @@ List<String> _titles(ReviewDocument doc) =>
 ResolvedGame _exportable(Detection detection) => ResolvedGame(
       detection: detection,
       best: Candidate(
-        igdbId: 1100000054,
+        externalId: 'igdb:1100000054',
         title: 'The Legend of Vireo: Echo of the Hollow',
         platformId: 130,
         platformName: 'Nintendo Switch',

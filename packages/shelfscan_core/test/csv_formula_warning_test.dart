@@ -162,7 +162,7 @@ void main() {
         _game('=Nothing',
             sourceEntry: '-Tactics',
             best: Candidate(
-                igdbId: 1,
+                externalId: 'igdb:1',
                 title: '=Nothing',
                 platformId: 48,
                 platformName: 'PlayStation 4',
@@ -258,7 +258,7 @@ void main() {
         _game('Tactics',
             sourceEntry: '-Tactics',
             best: Candidate(
-                igdbId: 1,
+                externalId: 'igdb:1',
                 title: 'Tactics',
                 platformId: 48,
                 platformName: 'PlayStation 4',

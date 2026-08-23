@@ -38,7 +38,7 @@ Candidate _candidate(
   MatchMethod matchMethod = MatchMethod.fuzzy,
 }) =>
     Candidate(
-      igdbId: id,
+      externalId: 'igdb:$id',
       title: title,
       platformId: platformId,
       platformName: platform,

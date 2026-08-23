@@ -99,7 +99,7 @@ void main() {
       ]);
       expect(resolved.detection.platformHint, 'DS');
       expect(resolved.best?.platformId, 159);
-      expect(resolved.best?.igdbId, 4001);
+      expect(resolved.best?.externalId, 'igdb:4001');
     });
 
     // And the price, which is the T-0023 clause unchanged: two rows differing

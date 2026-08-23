@@ -142,30 +142,73 @@ class TonkatsuExporter extends Exporter {
               // carries. [WorkKind] is the kind; the two are separate types
               // because they were one word (decision 0015).
               'media_type': g.detection.workKind.wire,
-              // The id space is the CATALOGUE's, and which catalogue is
-              // implied by `media_type` rather than stated: IGDB for a game,
-              // TMDB for a film. `Candidate.igdbId` is the field it arrives in
-              // whichever it came from (T-0162).
-              'external_id': g.best!.igdbId,
+              // A bare integer with the catalogue implied by `media_type`,
+              // which is this target's contract and not this project's:
+              // [Candidate.externalId] states the catalogue, so the namespace
+              // is split off here and checked rather than cast ([_externalId]).
+              'external_id': _externalId(g)!,
               // Present, absent or a reason to refuse the row -- [_PlatformId]
-              // holds the three answers and where each was read from.
-              if (_platformId(g.detection.workKind) == _PlatformId.fromMatch)
+              // holds the three answers and where each was read from. A null
+              // platform reaches here only from a hand-edited document, and
+              // the key is omitted rather than written null, which this pinned
+              // contract has no reading for.
+              if (_platformId(g.detection.workKind) == _PlatformId.fromMatch &&
+                  g.best!.platformId != null)
                 'platform_id': g.best!.platformId,
             }
         ],
       });
 
-  /// An animation row is refused rather than guessed at, on top of the
-  /// default rule.
+  /// Two refusals on top of the default rule, and they refuse different
+  /// things.
   ///
-  /// The refusal is the whole of [_PlatformId.undecidable]: this target's
+  /// An animation row is refused by [_PlatformId.undecidable]: this target's
   /// item for that kind states film-or-series in a field nothing upstream of
-  /// here can fill. The shells already name what an export drops, so the row
-  /// is visibly excluded rather than silently mis-filed.
+  /// here can fill. That row can be identified perfectly well -- what it lacks
+  /// is not an id, and reading it as one sends the next person looking for a
+  /// catalogue client that already exists.
+  ///
+  /// A row whose id this target cannot fill is refused by [_externalId].
+  ///
+  /// Either way the shells name what an export drops, so the row is visibly
+  /// excluded rather than silently mis-filed.
   @override
   bool canExport(ResolvedGame game) =>
       super.canExport(game) &&
-      _platformId(game.detection.workKind) != _PlatformId.undecidable;
+      _platformId(game.detection.workKind) != _PlatformId.undecidable &&
+      _externalId(game) != null;
+
+  /// The bare integer this target's `external_id` takes for [game], or null
+  /// when the row cannot fill it honestly.
+  ///
+  /// Two ways it cannot, stated as one clause because they are one question.
+  /// The namespace may name a catalogue other than the one this kind's
+  /// `media_type` implies -- which is exactly the defect T-0290 fixed by hand,
+  /// a games-catalogue id written one field over under a film kind, made
+  /// mechanical here. And the id may not be an integer, which is what this
+  /// field is by external contract however the answering catalogue keys it.
+  static int? _externalId(ResolvedGame game) {
+    final best = game.best;
+    final catalogue = _catalogue(game.detection.workKind);
+    if (best == null || catalogue == null) return null;
+    // The FIRST colon, the split [Detection.sourceId] documents: the rest is
+    // the catalogue's id verbatim.
+    final colon = best.externalId.indexOf(':');
+    if (colon <= 0 || best.externalId.substring(0, colon) != catalogue) {
+      return null;
+    }
+    return int.tryParse(best.externalId.substring(colon + 1));
+  }
+
+  /// The catalogue this target's `media_type` implies for [kind] (T-0162).
+  ///
+  /// Null for a kind this target declines anyway, so [_externalId] says
+  /// nothing about a catalogue nobody has had to choose.
+  static String? _catalogue(WorkKind kind) => switch (kind) {
+        WorkKind.game => igdbCatalogue,
+        WorkKind.movie => tmdbCatalogue,
+        WorkKind.animation => null,
+      };
 
   /// What Tonkatsu's item for this kind puts in `platform_id`.
   ///
@@ -244,7 +287,13 @@ class CsvExporter extends Exporter {
   /// "where this came from". That field is arithmetic in `dedupeDetections`
   /// as well as text here, and renaming it breaks a consumer that adding
   /// beside it does not.
-  static const _columns = 'title,platform,media_type,igdb_id,source_photo';
+  ///
+  /// `external_id` was `igdb_id` until decision 0016. A column named for one
+  /// catalogue that carries another's ids is the same defect as the field it
+  /// came from, one level out, and the cost is affordable only because no
+  /// catalogue app has ever imported this CSV. The day one does, the column is
+  /// frozen and that is a different decision.
+  static const _columns = 'title,platform,media_type,external_id,source_photo';
 
   /// Appended only to an export that has provenance to publish (below).
   ///
@@ -286,18 +335,27 @@ class CsvExporter extends Exporter {
       // The hint is a guess ("PS4") where a match is canonical ("PlayStation
       // 4"). Writing the guess beats writing nothing: importers match
       // platform names loosely, and the human can fix one cell.
+      //
+      // The hint is reached ONLY when nothing matched: a match that names no
+      // platform writes none. This was one `??` chain until decision 0016, and
+      // it was right by accident -- a film's platform name was `''`, which is
+      // not null and blocked the fallback. Nullable, the chain would continue,
+      // and a row corrected from game to film keeps the console hint its spine
+      // gave it (`correctWorkKind` clears the match, not the detection).
       (
         column: 'platform',
-        value: best?.platformName ?? d.platformHint ?? '',
+        value: (best == null ? d.platformHint : best.platformName) ?? '',
         quote: true
       ),
       (column: 'media_type', value: d.mediaType.name, quote: false),
-      // Empty rather than 0: 0 is a valid-looking IGDB id and would be a
-      // lie in a column other tools may key on.
+      // Empty rather than a bare 0: 0 is a valid-looking catalogue id and
+      // would be a lie in a column other tools may key on. Quoted like any
+      // other text cell now that it is one -- the values this project writes
+      // need no quoting and come out unchanged.
       (
-        column: 'igdb_id',
-        value: best == null ? '' : '${best.igdbId}',
-        quote: false
+        column: 'external_id',
+        value: best?.externalId ?? '',
+        quote: true
       ),
       (column: 'source_photo', value: d.sourcePhoto, quote: true),
       if (provenance) ...[

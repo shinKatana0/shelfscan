@@ -130,7 +130,7 @@ void main() {
       );
       final resolved = await run.resolved;
       expect(resolved.best, isNotNull);
-      expect(resolved.best!.igdbId, 1100000019);
+      expect(resolved.best!.externalId, 'igdb:1100000019');
       expect(resolved.best!.title, 'Kaldreth: Book II');
       expect(resolved.best!.platformId, 6);
       expect(resolved.best!.score, 1.0);
@@ -162,7 +162,7 @@ void main() {
         ],
       );
       final resolved = await run.resolved;
-      expect(resolved.best?.igdbId, 67);
+      expect(resolved.best?.externalId, 'igdb:1100000058');
       expect(resolved.best?.title, 'Regent of Aurex');
     });
 
@@ -176,7 +176,7 @@ void main() {
         ],
       );
       final resolved = await run.resolved;
-      expect(resolved.best?.igdbId, 1100000034);
+      expect(resolved.best?.externalId, 'igdb:1100000034');
     });
   });
 
@@ -195,7 +195,7 @@ void main() {
       expect(run.calls.games.single, contains('search "ivor lane"'));
       expect(run.calls.games.single, contains('platforms = (6)'),
           reason: 'the ordinary path still applies the PC platform gate');
-      expect(resolved.best?.igdbId, 1100000031);
+      expect(resolved.best?.externalId, 'igdb:1100000031');
       expect(resolved.best?.platformId, 6);
       expect(resolved.best?.score, 1.0);
     });
@@ -247,7 +247,7 @@ void main() {
       final resolved = await run.resolved;
       expect(run.calls.external, isEmpty);
       expect(run.calls.games, hasLength(1));
-      expect(resolved.best?.igdbId, 1100000031);
+      expect(resolved.best?.externalId, 'igdb:1100000031');
     });
 
     test('a sourceId with no namespace at all falls back', () async {
@@ -299,7 +299,7 @@ void main() {
       expect(resolved.best, isNull);
       expect(run.calls.games, isEmpty,
           reason: 'the game was found; only the platform is open');
-      expect(resolved.candidates.map((c) => c.igdbId), everyElement(500002));
+      expect(resolved.candidates.map((c) => c.externalId), everyElement('igdb:500002'));
       expect(resolved.candidates.map((c) => c.platformId), [13, 16, 26],
           reason: 'sorted by id -- IGDB\'s own order is not stable');
     });
@@ -391,8 +391,8 @@ void main() {
           _external('1100000039', _game(1100000011, 'Moor', [_pc])),
         ],
       );
-      expect((await ultimate.resolved).best?.igdbId, 1100000012);
-      expect((await reboot.resolved).best?.igdbId, 1100000011);
+      expect((await ultimate.resolved).best?.externalId, 'igdb:1100000012');
+      expect((await reboot.resolved).best?.externalId, 'igdb:1100000011');
     });
 
     test('the same, for the two Regent of Aurex releases', () async {
@@ -408,8 +408,8 @@ void main() {
           _external('1100000040', _game(1100000009, 'Regent of Aurex', [_pc])),
         ],
       );
-      expect((await original.resolved).best?.igdbId, 67);
-      expect((await remake.resolved).best?.igdbId, 1100000009);
+      expect((await original.resolved).best?.externalId, 'igdb:1100000058');
+      expect((await remake.resolved).best?.externalId, 'igdb:1100000009');
     });
 
     test('the third collision has no GOG row and stays the tie rule\'s',
@@ -447,7 +447,7 @@ void main() {
       final resolved = await run.resolved;
       expect(run.calls.external, isEmpty);
       expect(run.calls.games, hasLength(1));
-      expect(resolved.best?.igdbId, 1100000031);
+      expect(resolved.best?.externalId, 'igdb:1100000031');
     });
   });
 }

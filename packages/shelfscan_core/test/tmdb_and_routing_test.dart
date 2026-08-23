@@ -214,7 +214,7 @@ void main() {
       ]).process(_filmRow('Pale Anchor', year: 1987));
 
       expect(resolved.best, isNotNull);
-      expect(resolved.best!.igdbId, 11);
+      expect(resolved.best!.externalId, 'tmdb:11');
       expect(resolved.best!.score, 1.0);
     });
 
@@ -252,7 +252,7 @@ void main() {
         _film(12, 'Pale Anchor', released: '2013-10-01'),
       ]).process(_filmRow('Pale Anchor', year: 2013));
 
-      expect(resolved.best!.igdbId, 12);
+      expect(resolved.best!.externalId, 'tmdb:12');
       expect(resolved.best!.releaseYear, 2013);
     });
 
@@ -271,8 +271,8 @@ void main() {
         _film(11, 'Pale Anchor', released: '1987-04-02'),
       ]).process(_filmRow('Pale Anchor', year: 1987));
 
-      expect(resolved.best!.platformName, filmPlatformName);
-      expect(resolved.best!.platformId, filmPlatformId);
+      expect(resolved.best!.platformName, isNull);
+      expect(resolved.best!.platformId, isNull);
     });
   });
 
@@ -372,10 +372,10 @@ void main() {
             workKind: kind,
           ),
           best: Candidate(
-            igdbId: 11,
+            externalId: kind == WorkKind.movie ? 'tmdb:11' : 'igdb:11',
             title: 'Pale Anchor',
-            platformId: kind == WorkKind.movie ? filmPlatformId : 167,
-            platformName: kind == WorkKind.movie ? filmPlatformName : 'PS5',
+            platformId: kind == WorkKind.movie ? null : 167,
+            platformName: kind == WorkKind.movie ? null : 'PS5',
             score: 1.0,
           ),
           status: ReviewStatus.approved,
@@ -470,10 +470,8 @@ class _Recording extends Worker<Detection, ResolvedGame> {
   Future<ResolvedGame> process(Detection task) async => ResolvedGame(
         detection: task,
         best: Candidate(
-          igdbId: 0,
+          externalId: '$label:0',
           title: label,
-          platformId: 0,
-          platformName: '',
           score: 1.0,
         ),
       );

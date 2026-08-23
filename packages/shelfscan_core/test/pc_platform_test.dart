@@ -191,7 +191,7 @@ void main() {
       final resolved =
           await _resolve([_game(5, 'Sundrop Hollow', [_pc])],
               title: 'sundrop hollow');
-      expect(resolved.best?.igdbId, 5);
+      expect(resolved.best?.externalId, 'igdb:5');
     });
   });
 }

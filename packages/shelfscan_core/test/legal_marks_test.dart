@@ -231,7 +231,7 @@ void main() {
       final repeat = await resolve('SOLAR PILGRIM XII THE CINDER AGE');
 
       expect(firstAsk.best, isNotNull);
-      expect(firstAsk.best!.igdbId, repeat.best!.igdbId);
+      expect(firstAsk.best!.externalId, repeat.best!.externalId);
       expect(firstAsk.best!.score, repeat.best!.score);
       expect(jsonEncode(firstAsk.toJson()['best']),
           jsonEncode(repeat.toJson()['best']));

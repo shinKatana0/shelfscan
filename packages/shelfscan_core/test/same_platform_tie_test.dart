@@ -81,7 +81,7 @@ void main() {
       ], title: 'regent of aurex', hint: 'PC');
       expect(resolved.best, isNull);
       // Refused, never hidden: both are still the reviewer's to pick from.
-      expect(resolved.candidates.map((c) => c.igdbId), [67, 1100000009]);
+      expect(resolved.candidates.map((c) => c.externalId), ['igdb:1100000058', 'igdb:1100000009']);
       expect(resolved.candidates.map((c) => c.score), everyElement(1.0));
     });
 
@@ -118,7 +118,7 @@ void main() {
         _game(1100000050, "Solar Pilgrim XVI: Collector's Edition", [_ps5],
             releasedAt: released, alternativeNames: ['Solar Pilgrim XVI']),
       ], title: 'solar pilgrim xvi', hint: 'PS5');
-      expect(resolved.best?.igdbId, 1100000049);
+      expect(resolved.best?.externalId, 'igdb:1100000049');
     });
 
     test('two IGDB entries for one release, on a single-id console hint',
@@ -127,7 +127,7 @@ void main() {
         _game(1100000051, 'Old Dusk Reckonings', [_switch2], year: 2023),
         _game(1100000052, 'Old Dusk Reckonings', [_switch2], year: 2023),
       ], title: 'old dusk reckonings', hint: 'SWITCH2');
-      expect(resolved.best?.igdbId, 1100000051);
+      expect(resolved.best?.externalId, 'igdb:1100000051');
     });
 
     test('an unanswered year refuses, like any other unanswered question',
@@ -217,7 +217,7 @@ void main() {
               releasedAt:
                   DateTime.utc(2016, 6, 1).millisecondsSinceEpoch ~/ 1000),
         ], title: 'regent of aurex', hint: 'PC');
-        expect(resolved.best?.igdbId, 1,
+        expect(resolved.best?.externalId, 'igdb:1',
             reason: 'both games released in ${moment.toIso8601String()}\'s '
                 'UTC year, so the tie is one release, not two');
       }

@@ -222,7 +222,7 @@ void main() {
       // Canonical, because that is what gets exported and what the target app
       // shows -- the alternative name only explains the match.
       expect(best!.title, 'Resident Evil 4');
-      expect(best.igdbId, 1100000056);
+      expect(best.externalId, 'igdb:1100000056');
       expect(best.matchedAlternativeName, 'Biohazard RE:4');
       expect(best.score, 1.0);
     });
@@ -266,7 +266,7 @@ void main() {
 
     test('and one written with it round-trips', () {
       final candidate = Candidate(
-        igdbId: 1100000056,
+        externalId: 'igdb:1100000056',
         title: 'Resident Evil 4',
         platformId: 167,
         platformName: 'PlayStation 5',

@@ -59,7 +59,7 @@ class _RecordingResolver extends SkipResolver {
     return ResolvedGame(
       detection: task,
       best: Candidate(
-        igdbId: asked.length,
+        externalId: 'igdb:${asked.length}',
         title: task.rawTitle,
         platformId: 48,
         platformName: 'PlayStation 4',

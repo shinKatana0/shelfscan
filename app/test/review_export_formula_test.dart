@@ -159,7 +159,7 @@ void main() {
           origin: DetectionOrigin.filename,
         ),
         best: Candidate(
-          igdbId: 7,
+          externalId: 'igdb:7',
           title: 'Tactics',
           platformId: 6,
           platformName: 'PC (Microsoft Windows)',

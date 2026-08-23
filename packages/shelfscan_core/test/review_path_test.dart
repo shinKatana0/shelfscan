@@ -203,8 +203,8 @@ void main() {
       expect(result.stdout, contains('Exported 1 of 1 approved game(s)'));
       expect(
           File(out).readAsStringSync(),
-          'title,platform,media_type,igdb_id,source_photo\r\n'
-          'Crown of Tidefall,PlayStation 5,disc,1100000048,shelf_b.jpg\r\n');
+          'title,platform,media_type,external_id,source_photo\r\n'
+          'Crown of Tidefall,PlayStation 5,disc,igdb:1100000048,shelf_b.jpg\r\n');
     });
 
     test('an existing review file gets past the check into resolve proper', () {

@@ -87,7 +87,7 @@ Detection _gogInstall(String title, String sourceId) => Detection.fromSource(
     );
 
 Candidate _plain({int? releaseYear, MatchMethod? matchMethod}) => Candidate(
-      igdbId: 67,
+      externalId: 'igdb:1100000058',
       title: 'Regent of Aurex',
       platformId: 6,
       platformName: 'PC (Microsoft Windows)',
@@ -155,7 +155,7 @@ void main() {
 
       expect(joined.best!.score, 1.0);
       expect(fuzzy.best!.score, 1.0);
-      expect(joined.best!.igdbId, fuzzy.best!.igdbId);
+      expect(joined.best!.externalId, fuzzy.best!.externalId);
       // The one thing that now tells them apart.
       expect(joined.best!.matchMethod, MatchMethod.externalId);
       expect(fuzzy.best!.matchMethod, MatchMethod.fuzzy);
@@ -179,7 +179,7 @@ void main() {
         _gogInstall('Ivor Lane', 'gog:9999999999'),
         games: [_game(1100000029, 'Ivor Lane', [_pc], year: 2010)],
       );
-      expect(resolved.best!.igdbId, 1100000029);
+      expect(resolved.best!.externalId, 'igdb:1100000029');
       expect(resolved.best!.matchMethod, MatchMethod.fuzzy);
     });
   });

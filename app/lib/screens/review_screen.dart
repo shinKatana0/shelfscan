@@ -469,7 +469,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
         game: game,
         message: best == null
             ? unmatched
-            : 'Added "${best.title}" (${best.platformName}).',
+            : 'Added "${best.title}"'
+                '${best.platformName == null ? '' : ' (${best.platformName})'}.',
       );
     } on Object catch (e) {
       return (
@@ -1044,7 +1045,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
       leading: game.detection.isManual ? const Icon(Icons.edit_note) : null,
       title: Text(best?.title ?? game.detection.rawTitle),
       subtitle: Text([
-        best?.platformName ?? game.detection.platformHint ?? '?',
+        (best == null ? game.detection.platformHint : best.platformName) ??
+            '?',
         if (game.detection.isManual)
           'added by hand'
         else
@@ -1454,7 +1456,7 @@ class _RowSheet extends StatelessWidget {
           const Divider(height: 1),
           for (final candidate in game.candidates)
             ListTile(
-              key: Key('candidate-${candidate.igdbId}'),
+              key: Key('candidate-${candidate.externalId}'),
               // The resolver's pick is marked, not privileged: the whole
               // point of this sheet is that it can be wrong.
               leading: Icon(_isBest(candidate, best)
@@ -1462,7 +1464,7 @@ class _RowSheet extends StatelessWidget {
                   : Icons.radio_button_unchecked),
               title: Text(candidate.title),
               subtitle: Text([
-                candidate.platformName,
+                if (candidate.platformName case final platform?) platform,
                 ..._identity(candidate),
               ].join(' - ')),
               onTap: () => Navigator.of(context).pop(_PickMatch(candidate)),
@@ -1507,6 +1509,6 @@ class _RowSheet extends StatelessWidget {
 
   static bool _isBest(Candidate candidate, Candidate? best) =>
       best != null &&
-      best.igdbId == candidate.igdbId &&
+      best.externalId == candidate.externalId &&
       best.platformId == candidate.platformId;
 }
