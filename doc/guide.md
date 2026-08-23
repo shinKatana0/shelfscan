@@ -158,10 +158,11 @@ or, when the directory is simply empty, `No files to scan in D:\photos`.
     Not a photo directory: D:\photos\shelf1.jpg is a file -- scan takes the directory that holds your photos, not one photo
 
 **HEIC was converted.** Not a failure, but you will see it, per file so a slow
-one cannot hide in an average:
+one cannot hide in an average. *Illustrative output: the figures below are made
+up, not measured off any shelf.*
 
-    CONVERTED: shelf-1.heic -> jpeg in 812 ms
-    HEIC: 3 file(s) converted to a temp directory in 3412 ms total (process start included). Nothing was written next to the originals.
+    CONVERTED: shelf-1.heic -> jpeg in 800 ms
+    HEIC: 3 file(s) converted to a temp directory in 3400 ms total (process start included). Nothing was written next to the originals.
 
 ---
 

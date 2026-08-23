@@ -151,8 +151,8 @@ HEIC 三枚を置いた実行が、本物の実行と見分けのつかない結
 **HEIC が変換された。** 失敗ではありませんが、表示されます。遅い一枚が平均の中に
 隠れないよう、ファイルごとに出ます:
 
-    CONVERTED: shelf-1.heic -> jpeg in 812 ms
-    HEIC: 3 file(s) converted to a temp directory in 3412 ms total (process start included). Nothing was written next to the originals.
+    CONVERTED: shelf-1.heic -> jpeg in 800 ms
+    HEIC: 3 file(s) converted to a temp directory in 3400 ms total (process start included). Nothing was written next to the originals.
 
 ---
 

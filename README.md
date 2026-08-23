@@ -370,13 +370,15 @@ No account, no key, nothing to configure. This is the default on Windows.
    renamed `.jpg` is converted too, and a spreadsheet named `.jpg` is
    skipped rather than uploaded. The run says what it converted (three
    4000×3000 photos, against ~25 s of vision each) and names every file it
-   is leaving out, before it starts:
+   is leaving out, before it starts. *Illustrative output: the filenames
+   and the figures in this block are made up, not measured off any
+   shelf.*
 
    ```
-   CONVERTED: shelf-1.HEIC -> jpeg in 652 ms
-   CONVERTED: shelf-2.HEIC -> jpeg in 361 ms
-   CONVERTED: shelf-3.HEIC -> jpeg in 369 ms
-   HEIC: 3 file(s) converted to a temp directory in 1907 ms total (process start included). Nothing was written next to the originals.
+   CONVERTED: shelf-1.HEIC -> jpeg in 700 ms
+   CONVERTED: shelf-2.HEIC -> jpeg in 400 ms
+   CONVERTED: shelf-3.HEIC -> jpeg in 400 ms
+   HEIC: 3 file(s) converted to a temp directory in 2000 ms total (process start included). Nothing was written next to the originals.
    SKIPPED: notes.jpg (.jpg) -- named .jpg but the bytes are not a photo this tool reads; the contents decide here, not the name
    ```
 

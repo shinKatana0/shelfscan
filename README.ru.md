@@ -390,13 +390,15 @@ Windows.
    мессенджером в `.jpg`, тоже будет сконвертирован, а таблица с именем `.jpg`
    будет пропущена, а не выгружена. Запуск говорит, что он сконвертировал (три
    фотографии 4000×3000 против ~25 с зрения на каждую), и называет каждый файл,
-   который оставляет в стороне, ещё до старта:
+   который оставляет в стороне, ещё до старта. *Вывод для иллюстрации:
+   имена файлов и числа в этом блоке выдуманы, а не измерены на реальной
+   полке.*
 
    ```
-   CONVERTED: shelf-1.HEIC -> jpeg in 652 ms
-   CONVERTED: shelf-2.HEIC -> jpeg in 361 ms
-   CONVERTED: shelf-3.HEIC -> jpeg in 369 ms
-   HEIC: 3 file(s) converted to a temp directory in 1907 ms total (process start included). Nothing was written next to the originals.
+   CONVERTED: shelf-1.HEIC -> jpeg in 700 ms
+   CONVERTED: shelf-2.HEIC -> jpeg in 400 ms
+   CONVERTED: shelf-3.HEIC -> jpeg in 400 ms
+   HEIC: 3 file(s) converted to a temp directory in 2000 ms total (process start included). Nothing was written next to the originals.
    SKIPPED: notes.jpg (.jpg) -- named .jpg but the bytes are not a photo this tool reads; the contents decide here, not the name
    ```
 

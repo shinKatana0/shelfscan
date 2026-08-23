@@ -152,8 +152,8 @@ Windows**: каждый файл конвертируется в JPEG во вр�
 **HEIC был сконвертирован.** Не сбой, но вы это увидите — по файлу, чтобы
 медленный не спрятался в среднем:
 
-    CONVERTED: shelf-1.heic -> jpeg in 812 ms
-    HEIC: 3 file(s) converted to a temp directory in 3412 ms total (process start included). Nothing was written next to the originals.
+    CONVERTED: shelf-1.heic -> jpeg in 800 ms
+    HEIC: 3 file(s) converted to a temp directory in 3400 ms total (process start included). Nothing was written next to the originals.
 
 ---
 

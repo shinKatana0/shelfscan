@@ -371,13 +371,14 @@ SDK が要り、そちらには Dart が含まれる。ビルドして動かし�
    スマートフォンやメッセージアプリが `.jpg` に改名した HEIC も変換されるし、
    `.jpg` という名前の表計算ファイルは送信されずに飛ばされる。実行は、何を変換
    したか（4000×3000 の写真三枚。画像認識のほうは一枚あたり約 25 秒である）を
-   述べ、除外するファイルをすべて名指ししてから始まる:
+   述べ、除外するファイルをすべて名指ししてから始まる。*これは説明用の出力です。
+   ブロック内のファイル名と数値は作り物であり、実際の棚を測ったものではありません。*
 
    ```
-   CONVERTED: shelf-1.HEIC -> jpeg in 652 ms
-   CONVERTED: shelf-2.HEIC -> jpeg in 361 ms
-   CONVERTED: shelf-3.HEIC -> jpeg in 369 ms
-   HEIC: 3 file(s) converted to a temp directory in 1907 ms total (process start included). Nothing was written next to the originals.
+   CONVERTED: shelf-1.HEIC -> jpeg in 700 ms
+   CONVERTED: shelf-2.HEIC -> jpeg in 400 ms
+   CONVERTED: shelf-3.HEIC -> jpeg in 400 ms
+   HEIC: 3 file(s) converted to a temp directory in 2000 ms total (process start included). Nothing was written next to the originals.
    SKIPPED: notes.jpg (.jpg) -- named .jpg but the bytes are not a photo this tool reads; the contents decide here, not the name
    ```
 
