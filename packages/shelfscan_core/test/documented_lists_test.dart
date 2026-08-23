@@ -168,7 +168,10 @@ Set<String> _environmentNamesIn(String source) => {
           .allMatches(source)
           .map((match) => match.group(1)!),
       for (final entry in _namedByConstant.entries)
-        if (RegExp('envValue\(\s*\w+\s*,\s*${entry.key}\s*\)')
+        // Raw fragments either side of the identifier: a non-raw literal eats
+        // every backslash here and leaves a pattern that matches nothing and
+        // says nothing about it.
+        if (RegExp(r'envValue\(\s*\w+\s*,\s*' + entry.key + r'\s*\)')
             .hasMatch(source))
           entry.value,
     };

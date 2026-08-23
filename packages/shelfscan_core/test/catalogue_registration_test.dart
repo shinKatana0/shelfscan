@@ -177,8 +177,9 @@ void main() {
       expect(film.detection.rawTitle, 'Pale Anchor');
 
       // Both halves of the claim, out of one run: the film was never offered
-      // to IGDB, and the game still was.
-      expect(igdb.searched, ['Nocturne 5 Gold']);
+      // to IGDB, and the game still was. The query is the normalised title,
+      // which is what `ResolverWorker` searches on.
+      expect(igdb.searched, ['nocturne 5 gold']);
     });
 
     test('CSV yes, on the title read off the filename', () async {
@@ -189,7 +190,7 @@ void main() {
       final header = csv.trim().split('\n').first.split(',');
       final cells = csv.trim().split('\n').last.split(',');
 
-      expect(cells[header.indexOf('title')], '"Pale Anchor"');
+      expect(cells[header.indexOf('title')], 'Pale Anchor');
       expect(cells[header.indexOf('external_id')], isEmpty);
     });
 
@@ -211,7 +212,7 @@ void main() {
 
       expect(resolved.best, isNotNull);
       expect(resolved.best!.externalId, 'igdb:4');
-      expect(igdb.searched, ['Nocturne 5 Gold']);
+      expect(igdb.searched, ['nocturne 5 gold']);
     });
   });
 }
