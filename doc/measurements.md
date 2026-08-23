@@ -1214,3 +1214,95 @@ Second passes: 40 spines 1929 tokens both times, 40/40 both times; 120 spines
 5504 tokens both times, 114 items and 108/120 both times; 176 spines **27,836
 tokens both times**, `done_reason: length` both times. What does *not* repeat
 is the clock — see the tokens/s spread above, measured on the same two frames.
+
+## The generation cap, and the ceiling that is not the context window (T-0281, 2026-08-23)
+
+T-0278 left the Ollama request with no `num_predict`, so the only bound behind
+a `done_reason: length` was the server's context window. This section is what
+choosing a number cost to establish. **Every frame is synthetic**, generated
+for this task at 3060×2040 with invented titles and printed platform bands, and
+`prompt_eval_count` is 4932 on all of them — the same rig as the section above,
+independently rebuilt: `qwen2.5vl:7b`, `num_ctx` 32768, the shipped
+`detectionPrompt` dumped out of `providers/vision.dart` rather than retyped,
+`format: 'json'`, `temperature: 0`, `seed: 20260814`.
+
+**The loop reproduced on a frame T-0278 never saw**, which is the strongest
+thing to say for it: a fresh 176-spine frame, first ask, generated 27836 tokens
+— `4932 + 27836 = 32768` — returned `done_reason: length`, and was not JSON.
+296 s.
+
+### What the cap does to that frame
+
+Same frame, same first-ask state, `num_predict: 8192`:
+
+| | tokens | done_reason | wall | the user gets |
+|---|---|---|---|---|
+| no cap | 27836 | `length` | 296 s | the truncated advice, after five minutes |
+| `num_predict` 8192 | 8192 | `length` | 93 s | the same advice, three times sooner |
+
+Both decline the photo. The cap buys the three minutes, not the outcome — and
+it is the whole of what it buys, which is why the value could be argued about
+rather than derived.
+
+### The ceiling is `visionCallTimeout`, and it binds well below the window
+
+A cap only helps if the generation reaches it before the call is abandoned:
+past that the user is told the server went quiet, which carries no advice about
+the shelf. The cold-ask budget measured here is **8.6 s to load the model, 3.5 s
+to prefill, 103.8 generated tokens/s** — so 120 s admits about **11200**
+generated tokens. 8192 lands at 93 s; 12288 would need ~130 s and never fire.
+The context window, 27836 tokens away, never enters the arithmetic.
+
+Neither bound survives contention. T-0278 measured 24–105 tokens/s on this
+machine depending only on what else was running, and at the low end no cap is
+reachable inside 120 s. The value buys the uncontended case.
+
+### The floor, checked rather than assumed
+
+A synthetic 120-spine frame answered in **4690 tokens, `done_reason: stop`,
+parsing, 100 items, `unreadable` empty, 97 of them real spines** — under
+T-0278's 5504 at the same density, on a different frame. 8192 clears both by
+half again. **4096 is rejected on this**: it stops the loop in 46 s and it also
+sits under every honest answer anyone here has measured.
+
+### The state changes the answer, and it is the cached-prefix state again
+
+The same 176-spine frame asked a second time, with its image prefix already in
+the KV cache (`prompt_eval_duration` 0.05 s against 3.5 s cold), **does not
+loop**: it stops on its own at 9006 tokens with `done_reason: stop` and a
+document that parses — 191 rows, 122 distinct, 114 of them real spines. This is
+the third cache state of T-0106 reaching a different fixed point, not a
+different frame, and the two runs diverge at character 2737 of the answer.
+
+Two things follow, and the first is why the cap is where it is:
+
+1. **A real scan is always the cold ask** — each photograph is sent once — so
+   the runaway is the case the shipped path meets and the 9006-token answer is
+   an artifact of asking four times. A cap chosen to preserve it would be
+   chosen for a state the product does not run in.
+2. **8192 does cut that warm answer off**, and it is worth stating plainly
+   rather than discovering later: on the warm prefix the cap costs 114 real
+   titles and returns nothing. Against that, T-0278 measured the same 176-spine
+   density cut into two halves at identical pixel scale yielding **130 / 176** —
+   more than the 114 — so the advice the decline prints beats the answer the
+   decline suppresses.
+
+The `num_predict` 8192 and `num_predict` 12288 answers on the warm prefix are
+**byte-identical up to 8192 tokens**: the shorter is an exact prefix of the
+longer. So the cap changes where the same greedy sequence is cut and nothing
+else, which is what makes the comparison above a comparison.
+
+### One thing past the ladder's end: the anti-invention guarantee has a density
+
+T-0278 records not one invented title at any density, and its ladder's densest
+*answering* rung was 120 spines. At 176, on the warm prefix that answers, **8 of
+the 122 distinct rows are titles that are not on the frame** — and they are not
+misreads. Every one of them pairs a first word taken from elsewhere in the
+frame with the last row's second word, continuing the series past where it
+stops.
+
+**Read this narrowly.** These synthetic titles are a regular two-word
+combinatorial series, which is an invitation to continue a pattern that real
+spine titles do not extend. It is evidence that a frame past the ceiling can
+fabricate rows that parse and look like reads, not a measurement of the rate on
+anything real. Filed as its own task rather than folded in here.
