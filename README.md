@@ -15,11 +15,13 @@
 **shelfscan turns a game collection you already own into a file another app
 can import.** Photograph a shelf and a vision model reads the spines. Point it
 at a folder of installed PC games, or at the GOG Galaxy library on your
-machine, and it reads those with no model and no cost at all. Everything from
-one run lands in a single review file you confirm by hand, and out of that
-comes `.xcoll` for Tonkatsu Box — which fetches covers and metadata itself
-from the ids in it — or generic CSV for CLZ Games and most other collection
-managers.
+machine, and it reads those with no model and no cost at all. A film in that
+folder is read as a film rather than as a game, and that half is
+[not finished](#films-are-read-as-films-and-how-far-that-goes).
+Everything from one run lands in a single review file you confirm by
+hand, and out of that comes `.xcoll` for Tonkatsu Box — which fetches covers
+and metadata itself from the ids in it — or generic CSV for CLZ Games and most
+other collection managers.
 
 It owns **no catalog UI and no database**: recognition and export, nothing
 else. Four sources go through one dedupe, so a game you own on a disc *and*
@@ -76,15 +78,55 @@ links to has the numbers.
   to end" still belongs to the photographs alone. Nor has a CSV ever been
   imported into CLZ Games here: the format is generic and tested, the import is
   not.
+- **Films are read, and the film half stops at review.** A video file whose
+  name is release-shaped becomes a film row rather than a game row, and the
+  kind is shown and correctable at review. The lookup is the part that is not
+  wired up: nothing in either shell calls TMDB, so a film matches nothing,
+  exports to CSV and never to `.xcoll`
+  ([how far that goes](#films-are-read-as-films-and-how-far-that-goes)).
 - **A folder of installers is not a games folder.** Names alone cannot tell
   `NoteWellSetup.exe` from `setup_moor_1.9.exe` — measured on a real `Downloads`
   folder, every title the name parser produced was an application rather than a
   game — so the command refuses the well-known personal and system directories
   outright. That folder was a private one and its contents are not published.
+  Reading names for three kinds of thing rather than one makes that weaker and
+  not stronger: a name can now also be read as the wrong *kind*, so the rule is
+  point it at a media folder and review every row.
 - **"Local" does not mean "offline".** A local run POSTs every photo to your
   Ollama server, and that address is yours to set: pointed at a box on the LAN
   it ships the photographs there over plain HTTP
   ([where your photos go](#where-your-photos-go)).
+
+## Films are read as films, and how far that goes
+
+The disk sources read **films** as well as games. A video file whose name is
+release-shaped — `Some.Title.1999.1080p.BluRay.x264-GROUP.mkv` — becomes a
+film row; an installer beside it stays a game row. The kind is decided per
+file, so one folder holding both is read once and there is no mode to choose
+before the run, and a file that settles neither is declined and named to you
+rather than guessed at. The kind is shown on the review screen and you can
+change it there, which is the only thing that turns a wrong guess into a
+visible one.
+
+**What is not there yet, said plainly, because the paragraph above would
+otherwise read as a promise.** A film is meant to be looked up in TMDB rather
+than IGDB, and the client that would do it is written and covered by tests —
+against a fake server. **No run calls TMDB today:** neither shell wires that
+client up, and no TMDB credential has ever been used here, so whether TMDB
+answers real release names well is unmeasured rather than measured and poor. A
+film row therefore reaches review carrying the title read off its filename,
+matches nothing, and exports to CSV but not to `.xcoll`, which is a file of
+catalogue ids and has nothing to put in one — the same way any row behaves when
+the catalogue it needs is out of reach.
+
+**Anime is not a working kind.** The review screen offers the value and a
+person may correct a row to it, but no source produces one, no catalogue
+answers it, and `.xcoll` declines such a row outright rather than inventing the
+film-or-series flag the format wants beside it.
+
+The operational half — what a run prints, and why reading names for three kinds
+of thing makes this command's safety contract weaker rather than stronger — is
+in [doc/guide.md](doc/guide.md), under *Installed games*.
 
 ## Try it without an account
 
@@ -631,14 +673,16 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
 - **`scan-installs`** — a directory of PC games in, the same review file
   out, with **no vision call at all**: it reads GoG's own
   `goggame-*.info` where an install has one and falls back to parsing the
-  file or folder name where it does not. Free, instant and byte-identical
-  on repeats, because nothing is guessed by a model. Point it at a games
-  folder and not at `Downloads`: measured over one, every title the name
-  parser produced was an application rather than a game (T-0158), and nothing
-  in a filename can tell `NoteWellSetup.exe` from `setup_moor_1.9.exe`. The
-  folder measured was a private one: neither its listing nor any count of it
-  is published. The command refuses the well-known personal and
-  system directories outright and says so on every run.
+  file or folder name where it does not. A video file whose name is
+  release-shaped is read as a **film** rather than a game, decided per file
+  ([Films](#films-are-read-as-films-and-how-far-that-goes)). Free, instant
+  and byte-identical on repeats, because nothing is guessed by a model. Point
+  it at a games folder and not at `Downloads`: measured over one, every title
+  the name parser produced was an application rather than a game (T-0158), and
+  nothing in a filename can tell `NoteWellSetup.exe` from
+  `setup_moor_1.9.exe`. The folder measured was a private one: neither its
+  listing nor any count of it is published. The command refuses the well-known
+  personal and system directories outright and says so on every run.
 - **`scan-library`** — GOG Galaxy's own local database in, the same review
   file out, so a game you own but have **not** installed is in the list too.
   No photo, no vision call, no cost, and nothing from `gog.com`: it reads one
@@ -760,7 +804,13 @@ title,platform,media_type,external_id,source_photo
 form `catalogue:id` — `igdb:1234`. The prefix names which catalogue
 answered, so a consumer splits at the first `:` rather than assuming one.
 It is empty when nothing resolved the row, which is every row on a keyless
-run.
+run. `igdb:` is the only prefix anything writes today — a film row is the case
+that would carry a second one, and no run calls that catalogue yet
+([Films](#films-are-read-as-films-and-how-far-that-goes)).
+
+There is no column for the kind of work a row is. `media_type` is the physical
+carrier it came on — `disc`, `cartridge` or `unknown` — and a film row and a
+game row are told apart by nothing in this file.
 
 `source_photo` is the photo the title was read *off*, and is empty when it
 was read off none — a row you typed at review, or one taken from an
