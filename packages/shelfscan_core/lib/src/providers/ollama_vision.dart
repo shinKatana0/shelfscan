@@ -28,6 +28,46 @@ const defaultOllamaModel = 'qwen2.5vl:7b';
 /// Any fixed value would do; this one is the date it was chosen (T-0053).
 const _defaultSeed = 20260814;
 
+/// The generation cap this request carries, and why the ceiling that bounds it
+/// is [timeout] rather than the context window (T-0281).
+///
+/// Without one, this model past its density ceiling repeats itself under
+/// greedy decoding and generates until the context window is full. Measured on
+/// a synthetic 176-spine frame, first ask: 27836 tokens after a 4932-token
+/// prefill -- `4932 + 27836 = 32768` exactly -- 296 s, and what comes back is
+/// not JSON, so the photo yields nothing. `temperature` 0 is why nothing
+/// escapes: greedy decoding has no draw to break a repetition fixed point
+/// with. The same frame and the same first-ask sequence under this cap stops
+/// at 8192 tokens exactly with `done_reason: length` in 93 s, which is the
+/// branch below -- the user reaches [visionTruncatedFailure] and its advice to
+/// photograph the shelf in sections three times sooner.
+///
+///   floor    a frame that answers must not be cut off and called truncated.
+///            Output is linear at ~48 tokens a row; T-0278's densest honest
+///            rung generates 5504 (120 spines), and a synthetic 120-spine
+///            frame here answered in 4690 with `done_reason: stop`. 4096 also
+///            stops the loop, in 46 s, and is rejected because it sits under
+///            both.
+///   ceiling  the cap only helps if generation REACHES it inside [timeout].
+///            Past that the call is aborted as a stall, the user is told the
+///            server went quiet, and the advice that fits is never printed.
+///            The cold-ask budget measured here is 8.6 s to load the model,
+///            3.5 s to prefill and 103.8 generated tokens/s, so 120 s buys
+///            about 11200 tokens: 12288 needs ~130 s and would never fire.
+///
+/// 8192 clears the honest maximum by half again and lands at 93 s of a 120 s
+/// bound. Both bounds are throughput-dependent and the throughput is not:
+/// T-0278 measured 24-105 tokens/s on one machine depending only on what else
+/// was running, so under contention no cap is reachable and the stall message
+/// is what the user gets. This value buys the uncontended case, which is the
+/// ordinary one.
+///
+/// That it equals `_maxOutputTokens` in openai_compatible_vision.dart is two
+/// arguments arriving at one number rather than a shared constant -- that one
+/// clears a reasoning model's tail, this one clears a dense shelf -- so
+/// neither moves the other.
+const _numPredict = 8192;
+
 /// Named because two of the messages below quote the route the 404 came from,
 /// which is the whole evidence that a 404 is about the address and not the
 /// model.
@@ -144,7 +184,11 @@ class OllamaVisionProvider implements VisionProvider {
             'model': model,
             'stream': false,
             'format': 'json',
-            'options': {'temperature': temperature, 'seed': seed},
+            'options': {
+              'temperature': temperature,
+              'seed': seed,
+              'num_predict': _numPredict,
+            },
             'messages': [
               {
                 'role': 'user',
@@ -178,17 +222,15 @@ class OllamaVisionProvider implements VisionProvider {
     final answer = jsonDecode(response.body) as Map<String, dynamic>;
     final content =
         (answer['message'] as Map<String, dynamic>?)?['content'] as String?;
-    // This request sends no `num_predict`, so the ceiling behind a `length` is
-    // the server's own (context window or its default) rather than anything
-    // this repository chose -- hence a null cap, which is what keeps the
-    // message from quoting a number (T-0111). Unmeasured: no local run here has
-    // reached it, and an Ollama old enough to omit `done_reason` simply falls
-    // through to the parse, which is today's behaviour.
+    // Reached routinely, not hypothetically: past the density ceiling this
+    // model runs to [_numPredict] every time (T-0281), which is why the cap is
+    // named here rather than passed as null. An Ollama old enough to omit
+    // `done_reason` still falls through to the parse.
     if (answer['done_reason'] == 'length') {
       throw visionTruncatedFailure(
         service: 'Ollama at $baseUrl',
         model: model,
-        cap: null,
+        cap: _numPredict,
         answer: content ?? '',
         body: response.body,
         hasKey: false,

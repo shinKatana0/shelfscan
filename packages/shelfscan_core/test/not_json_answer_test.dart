@@ -208,7 +208,7 @@ void main() {
     test('so does Ollama\'s, under its own field name', () async {
       final message = await _messageOf(_ollama(_prose, done: 'length'));
 
-      expect(message, contains('output limit'));
+      expect(message, contains('output cap'));
       expect(message, isNot(contains('not the JSON document')));
     });
 

@@ -1148,13 +1148,14 @@ Exception visionTruncatedFailure({
 ///
 /// **The advice is what the user can reach, which is one action of the two.**
 /// Fewer spines per photo is theirs. The cap is not: it is a constant in this
-/// build (`_maxOutputTokens` in openai_compatible_vision.dart,
-/// [_anthropicMaxOutputTokens] here), and neither the app nor the CLI exposes
-/// a control for it, so recommending it would be T-0072 again in a new
-/// costume. A null [cap] is the case where this request carried none -- an
-/// endpoint that refused both names for it (T-0120/T-0139), and Ollama, which
-/// is asked for no cap at all -- and there the ceiling is the endpoint's own,
-/// so the sentence must not claim a number this repository sent.
+/// build (`_maxOutputTokens` in openai_compatible_vision.dart, `_numPredict`
+/// in ollama_vision.dart, [_anthropicMaxOutputTokens] here), and neither the
+/// app nor the CLI exposes a control for any of the three, so recommending it
+/// would be T-0072 again in a new costume. A null [cap] is the case where this
+/// request carried none -- an endpoint that refused both names for it
+/// (T-0120/T-0139) -- and there the ceiling is the endpoint's own, so the
+/// sentence must not claim a number this repository sent. Ollama was that case
+/// until T-0281 measured what its absent cap cost and sent one.
 String visionTruncatedMessage({
   required String service,
   required String model,
@@ -1542,6 +1543,20 @@ const _apiUrl = 'https://api.anthropic.com/v1/messages';
 /// The cap the Anthropic request carries, named rather than written twice so
 /// the message reporting a `stop_reason: max_tokens` cannot quote a number the
 /// request did not send.
+///
+/// **The lowest of the three this repository sends, and the only one nobody
+/// has priced** (T-0281). The other two are 8192: `_maxOutputTokens` in
+/// openai_compatible_vision.dart clears a reasoning model's measured tail,
+/// `_numPredict` in ollama_vision.dart clears a dense shelf inside the call
+/// timeout. They are not one constant and should not become one -- three
+/// different models, three different things being bounded.
+///
+/// What 4096 is worth flagging for is arithmetic, not a measurement: this
+/// answer is ~48 tokens a row whatever writes it, so 4096 is about 85 rows,
+/// and T-0278's ladder puts an 84-spine frame at 3023 tokens and a 120-spine
+/// one at 5504. A dense frame would therefore stop here. Carried across models
+/// and never run -- no key for this provider has ever been available, which is
+/// the same reason the class comment below gives for every other number on it.
 const _anthropicMaxOutputTokens = 4096;
 
 /// Vision provider backed by the Anthropic Messages API.
