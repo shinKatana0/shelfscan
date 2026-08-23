@@ -1,5 +1,5 @@
 <!-- STALE. This translation stands at f291393 (2026-08-23); the English
-     README.md has moved on past 33927c2 and this file has not followed.
+     README.md has moved on past 7a15993 and this file has not followed.
      Two claims below are now wrong and one of them is dangerous: "What it
      cannot do" and "Setup -> The app" still say Android has never been built
      and that the platform folders are generated rather than committed, and
