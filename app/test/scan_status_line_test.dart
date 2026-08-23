@@ -13,7 +13,6 @@
 /// `scan_backend_switch_test.dart` (T-0040, T-0076, T-0079).
 library;
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/provider_config.dart';
@@ -22,7 +21,7 @@ import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
 import 'scan_all_failed_test.dart' show ScriptedVision;
-import 'scan_wiring_test.dart' show FakeFilePicker;
+import 'scan_wiring_test.dart' show FakeInputPicker;
 import 'settings_store_test.dart' show RecordingStore;
 
 SettingsStore _store() =>
@@ -49,13 +48,12 @@ Future<void> _scan(WidgetTester tester) async {
 }
 
 void main() {
-  setUp(() => FilePicker.platform = FakeFilePicker(['shelf1.jpg']));
-
   testWidgets('1. a blocker: the condition, in the policy\'s own words',
       (tester) async {
     final settings = ProviderSettings(backend: VisionBackend.local);
     await tester.pumpWidget(MaterialApp(
-      home: ScanScreen(settings: settings, store: _store()),
+      home: ScanScreen(
+          settings: settings, store: _store(), picker: FakeInputPicker()),
     ));
     await tester.tap(find.byIcon(Icons.cloud));
     await tester.pump();
@@ -70,7 +68,8 @@ void main() {
       (tester) async {
     final settings = ProviderSettings(backend: VisionBackend.cloud);
     await tester.pumpWidget(MaterialApp(
-      home: ScanScreen(settings: settings, store: _store()),
+      home: ScanScreen(
+          settings: settings, store: _store(), picker: FakeInputPicker()),
     ));
     await _scan(tester);
 
@@ -84,7 +83,6 @@ void main() {
 
   testWidgets('3. every photo failed: the exception\'s sentence, unprefixed',
       (tester) async {
-    FilePicker.platform = FakeFilePicker(['shelf1.jpg', 'shelf2.jpg']);
     final failure = visionApiFailure(
       service: 'Anthropic',
       model: 'claude-not-a-model',
@@ -100,6 +98,7 @@ void main() {
           anthropicModel: 'claude-not-a-model',
         ),
         store: _store(),
+        picker: FakeInputPicker(['shelf1.jpg', 'shelf2.jpg']),
         debugVisionProvider: ScriptedVision(
             {'shelf1.jpg': failure, 'shelf2.jpg': failure}),
       ),
@@ -132,6 +131,7 @@ void main() {
           builder: (_) => ScanScreen(
             settings: ProviderSettings(backend: VisionBackend.local),
             store: _store(),
+            picker: FakeInputPicker(),
             debugVisionProvider: ScriptedVision(const {}),
           ),
         ),

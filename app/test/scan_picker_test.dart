@@ -7,12 +7,13 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/heic_wic.dart';
+import 'package:shelfscan_app/input_picker.dart';
 import 'package:shelfscan_app/photo_files.dart';
 import 'package:shelfscan_app/provider_config.dart';
 import 'package:shelfscan_app/screens/scan_screen.dart';
@@ -28,58 +29,46 @@ Uint8List _bytes(List<int> head) =>
 final _jpeg = _bytes(const [0xFF, 0xD8, 0xFF, 0xE0]);
 final _heic = _bytes([0, 0, 0, 0x18, ...'ftyp'.codeUnits, ...'heic'.codeUnits]);
 
-/// Records what the screen asked the dialog for, and hands back named bytes.
+/// Counts the picks and hands back named bytes.
 ///
-/// [gate], when given, holds the dialog open, which is the whole of T-0116:
+/// [files] and [gate] are settable, because a test that picks twice is asking
+/// the second dialog for something else and the screen holds one picker for
+/// its lifetime.
+///
+/// [gate], when set, holds the dialog open, which is the whole of T-0116:
 /// the presses that opened a second explorer were the ones that landed while
 /// the first one was still up.
-class RecordingFilePicker extends FilePicker {
-  RecordingFilePicker(this.files, {this.gate});
+class RecordingInputPicker extends InputPicker {
+  RecordingInputPicker(this.files, {this.gate});
 
-  final Map<String, Uint8List> files;
-  final Completer<void>? gate;
-  FileType? askedType;
-  List<String>? askedExtensions;
+  Map<String, Uint8List> files;
+  Completer<void>? gate;
   int calls = 0;
 
   @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    bool allowCompression = true,
-    int compressionQuality = 30,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-  }) async {
+  Future<List<PickedFile>?> pickPhotos() async {
     calls++;
-    askedType = type;
-    askedExtensions = allowedExtensions;
     await gate?.future;
-    return FilePickerResult([
-      for (final entry in files.entries)
-        PlatformFile(
-            name: entry.key, size: entry.value.length, bytes: entry.value),
-    ]);
+    return [
+      for (final entry in files.entries) (name: entry.key, bytes: entry.value)
+    ];
   }
+
+  @override
+  Future<String?> pickFolder({required String prompt}) async => null;
 }
 
-Future<RecordingFilePicker> _pick(
+Future<RecordingInputPicker> _pick(
   WidgetTester tester,
   Map<String, Uint8List> files, {
   HeicDecoder? decoder,
 }) async {
-  final picker = RecordingFilePicker(files);
-  FilePicker.platform = picker;
+  final picker = RecordingInputPicker(files);
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
       settings: ProviderSettings(backend: VisionBackend.local),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+      picker: picker,
       debugVisionProvider: FakeVisionProvider(),
       debugHeicDecoder: decoder ?? (_) async => _jpeg,
     ),
@@ -95,13 +84,19 @@ Finder _rejection(String text) => find.descendant(
     );
 
 void main() {
-  testWidgets('the dialog is asked for HEIC by extension, not for "images"',
-      (tester) async {
-    final picker = await _pick(tester, {'shelf.jpg': _jpeg});
+  test('the dialog is asked for HEIC by extension, not for "images"', () {
+    // Read as text rather than driven: since T-0305 the screen asks for
+    // photographs and the picker decides how, so the plugin has one caller
+    // and a widget test can no longer see these arguments without naming it
+    // again.
+    final source = File('lib/input_picker.dart').readAsStringSync();
 
-    expect(picker.askedType, FileType.custom);
-    expect(picker.askedExtensions, contains('heic'));
-    expect(picker.askedExtensions, pickerExtensions);
+    expect(source, contains('pickFiles('),
+        reason: 'the source scan found no call, so the checks below would '
+            'pass on a file that picks nothing');
+    expect(source, contains('type: FileType.custom'));
+    expect(source, contains('allowedExtensions: pickerExtensions'));
+    expect(pickerExtensions, contains('heic'));
   });
 
   testWidgets('a chosen HEIC becomes a scannable photo', (tester) async {
@@ -152,14 +147,14 @@ void main() {
 
   testWidgets('the second pick replaces the first pick\'s complaints',
       (tester) async {
-    await _pick(
+    final picker = await _pick(
       tester,
       {'phone.heic': _heic},
       decoder: (_) async => throw HeicDecodeException('no codec'),
     );
     expect(_rejection('phone.heic'), findsOneWidget);
 
-    FilePicker.platform = RecordingFilePicker({'shelf.jpg': _jpeg});
+    picker.files = {'shelf.jpg': _jpeg};
     await tester.tap(find.text('Add photos'));
     await tester.pumpAndSettle();
 
@@ -170,12 +165,12 @@ void main() {
     // ~0.4 s per phone photo, so the screen would otherwise sit unchanged
     // after the dialog closes.
     final gate = Completer<void>();
-    FilePicker.platform = RecordingFilePicker({'phone.heic': _heic});
     await tester.pumpWidget(MaterialApp(
       home: ScanScreen(
         settings: ProviderSettings(backend: VisionBackend.local),
         store:
             SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+        picker: RecordingInputPicker({'phone.heic': _heic}),
         debugVisionProvider: FakeVisionProvider(),
         debugHeicDecoder: (_) async {
           await gate.future;
@@ -204,12 +199,12 @@ void main() {
     // the file is called .heic -- the name stays the user's file, the type
     // describes the bytes (T-0036).
     final seen = <PhotoInput>[];
-    FilePicker.platform = RecordingFilePicker({'phone.heic': _heic});
     await tester.pumpWidget(MaterialApp(
       home: ScanScreen(
         settings: ProviderSettings(backend: VisionBackend.local),
         store:
             SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+        picker: RecordingInputPicker({'phone.heic': _heic}),
         debugVisionProvider: _RecordingVision(seen),
         debugHeicDecoder: (_) async => _jpeg,
       ),
@@ -227,13 +222,13 @@ void main() {
   testWidgets('a second press while the dialog is open never reaches the '
       'picker', (tester) async {
     final gate = Completer<void>();
-    final picker = RecordingFilePicker({'shelf.jpg': _jpeg}, gate: gate);
-    FilePicker.platform = picker;
+    final picker = RecordingInputPicker({'shelf.jpg': _jpeg}, gate: gate);
     await tester.pumpWidget(MaterialApp(
       home: ScanScreen(
         settings: ProviderSettings(backend: VisionBackend.local),
         store:
             SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+        picker: picker,
         debugVisionProvider: FakeVisionProvider(),
       ),
     ));
@@ -257,11 +252,10 @@ void main() {
 
   testWidgets('the same file picked twice is listed once, and the copy is '
       'named', (tester) async {
-    await _pick(tester, {'shelf1.jpg': _jpeg});
+    final picker = await _pick(tester, {'shelf1.jpg': _jpeg});
     expect(find.text('shelf1.jpg'), findsOneWidget);
 
-    FilePicker.platform =
-        RecordingFilePicker({'shelf1.jpg': _jpeg, 'shelf2.jpg': _jpeg});
+    picker.files = {'shelf1.jpg': _jpeg, 'shelf2.jpg': _jpeg};
     await tester.tap(find.text('Add photos'));
     await tester.pumpAndSettle();
 
