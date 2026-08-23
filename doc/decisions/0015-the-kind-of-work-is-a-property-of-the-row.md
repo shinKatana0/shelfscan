@@ -73,6 +73,59 @@ it. The same observation is the evidence for the hint being advisory rather
 than binding: aiming the prompt moves what the model looks for, not what it is
 willing to answer.
 
+## A source with no prompt: the kind is inferred per entry
+
+Added 2026-08-23, on the owner's question. The stage analysis above says the
+prompt is the only per-run thing. **A disk source has no prompt at all**, so
+the question is what replaces it — and the answer is that nothing does.
+
+What actually differs between a folder of games, a folder of films and a folder
+of anime is the **grammar of the names**, and the three are genuinely different
+rather than one shape with a flag:
+
+```
+setup_harbour_lantern_1.6.15_(45683).exe      version, build, architecture
+The.Matrix.1999.1080p.BluRay.x264-GROUP.mkv   year, resolution, source, codec
+[SubGroup] Series - 04 [1080p].mkv            group in brackets, EPISODE number
+```
+
+The third also splits the title: the series is the name and the episode is a
+separate field, which neither of the others has.
+
+**But the entry carries its own markers, so the kind is inferred rather than
+chosen.** The extension separates most of it — `.exe`, `.msi`, `.iso` beside a
+`goggame-*.info` is a game; `.mkv`, `.mp4`, `.avi` is video. The grammar
+separates the rest — `[Group] Name - 04 [1080p]` is the fansub shape,
+`Name.Year.1080p.Source-GROUP` is the scene shape, and an episode number in
+`- NN` or `S01E04` tells a series from a film. Where neither settles it, the
+source **declines**, which is machinery `FilenameSource` already has and
+already uses.
+
+**This is the case that argues hardest for the row property.** A real download
+directory is mixed — the owner's own run over one returned application
+installers beside everything else. A per-run mode would have to scan such a
+folder once per kind and discard most of each pass; a per-entry property reads
+it once. So the source with no prompt, which looked like the awkward case for
+this decision, is the one it fits best.
+
+A per-run hint may still exist for a disk source, but it means something
+weaker than it does for a photograph: **a prior, not a selector.** "This folder
+is mostly films" breaks ties; it does not override a clear marker.
+
+### And the cost, which belongs here rather than being found later
+
+`scan-installs` ships a contract — *point this at a games folder only* — and it
+exists because a name cannot tell an application installer from a game
+installer. That is measured, not feared: a run over a real download directory
+returned application installers as titles, and `NoteWellSetup.exe` is the
+example in the guide.
+
+**Three kinds do not remove that contract, they weaken it.** It becomes *point
+this at a media folder and review every row*, and there are now three ways for
+a name to be read as the wrong thing instead of one. The failure stays silent,
+because a filename never announces that it is not what it looks like. Any task
+that adds a second kind to a disk source owns that sentence in the guide.
+
 ## What this gives up
 
 There is a cost, and the first two items are the ones that were weighed.
