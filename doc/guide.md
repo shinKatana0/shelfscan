@@ -73,8 +73,8 @@ worked.
 Those two figures are the project's standard control sets, `CONTROL-LOWRES` and
 `CONTROL-HIRES` — the same shelf, twice, at those two resolutions. They are
 private photographs and are not published, so what you can read is what they
-produce: [`measurements.md`](measurements.md) quotes every figure in this
-project against one of them.
+produce: [`measurements.md`](measurements.md) quotes the figures they settled,
+each against the set it was measured on.
 
 So, practically: shoot at your phone camera's full resolution and do not let a
 messaging app downscale the file on its way to the PC. Fill the frame with
@@ -890,9 +890,11 @@ is the last point at which a wrong row is still cheap to remove.
 
 ## Where to go next
 
-- [`measurements.md`](measurements.md) — everything this project measured,
-  including everything it measured and then decided not to do. Read the one
-  section that covers what you are about to try.
+- [`measurements.md`](measurements.md) — the measurements this project's
+  decisions rest on, including what it measured and then decided not to do.
+  Not every figure: one that settles a single constant usually lives in the
+  doc comment beside that constant, and the archive's own opening says so.
+  Read the one section that covers what you are about to try.
 - [`decisions/`](decisions/) — the decisions a reader would otherwise be
   surprised by, each with the measurement that settled it.
 - [`../ARCHITECTURE.md`](../ARCHITECTURE.md) — the pipeline, the module map,
