@@ -625,12 +625,21 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
   file out, so a game you own but have **not** installed is in the list too.
   No photo, no vision call, no cost, and nothing from `gog.com`: it reads one
   file on this machine, with no login, no OAuth and no credential stored or
-  needed. **Windows only** — that is where Galaxy runs. What it reads is a
-  cache of the last sync rather than your account, so a game bought since
-  Galaxy last ran is missing, and the run prints how old the cache is. DLC,
-  releases Galaxy itself hides, and releases from other stores connected to
-  Galaxy are counted out **by name rather than dropped silently** — the run
-  names each kind of row it left out.
+  needed. **Windows only** — that is where Galaxy runs. **And Galaxy must be
+  installed here and signed in at least once**, because that file is what its
+  sync writes: a machine nobody has ever signed in on has nothing to read.
+  That is a precondition on Galaxy, not a credential for shelfscan — the
+  no-login sentence above still holds, and Galaxy need be neither running nor
+  online while you do this. The two ways it can be unmet are reported apart,
+  each exiting 2 rather than as a scan that found nothing: **no database at
+  all** — Galaxy is not installed, or the file was moved or lost, and Galaxy
+  rebuilds it on next launch; and **a database with no rows** — it is there,
+  but no GOG account has ever signed in on this machine, or GOG has moved the
+  schema out from under the reader. What it reads is a cache of the last sync
+  rather than your account, so a game bought since Galaxy last ran is missing,
+  and the run prints how old the cache is. DLC, releases Galaxy itself hides,
+  and releases from other stores connected to Galaxy are counted out **by name
+  rather than dropped silently** — the run names each kind of row it left out.
 - **One run, several sources.** A game you own on a disc *and* have installed
   is one game, and only a single run puts the two through one dedupe:
   `--installs` and `--library` add those sources to a scan of your
