@@ -23,6 +23,14 @@
 > (`measurements.md`, `decisions/`, `../ARCHITECTURE.md`), существуют только
 > на английском.
 
+<!-- TRANSCRIPTS. Some blocks below are program output and are pinned, byte
+     for byte, against a real run of the command: they carry a marker of the
+     form "transcript: NAME" in an HTML comment directly above them. The test
+     is packages/shelfscan_core/test/guide_transcript_test.dart. Change one of
+     those blocks, or the string the program builds, and it fails until the
+     two agree again. That file also lists the output blocks it does NOT pin,
+     and why. -->
+
 # shelfscan — один полный запуск
 
 Эта страница проводит через один запуск от нуля до коллекции, импортированной в
@@ -347,9 +355,13 @@ bash:
 
 **Не задана ни одна.** `scan` не падает — он деградирует и говорит об этом:
 
+<!-- transcript: igdb-skipped -->
+
     IGDB credentials not set -- resolve stage will be skipped, games stay unresolved (fine for vision validation).
 
 `resolve` падает, потому что сопоставление — вся его суть:
+
+<!-- transcript: resolve-needs-igdb -->
 
     The "resolve" command needs IGDB credentials: set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET (see .env.example). Resolving is the entire point of this command, so there is nothing useful to do without them.
 
@@ -453,6 +465,8 @@ bash:
 
 **Флаг, принадлежащий другой команде.** Проверяется до того, как что-либо
 прочитано, так что вы ни за что не платите:
+
+<!-- transcript: unknown-option -->
 
     Unknown option "--targt" for "export". Nothing was read. Options of "export": -o, --target.
     "--target" is not an option of "scan" -- it belongs to "export". Nothing was read. Options of "scan": -o, --provider, --fallback, --aliases, --installs, --library, --galaxy-db. Run "shelfscan" with no arguments for what each command reads.
@@ -700,6 +714,8 @@ bash:
 
 **Неизвестная цель называет существующие:**
 
+<!-- transcript: unknown-export-target -->
+
     Unknown target "tonkatsu-box". Known: tonkatsu, csv
 
 **Если вы экспортировали CSV**, вы можете увидеть ещё и это, и только когда оно
@@ -769,6 +785,8 @@ bash:
 **Каждый запуск говорит, что он делает, потому что этот контракт невозможно
 проконтролировать изнутри:**
 
+<!-- transcript: scan-installs-notice -->
+
     Reading C:\GOG Games: file and folder NAMES, plus any goggame-*.info beside them. No photo is read and no vision model is called. Nothing here can tell an application from a game, or a game from a film, by its name -- point this at a media folder, and review every row before you export it.
 
 Отнеситесь к этому серьёзно. Наведённая на реальную папку `Downloads`, она выдала
@@ -782,6 +800,8 @@ bash:
 
 Поэтому короткому закрытому списку общеизвестных личных и системных каталогов
 отказывают напрямую:
+
+<!-- transcript: scan-installs-refused -->
 
     Not a games folder: C:\Users\me\Downloads. This reads NAMES, and no rule reading a name tells NoteWellSetup.exe from setup_moor_1.9.exe -- run over a Downloads folder it titles every installer it finds, and not one of them is a game (T-0158). Point it at the directory your games are installed in.
 
