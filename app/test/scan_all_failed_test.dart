@@ -96,7 +96,6 @@ Future<void> _pumpScan(
 }) async {
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
-      picker: FakeInputPicker(photos),
       // Cloud with a key: the configuration a 404 on a model id comes from,
       // and it puts the privacy warning directly above the status line, which
       // is where the shortcut has to remain findable.
@@ -106,6 +105,7 @@ Future<void> _pumpScan(
         anthropicModel: 'claude-not-a-model',
       ),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+      picker: FakeInputPicker(photos),
       debugVisionProvider: ScriptedVision(failWith),
     ),
   ));

@@ -82,9 +82,9 @@ Future<void> _pumpScan(
 }) async {
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
-      picker: FakeInputPicker(['shelf1.jpg']),
       settings: _endpointSettings(),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+      picker: FakeInputPicker(['shelf1.jpg']),
       debugVisionProviderBuilder: (onNote) => OpenAiCompatibleVisionProvider(
         baseUrl: 'https://endpoint.test/v1',
         model: 'gpt-5.5',

@@ -57,11 +57,11 @@ void main() {
     };
     await tester.pumpWidget(MaterialApp(
       home: ScanScreen(
-        picker: FakeInputPicker(gates.keys.toList()),
         // Local runs one photo at a time (ProviderPolicy.visionConcurrency),
         // so the gates open the run one countable step at a time.
         settings: ProviderSettings(backend: VisionBackend.local),
         store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+        picker: FakeInputPicker(gates.keys.toList()),
         debugVisionProvider: GatedVision(gates),
       ),
     ));
@@ -102,9 +102,9 @@ void main() {
     // stuck at zero.
     await tester.pumpWidget(MaterialApp(
       home: ScanScreen(
-        picker: FakeInputPicker(['shelf1.jpg']),
         settings: ProviderSettings(backend: VisionBackend.cloud),
         store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+        picker: FakeInputPicker(['shelf1.jpg']),
       ),
     ));
 

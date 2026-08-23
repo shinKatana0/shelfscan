@@ -92,13 +92,13 @@ void main() {
     );
     await tester.pumpWidget(MaterialApp(
       home: ScanScreen(
-        picker: FakeInputPicker(['shelf1.jpg', 'shelf2.jpg']),
         settings: ProviderSettings(
           backend: VisionBackend.cloud,
           anthropicApiKey: 'sk-test',
           anthropicModel: 'claude-not-a-model',
         ),
         store: _store(),
+        picker: FakeInputPicker(['shelf1.jpg', 'shelf2.jpg']),
         debugVisionProvider: ScriptedVision(
             {'shelf1.jpg': failure, 'shelf2.jpg': failure}),
       ),

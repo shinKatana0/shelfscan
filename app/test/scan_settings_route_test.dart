@@ -68,13 +68,13 @@ Future<void> _pumpScan(WidgetTester tester, Object failure) async {
 
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
-      picker: FakeInputPicker(const ['shelf1.jpg']),
       settings: ProviderSettings(
         backend: VisionBackend.cloud,
         anthropicApiKey: 'sk-test',
         anthropicModel: 'claude-not-a-model',
       ),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+      picker: FakeInputPicker(const ['shelf1.jpg']),
       debugVisionProvider: ScriptedVision({'shelf1.jpg': failure}),
     ),
   ));

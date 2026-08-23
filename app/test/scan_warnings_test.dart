@@ -58,9 +58,9 @@ Future<void> _pumpScan(
 }) async {
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
-      picker: FakeInputPicker(photos),
       settings: settings ?? ProviderSettings(backend: VisionBackend.local),
       store: SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+      picker: FakeInputPicker(photos),
       debugVisionProvider: vision,
     ),
   ));

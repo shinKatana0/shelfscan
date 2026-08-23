@@ -64,14 +64,14 @@ void main() {
     final vision = _SwitchableVision();
     await tester.pumpWidget(MaterialApp(
       home: ScanScreen(
+        settings: ProviderSettings(backend: VisionBackend.local),
+        store:
+            SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
         picker: RecordingInputPicker({
           'shelf1.jpg': _jpeg,
           'shelf2.jpg': _jpeg,
           'notes.txt': _notAPhoto,
         }),
-        settings: ProviderSettings(backend: VisionBackend.local),
-        store:
-            SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
         debugVisionProvider: vision,
       ),
     ));
@@ -116,11 +116,11 @@ void main() {
     final vision = _SwitchableVision();
     await tester.pumpWidget(MaterialApp(
       home: ScanScreen(
-        picker: RecordingInputPicker(
-            {'shelf1.jpg': _jpeg, 'notes.txt': _notAPhoto}),
         settings: ProviderSettings(backend: VisionBackend.local),
         store:
             SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+        picker: RecordingInputPicker(
+            {'shelf1.jpg': _jpeg, 'notes.txt': _notAPhoto}),
         debugVisionProvider: vision,
       ),
     ));
