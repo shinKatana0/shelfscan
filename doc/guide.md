@@ -73,8 +73,8 @@ worked.
 Those two figures are the project's standard control sets, `CONTROL-LOWRES` and
 `CONTROL-HIRES` — the same shelf, twice, at those two resolutions. They are
 private photographs and are not published, so what you can read is what they
-produce: [`measurements.md`](measurements.md) quotes every figure in this
-project against one of them.
+produce: [`measurements.md`](measurements.md) quotes the figures they settled,
+each against the set it was measured on.
 
 So, practically: shoot at your phone camera's full resolution and do not let a
 messaging app downscale the file on its way to the PC. Fill the frame with
@@ -820,6 +820,12 @@ reader looks.
 this machine and nothing from gog.com**: no login, no OAuth, no credential
 stored and none needed.
 
+**Galaxy must be installed here and signed in at least once.** That file is
+what Galaxy's sync writes, so on a machine nobody has ever signed in on there
+is nothing to read. It is a precondition on Galaxy and not a credential for
+this tool — the sentence above still holds — and Galaxy itself need be
+neither running nor online while you do this.
+
 **It is a cache of the last sync, not your account.** A game bought since
 Galaxy last ran is missing, and one removed since may still be listed. So
 every run prints how old it is:
@@ -830,10 +836,25 @@ DLC, releases Galaxy hides, and releases from other stores connected to Galaxy
 are **counted out by name rather than dropped silently** — the run names each
 kind of row it left out.
 
-**What can go wrong:** an absent or moved database exits 2 with its own
-message rather than being reported as a scan that found nothing. And if GOG
-has moved the schema under the reader you get a warning, not a failure — the
-query already succeeded, so the tables this reads are still there:
+**What can go wrong:** two states are reported apart, because the answer to
+each differs, and both exit 2 with their own message rather than being
+reported as a scan that found nothing.
+
+*No database at all* — Galaxy is not installed here, or the file was moved or
+lost:
+
+    No GOG Galaxy library database at <path>. Galaxy rebuilds it on next launch if it was lost; install or run Galaxy once, or pass the path if it lives elsewhere.
+
+*A database with no rows* — it is there, but no GOG account has ever signed
+in to Galaxy on this machine, or GOG has moved the schema out from under the
+reader. Zero rows out of a database that exists is a failure and not an empty
+library, because those two look identical from here:
+
+    The GOG Galaxy database at <path> returned no library rows. Either no GOG account is signed in to Galaxy on this machine, or the schema has changed (this reader was written against PRAGMA user_version 40, found <n>).
+
+And if GOG has moved the schema in a way the query survives you get a warning,
+not a failure — the query already succeeded, so the tables this reads are
+still there:
 
     WARN: this GOG Galaxy database is schema version 41; this reader was verified against 40. Check the titles below against Galaxy.
 
@@ -869,9 +890,11 @@ is the last point at which a wrong row is still cheap to remove.
 
 ## Where to go next
 
-- [`measurements.md`](measurements.md) — everything this project measured,
-  including everything it measured and then decided not to do. Read the one
-  section that covers what you are about to try.
+- [`measurements.md`](measurements.md) — the measurements this project's
+  decisions rest on, including what it measured and then decided not to do.
+  Not every figure: one that settles a single constant usually lives in the
+  doc comment beside that constant, and the archive's own opening says so.
+  Read the one section that covers what you are about to try.
 - [`decisions/`](decisions/) — the decisions a reader would otherwise be
   surprised by, each with the measurement that settled it.
 - [`../ARCHITECTURE.md`](../ARCHITECTURE.md) — the pipeline, the module map,
