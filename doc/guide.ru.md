@@ -769,7 +769,7 @@ bash:
 **Каждый запуск говорит, что он делает, потому что этот контракт невозможно
 проконтролировать изнутри:**
 
-    Reading C:\GOG Games: file and folder NAMES, plus any goggame-*.info beside them. No photo is read and no vision model is called. Nothing here can tell an application from a game by its name -- point this at a games folder only, and review every row before you export it.
+    Reading C:\GOG Games: file and folder NAMES, plus any goggame-*.info beside them. No photo is read and no vision model is called. Nothing here can tell an application from a game, or a game from a film, by its name -- point this at a media folder, and review every row before you export it.
 
 Отнеситесь к этому серьёзно. Наведённая на реальную папку `Downloads`, она выдала
 заголовки, **и каждый до единого оказался приложением**, а не игрой. Та папка

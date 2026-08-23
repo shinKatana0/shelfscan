@@ -1039,8 +1039,9 @@ String? installsPathError(String path) {
 String installsNotice(String dirPath) =>
     'Reading $dirPath: file and folder NAMES, plus any goggame-*.info beside '
     'them. No photo is read and no vision model is called. Nothing here can '
-    'tell an application from a game by its name -- point this at a games '
-    'folder only, and review every row before you export it.';
+    'tell an application from a game, or a game from a film, by its name '
+    '-- point this at a media folder, and review every row before you '
+    'export it.';
 
 /// How much of the directory the run covered, for the summary line.
 String installScope(InstallDirectory listing) =>

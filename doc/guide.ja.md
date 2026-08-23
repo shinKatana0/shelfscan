@@ -740,7 +740,7 @@ PC にインストールしてあるゲームと、GOG で所有しているが�
 
 **この契約は内側からは強制できないので、実行のたびに何をしているかを述べます:**
 
-    Reading C:\GOG Games: file and folder NAMES, plus any goggame-*.info beside them. No photo is read and no vision model is called. Nothing here can tell an application from a game by its name -- point this at a games folder only, and review every row before you export it.
+    Reading C:\GOG Games: file and folder NAMES, plus any goggame-*.info beside them. No photo is read and no vision model is called. Nothing here can tell an application from a game, or a game from a film, by its name -- point this at a media folder, and review every row before you export it.
 
 これは真に受けてください。実在の `Downloads` フォルダに向けたところ、**出てきた
 タイトルは全部がアプリケーションで、ゲームではありませんでした**。その
