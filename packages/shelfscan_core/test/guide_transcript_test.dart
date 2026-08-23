@@ -59,7 +59,8 @@
 /// The census is enforced: a new block in `doc/guide.md` that is neither a
 /// command the reader types nor output containing an elision must be marked or
 /// listed here, or this fails. That is the guard the task exists for -- a test
-/// green over six blocks while nine others drift is the defect, not the fix.
+/// green over six blocks while the rest drift, with everybody believing the
+/// guide is pinned, is the defect and not the fix.
 ///
 /// ## The translations
 ///
