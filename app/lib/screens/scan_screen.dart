@@ -4,13 +4,13 @@
 /// loaded at startup from the OS keychain / preferences (see settings_store).
 library;
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
 import '../galaxy_db.dart';
 import '../game_folders.dart';
 import '../heic_wic.dart';
+import '../input_picker.dart';
 import '../photo_files.dart';
 import '../provider_config.dart';
 import '../settings_store.dart';
@@ -29,6 +29,7 @@ class ScanScreen extends StatefulWidget {
     super.key,
     required this.settings,
     this.store = const SettingsStore(),
+    this.picker = const PlatformInputPicker(),
     this.aliases,
     this.debugVisionProvider,
     this.debugVisionProviderBuilder,
@@ -40,6 +41,10 @@ class ScanScreen extends StatefulWidget {
   /// Loaded once at startup and edited by the settings screen in place.
   final ProviderSettings settings;
   final SettingsStore store;
+
+  /// Where the photographs and the games folder come from -- the real file
+  /// dialogs in production, a fake in a widget test.
+  final InputPicker picker;
 
   /// Regional-title aliases from the bundled data file, handed to the
   /// resolver. Null leaves it on the built-in fallback.
@@ -269,23 +274,12 @@ class _ScanScreenState extends State<ScanScreen> {
     if (_picking) return;
     setState(() => _picking = true);
     try {
-      // FileType.custom rather than FileType.image: the Windows dialog's own
-      // image filter hides .heic, so the phone's HEIC photos could not even be
-      // selected (T-0039).
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: pickerExtensions,
-        allowMultiple: true,
-        withData: true, // bytes, not paths: Android may not expose real paths
-      );
-      if (result == null || !mounted) return;
+      final chosen = await widget.picker.pickPhotos();
+      if (chosen == null || !mounted) return;
 
       setState(() => _rejected.clear());
       final picked = await loadPickedPhotos(
-        [
-          for (final file in result.files)
-            if (file.bytes case final bytes?) (name: file.name, bytes: bytes)
-        ],
+        chosen,
         decodeHeic: widget.debugHeicDecoder ?? platformHeicDecoder,
         onConverting: (name) {
           if (mounted) setState(() => _converting = name);
@@ -338,8 +332,8 @@ class _ScanScreenState extends State<ScanScreen> {
     setState(() => _picking = true);
     var path = '';
     try {
-      path = await FilePicker.platform.getDirectoryPath(
-            dialogTitle: 'Pick the folder your games are installed in',
+      path = await widget.picker.pickFolder(
+            prompt: 'Pick the folder your games are installed in',
           ) ??
           '';
       if (path.isEmpty || !mounted) return;
