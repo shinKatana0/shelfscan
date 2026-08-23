@@ -183,10 +183,11 @@ void main() {
     ];
 
     test('the score falls below the threshold first', () async {
-      final bare = await _resolve(aurexPair, title: 'regent of aurex 1993', hint: 'PC');
+      final bare = await _resolve(aurexPair,
+          title: 'regent of aurex 1993', hint: 'PC');
       expect(bare.candidates.first.score, closeTo(0.750, 0.001));
-      final bracketed =
-          await _resolve(aurexPair, title: 'regent of aurex (1993)', hint: 'PC');
+      final bracketed = await _resolve(aurexPair,
+          title: 'regent of aurex (1993)', hint: 'PC');
       expect(bracketed.candidates.first.score, closeTo(0.682, 0.001));
       expect(bare.best, isNull);
       expect(bracketed.best, isNull);
