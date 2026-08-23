@@ -32,7 +32,10 @@ final _xcoll = TonkatsuExporter();
 /// gets longer.
 ///
 /// The only one of the three that asks for a tap, so [_noXcollClauseFor]
-/// decides which rows have earned it.
+/// decides which rows have earned it: the ones holding a candidate this file
+/// would take. The wording is T-0123's and the owner's own, so it is not
+/// re-decided here -- it is withheld from the rows that cannot follow it,
+/// which is the third narrowing of it and the first that is not about a kind.
 const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 
 /// The same slot for the OTHER reason `.xcoll` refuses a row: an animation
@@ -42,21 +45,26 @@ const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 /// cannot work. 32 characters, inside the budget measured above.
 const _noXcollKindClause = 'not in .xcoll -- film or series?';
 
-/// The same slot again for a film row, refused for a third reason: its
-/// `media_type` implies TMDB and every candidate on it is IGDB's, IGDB being
-/// the only catalogue either shell wires, so `TonkatsuExporter` declines the
-/// id however well it matched. The row said `tap to pick a match` until
-/// T-0313 and no pick reached the file -- the person did exactly what the
-/// screen asked and the row did not move, which is the failure
-/// [_noXcollKindClause] was written one kind over to prevent.
+/// The same slot again for a row no pick can rescue, whatever its kind.
+///
+/// Two routes reach it, refused for different reasons, which is why the guard
+/// asks the exporter rather than the kind. A film row's `media_type` implies
+/// TMDB and every candidate on it is IGDB's, IGDB being the only catalogue
+/// either shell wires, so `TonkatsuExporter` declines the id however well it
+/// matched (T-0313). A row the resolver answered with nothing has no
+/// candidate to offer at all, and only the sheet said so, after the tap had
+/// been spent (T-0318). Both rows said `tap to pick a match`, and in both the
+/// person did exactly what the screen asked and the row did not move -- the
+/// failure [_noXcollKindClause] was written one kind over to prevent.
 ///
 /// It spends its width on where the row still goes rather than on why this
-/// file will not take it. A film row is refused by the whole run and not by
-/// anything about itself, so the reason buys the reader nothing they can act
-/// on, while `.xcoll` refusing a row read alone says the row is lost -- csv
-/// carries it, which is the claim [_keylessBanner] already makes
-/// unconditionally for a whole run of such rows. 31 characters.
-const _noXcollFilmClause = 'not in .xcoll -- csv carries it';
+/// file will not take it. Neither reason is one the reader can act on: a film
+/// row is refused by the whole run rather than by anything about itself, and
+/// an empty candidate list is a search that has already happened. Meanwhile
+/// `.xcoll` refusing a row, read alone, says the row is lost -- csv carries
+/// it, which is the claim [_keylessBanner] already makes unconditionally for
+/// a whole run of such rows. 31 characters.
+const _noXcollCsvClause = 'not in .xcoll -- csv carries it';
 
 /// Which of the three a refused row gets.
 ///
@@ -64,13 +72,15 @@ const _noXcollFilmClause = 'not in .xcoll -- csv carries it';
 /// exhaustive for the same reason its switch is: a fourth [WorkKind] cannot
 /// arrive without someone answering what its refused row says.
 ///
-/// The film arm is guarded rather than fixed, so a film row that does carry a
-/// match this file would take goes back to inviting the tap with no edit
-/// here -- which is what wiring a film catalogue (T-0308) would produce.
+/// The invitation is guarded rather than fixed to a kind, so a row that does
+/// carry a match this file would take goes back to inviting the tap with no
+/// edit here -- which is what wiring a film catalogue (T-0308) would produce.
+/// Animation is outside the guard because its refusal is not about the
+/// candidates: `platform_id` is unanswerable there whatever the row matched.
 String _noXcollClauseFor(ResolvedGame game) =>
     switch (game.detection.workKind) {
       WorkKind.animation => _noXcollKindClause,
-      WorkKind.movie when !_pickReachesXcoll(game) => _noXcollFilmClause,
+      _ when !_pickReachesXcoll(game) => _noXcollCsvClause,
       WorkKind.game || WorkKind.movie => _noXcollClause,
     };
 
@@ -112,6 +122,16 @@ String _boxClause(int count) => 'maps to $count entries -- tap to expand';
 /// plain one. True on a keyless run too, where there was no match to clear
 /// and still no lookup. 37 characters against the 41 it replaces, so no row
 /// grows.
+///
+/// Shown while the match is ABSENT, not while `needsReresolution` is set
+/// (T-0317). The two came apart once the correction turned out to be
+/// undoable: `correctWorkKind` clears [ResolvedGame.best] and leaves
+/// [ResolvedGame.candidates] alone, so the match it took is still in the
+/// row's sheet and picking it puts the row back. The flag keeps its own
+/// meaning -- the row is owed a lookup, and it still is -- but the clause's
+/// job is explaining a match that disappeared, and it is spent the moment
+/// one is there. Left unguarded it becomes the scar of an undone action, on
+/// a row that once more holds the match it was matched to.
 const _reresolveClause = 'kind corrected -- nothing looks it up';
 
 /// What a row says instead of `score N%` when nothing scored it (T-0172).
@@ -1123,7 +1143,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         // Ahead of the status: this is what the row IS, and the box is the
         // reason the row has not been decided yet.
         if (game.mapsToSeveral) _boxClause(game.parts.length),
-        if (game.needsReresolution) _reresolveClause,
+        if (game.needsReresolution && best == null) _reresolveClause,
         // The row's only positive statement of what it cannot do. Independent
         // of the review status on purpose: this is a property of the row's
         // data, true while it is still pending, and the decision the user has
@@ -1538,10 +1558,26 @@ class _RowSheet extends StatelessWidget {
           // (decision 0015), and the row itself stays silent at `game`
           // because every document written so far is games. So this is the
           // one place the value is always readable.
-          const ListTile(
-            title: Text('Kind of work'),
-            subtitle: Text('The wrong kind is the wrong catalogue. Changing '
-                'it clears the match, and nothing looks the row up again.'),
+          ListTile(
+            title: const Text('Kind of work'),
+            // The cost sentence is T-0311's, unchanged. What T-0317 adds is
+            // the half that was true all along and was stated nowhere:
+            // `correctWorkKind` clears `best` and leaves `candidates`, so the
+            // match it took is still in the list above this tile and one tap
+            // puts it back. Unsaid, the control is a one-way door wearing the
+            // clothes of a toggle -- the person who taps it to find out what
+            // it does spends a good match and cannot know it is recoverable.
+            //
+            // Conditional, because on a row the resolver left nothing on
+            // there is nothing to pick back, and a recovery that does not
+            // exist is the promise this screen has now removed three times.
+            subtitle: Text([
+              'The wrong kind is the wrong catalogue. Changing it clears the '
+                  'match, and nothing looks the row up again.',
+              if (game.candidates.isNotEmpty)
+                'It does not clear the candidates above, so a match can be '
+                    'picked back from them.',
+            ].join(' ')),
           ),
           for (final kind in WorkKind.values)
             ListTile(

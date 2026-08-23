@@ -2,21 +2,23 @@
 /// the kind correction decision 0015 makes the mitigation for a silent wrong
 /// inference.
 ///
-/// Five things are pinned, and the last three are the ones that are not merely
+/// Six things are pinned, and the last four are the ones that are not merely
 /// cosmetic. That a box says so and can be expanded into rows that export
 /// separately. That the kind is readable on every row and changeable on every
 /// row. That changing it CLEARS the match rather than writing a new word
 /// beside the old one -- a corrected kind is a different catalogue, and a
 /// relabel would buy a right word and a wrong match. That neither the row
 /// nor the sheet promises the lookup that would replace it, because there is
-/// none: nothing reads `needsReresolution`, no screen re-runs the resolver
+/// none: nothing acts on `needsReresolution`, no screen re-runs the resolver
 /// over an existing row, and the app writes no `review.json` for the CLI to
-/// resolve (T-0311). And that the corrected row stops asking for a tap that
+/// resolve (T-0311). That the corrected row stops asking for a tap that
 /// cannot move it: under a film kind `.xcoll` takes none of the candidates
 /// the games catalogue left on the row, so the invitation was a second
-/// promise the row could not keep (T-0313). Each of those three is pinned in
-/// the negative too -- a promise is the one false statement no later moment
-/// disproves.
+/// promise the row could not keep (T-0313). And that the correction can be
+/// walked back -- the clearing spares the candidates, so the match is one tap
+/// away and the sheet now says so, on the rows where it is true (T-0317).
+/// Each of those four is pinned in the negative too -- a promise is the one
+/// false statement no later moment disproves.
 ///
 /// No network: the screen is given no resolver, and nothing here constructs a
 /// client. Every fixture is invented, catalogue ids included -- this project
@@ -305,14 +307,19 @@ void main() {
       await _openSheet(tester, 'HOLLOW PINE 2');
 
       // The one place a person reads about the correction BEFORE making it,
-      // so it is where the whole cost belongs: the match goes and nothing
-      // brings one back. It said `asks again` until T-0311, which invited
-      // the tap on the strength of a lookup that does not exist.
+      // so it is where the whole cost belongs. It said `asks again` until
+      // T-0311, which invited the tap on the strength of a lookup that does
+      // not exist.
       expect(
           find.textContaining(
               'clears the match, and nothing looks the row up again'),
           findsOneWidget);
       expect(find.textContaining('asks again'), findsNothing);
+      // And this row is the one the undo does NOT reach: the resolver left
+      // no candidates on it, so there is nothing to pick back and offering
+      // it would be the same shape of promise one sentence later (T-0317).
+      expect(find.textContaining('does not clear the candidates'),
+          findsNothing);
     });
 
     testWidgets('a keyed run says the same thing, beside what it cannot export',
@@ -384,6 +391,90 @@ void main() {
       // row still holds the candidate it would have offered.
       expect(find.textContaining('tap to pick a match'), findsNothing);
       expect(doc.games.single.candidates, hasLength(1));
+    });
+
+    // The control read as a one-way door and never was one (T-0317). The
+    // whole recovery is walked here rather than asserted a piece at a time,
+    // because the sentence the sheet now carries is worth nothing unless the
+    // taps it describes really do put the row back -- and because the middle
+    // step is the one the task was filed for: the kind alone does NOT
+    // restore the match, which is exactly what a person expects of a control
+    // shaped like a toggle.
+    testWidgets('a correction is walkable back: the kind, then the match',
+        (tester) async {
+      final match = Candidate(
+        externalId: 'igdb:510007',
+        title: 'Harbour Starling',
+        platformId: 167,
+        platformName: 'PlayStation 5',
+        score: 0.97,
+      );
+      final doc = _doc([
+        _row('HARBOUR STARLING',
+            best: match,
+            candidates: [match],
+            status: ReviewStatus.approved),
+      ]);
+      await _pump(tester, doc, keyless: false);
+
+      await _openSheet(tester, 'Harbour Starling');
+      await tester.tap(find.byKey(const Key('work-kind-movie')));
+      await tester.pumpAndSettle();
+      expect(doc.games.single.best, isNull);
+
+      await _openSheet(tester, 'HARBOUR STARLING');
+      await tester.tap(find.byKey(const Key('work-kind-game')));
+      await tester.pumpAndSettle();
+      expect(doc.games.single.detection.workKind, WorkKind.game);
+      expect(doc.games.single.best, isNull);
+      expect(find.textContaining('kind corrected -- nothing looks it up'),
+          findsOneWidget);
+
+      await _openSheet(tester, 'HARBOUR STARLING');
+      await tester.tap(find.byKey(const Key('candidate-igdb:510007')));
+      await tester.pumpAndSettle();
+
+      expect(doc.games.single.best?.externalId, 'igdb:510007');
+      expect(find.text('Harbour Starling'), findsOneWidget);
+      // The row stops wearing the scar of an action that has been undone.
+      // `needsReresolution` is still set and still means what it meant -- the
+      // clause is what has become spent, because there is no vanished match
+      // left to explain (T-0317).
+      expect(doc.games.single.needsReresolution, isTrue);
+      expect(find.textContaining('kind corrected'), findsNothing);
+      // And the row is back in the file it fell out of, which is the cost
+      // the person was actually paying.
+      expect(find.textContaining('not in .xcoll'), findsNothing);
+    });
+
+    testWidgets('the sheet names the undo, on a row that has one',
+        (tester) async {
+      final match = Candidate(
+        externalId: 'igdb:510008',
+        title: 'Hollow Pine 3',
+        platformId: 167,
+        platformName: 'PlayStation 5',
+        score: 0.95,
+      );
+      await _pump(
+          tester,
+          _doc([
+            _row('HOLLOW PINE 3', best: match, candidates: [match]),
+          ]),
+          keyless: false);
+      await _openSheet(tester, 'Hollow Pine 3');
+
+      expect(
+          find.textContaining('It does not clear the candidates above, so a '
+              'match can be picked back from them'),
+          findsOneWidget);
+      // Beside the cost and not instead of it: the correction still spends
+      // the match, and a person who reads only the second sentence must not
+      // come away thinking the tap is free.
+      expect(
+          find.textContaining(
+              'clears the match, and nothing looks the row up again'),
+          findsOneWidget);
     });
   });
 }
