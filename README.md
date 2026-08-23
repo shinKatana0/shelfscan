@@ -357,7 +357,7 @@ Exported 0 of 18 approved game(s) -> shelf.xcoll
 ```
 
 CSV has no such requirement: it keeps the titles and platforms the
-vision model read, with an empty `igdb_id` column.
+vision model read, with an empty `external_id` column.
 
 ### Path B — bring your own keys
 
@@ -753,8 +753,14 @@ takes them either way.
 ### CSV columns
 
 ```
-title,platform,media_type,igdb_id,source_photo
+title,platform,media_type,external_id,source_photo
 ```
+
+`external_id` is what the catalogue that resolved the row calls it, in the
+form `catalogue:id` — `igdb:1234`. The prefix names which catalogue
+answered, so a consumer splits at the first `:` rather than assuming one.
+It is empty when nothing resolved the row, which is every row on a keyless
+run.
 
 `source_photo` is the photo the title was read *off*, and is empty when it
 was read off none — a row you typed at review, or one taken from an
@@ -765,7 +771,7 @@ A scan that read anything other than a photograph (`scan-installs`,
 that such a run says where its rows came from:
 
 ```
-title,platform,media_type,igdb_id,source_photo,source_entry,origin,source_id
+title,platform,media_type,external_id,source_photo,source_entry,origin,source_id
 ```
 
 | column | what it is |

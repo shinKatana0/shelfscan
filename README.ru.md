@@ -1,4 +1,4 @@
-<!-- Translated from 760a0b8 (2026-08-23). The rule, and how to check
+<!-- Translated from 2866320 (2026-08-23). The rule, and how to check
      whether this is still true: README.md, "Translations". -->
 
 [English](README.md) · **Русский** · [日本語](README.ja.md)
@@ -366,7 +366,7 @@ Exported 0 of 18 approved game(s) -> shelf.xcoll
 ```
 
 У CSV такого требования нет: он сохраняет заголовки и платформы, прочитанные
-vision-моделью, с пустой колонкой `igdb_id`.
+vision-моделью, с пустой колонкой `external_id`.
 
 <a id="path-b--bring-your-own-keys"></a>
 
@@ -776,8 +776,13 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
 ### Колонки CSV
 
 ```
-title,platform,media_type,igdb_id,source_photo
+title,platform,media_type,external_id,source_photo
 ```
+
+`external_id` — то, как строку называет каталог, который её сопоставил, в виде
+`catalogue:id` — `igdb:1234`. Префикс говорит, какой каталог ответил, так что
+потребитель делит значение по первому `:`, а не догадывается. Колонка пуста,
+когда строку не сопоставил никто, — а на запуске без ключей это каждая строка.
 
 `source_photo` — это фотография, *с которой* прочитан заголовок; она пуста, если
 он не читался ни с одной: строка, введённая вами при проверке, или взятая из
@@ -788,7 +793,7 @@ title,platform,media_type,igdb_id,source_photo
 такой запуск говорил, откуда его строки:
 
 ```
-title,platform,media_type,igdb_id,source_photo,source_entry,origin,source_id
+title,platform,media_type,external_id,source_photo,source_entry,origin,source_id
 ```
 
 | колонка | что это |
