@@ -215,6 +215,70 @@ nothing to configure once. Anybody who types `android` without it has opted in,
 silently, for that invocation. If you use the tool regularly, wrap it in a
 shell alias or function that supplies the flag.
 
+## `share_plus` applies the Kotlin Gradle Plugin, and one day the build will refuse
+
+**Symptom.** Every `flutter build apk` prints this, and then builds anyway:
+
+```
+WARNING: Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP): share_plus
+Future versions of Flutter will fail to build if your app uses plugins that apply KGP.
+```
+
+**What it means.** Flutter is moving to Built-in Kotlin: the Flutter Gradle
+plugin supplies Kotlin itself, and a plugin that applies KGP in its own Gradle
+file stops building. Flutter publishes a guide each way —
+[for app developers](https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers)
+and [for plugin authors](https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors).
+
+`share_plus` is not incidental here: it is the whole Android export path, the
+share sheet `app/lib/export_saver.dart` raises. Dropping the dependency is not
+an option, so this resolves by upgrading it or not at all.
+
+**Is it fixed upstream? Yes. Can this tree take the fix? Not yet.** Measured
+2026-08-23 on Flutter 3.47.0 / Dart 3.13.0, against `share_plus` 10.1.4 in the
+lock.
+
+`share_plus` **13.2.0** added it — *"FEAT: Add support of built-in Kotlin"* in
+its changelog — and **13.3.0** is current. Raise the constraint and
+`flutter build apk --release` prints no KGP warning at all. That build then
+fails, at the Dart compile, on the `file_picker` errors below — but it fails
+*past* the point the warning is printed: on 10.1.4 the warning is the second
+line of the log, ahead of everything else, and on 13.3.0 the same search over a
+log that got as far as `:app:compileFlutterBuildRelease` finds nothing. The
+upgrade removes the warning. No apk has been produced on it.
+
+**What blocks it is `win32`, not Kotlin.** `share_plus` >= 13.1.0 requires
+`win32 ^6.0.1`; two other direct dependencies of this app pin `win32 ^5`, so
+version solving fails — on `flutter_secure_storage ^9.2.2` first, and once that
+is raised, on `file_picker ^8.0.0`. The resolution closes only with all three
+moved: `share_plus` 13.3.0, `flutter_secure_storage` 11.0.0, `file_picker`
+12.0.0.
+
+With all three moved the app does not compile, and `share_plus` is the least of
+it:
+
+- **`file_picker` 12 is the cost.** It removes `FilePicker.platform` and makes
+  `FilePicker` a `final` class. That is two errors in
+  `lib/screens/scan_screen.dart` and the end of the fake-picker pattern the app
+  test suite is built on — nearly every analyzer complaint comes from here.
+- **`flutter_secure_storage` 11 is free.** Source-clean against this tree; it
+  raised nothing.
+- **`share_plus` 13 costs two lines.** Its 11.0.0 superseded the `Share` class
+  with `SharePlus.instance.share(ShareParams(...))`. `Share.shareXFiles` still
+  exists and still works, but is `@Deprecated`, and `flutter analyze` — which
+  CI runs, and which fails on an `info` — reports it.
+
+**So the constraint was deliberately left alone** (T-0293), because this is a
+three-plugin upgrade with an API port in it and not a version bump. T-0304
+holds the upgrade.
+
+**When the build finally refuses**, that is the task to do, and none of it is
+guesswork now: raise all three, port the `file_picker` call sites and the test
+fakes, migrate `Share.shareXFiles` to `SharePlus.instance.share`. Then build a
+release apk and check the warning is gone rather than assuming it. Nothing
+above has been run on a device — T-0015 is still what verifies the share sheet
+actually shares — so a green build is a green build and no more.
+
 ## Unresolved: `flutter doctor` reports the licence status unknown
 
 `flutter doctor` reports **Android license status unknown** on this toolchain,
