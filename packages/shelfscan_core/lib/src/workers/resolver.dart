@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 
 import '../models.dart';
 import '../providers/igdb.dart';
+import '../providers/tmdb.dart';
 import 'base.dart';
 
 /// Fallback alias table, used when a shell supplies none.
@@ -775,4 +776,182 @@ class _RefusingClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) =>
       throw StateError('SkipResolver must never perform network I/O '
           '(attempted ${request.method} ${request.url})');
+}
+
+/// Stage 3's seam: **which catalogue answers a row is a property of the row.**
+///
+/// Decision 0015 put `workKind` on the detection and named this the stage that
+/// has to honour it. This is that stage, and it is a lookup rather than a
+/// branch on purpose -- the difference is what the next catalogue costs.
+///
+/// A branch (`if (kind == movie) ... else ...`) is edited by every kind that
+/// is added, so the third one edits code the second one wrote and the test for
+/// the second is where the third breaks. A lookup is not edited at all: anime
+/// arrives as one more entry in [catalogues], built by the shell that already
+/// builds the clients, and nothing in this file moves. That is the whole of
+/// the claim -- a seam is a thing you *pass* an implementation to, and the
+/// test for it is whether adding one requires editing it.
+///
+/// **It extends [ResolverWorker] rather than being a plain [Worker] only
+/// because `Orchestrator.resolverWorker` is typed [ResolverWorker].** That is
+/// the same accommodation [SkipResolver] makes, and it inherits the same
+/// refusing IGDB client, so a router that somehow reached the network fails
+/// loudly rather than resolving a film against IGDB. Widening the
+/// orchestrator's field to `Worker<Detection, ResolvedGame>` would remove the
+/// inheritance entirely and is the tidier shape; it was left alone because
+/// `orchestrator.dart` is outside this task's brief.
+class CatalogueRouter extends ResolverWorker {
+  CatalogueRouter({required this.catalogues, required this.fallback})
+      : super(IgdbClient(
+          clientId: '',
+          clientSecret: '',
+          client: _RefusingClient(),
+        ));
+
+  /// The catalogue for each kind. A kind absent here goes to [fallback].
+  final Map<WorkKind, Worker<Detection, ResolvedGame>> catalogues;
+
+  /// What answers a kind no catalogue is registered for.
+  ///
+  /// Required rather than defaulted, because both plausible defaults are wrong
+  /// in a way that hides itself: resolving an unknown kind against IGDB
+  /// matches films to games, and silently returning no match makes a missing
+  /// registration look like a catalogue miss. The shell knows which it means
+  /// and has to say.
+  final Worker<Detection, ResolvedGame> fallback;
+
+  /// Delegates to [Worker.process], not [Worker.run].
+  ///
+  /// The retry policy is applied once, by whichever `run` called this -- the
+  /// orchestrator's. Calling the delegate's `run` here would nest one backoff
+  /// schedule inside another and turn four attempts into sixteen, each of the
+  /// inner ones sleeping. The cost is that a delegate's own `maxRetries` and
+  /// `backoffBase` are not honoured: every catalogue on this seam retries on
+  /// this class's schedule, which is [ResolverWorker]'s.
+  @override
+  Future<ResolvedGame> process(Detection task) =>
+      (catalogues[task.workKind] ?? fallback).process(task);
+}
+
+/// A film has no platform, and [Candidate] requires one because it was written
+/// when IGDB was the only catalogue.
+///
+/// These two are the shape of that mismatch rather than values anybody
+/// measured. Neither reaches either export target: `TonkatsuExporter` omits
+/// `platform_id` for a film, and the CSV's `platform` column takes
+/// [filmPlatformName], where empty is the honest answer and is already what
+/// the column writes for an unmatched row.
+///
+/// [filmPlatformId] is the one placeholder here sitting in a field other code
+/// could read, and `exporters.dart` states this project's rule about exactly
+/// that: *0 is a valid-looking id and would be a lie in a column other tools
+/// may key on*. It survives only because nothing writes it. The real fix is a
+/// nullable platform on [Candidate], which changes the review-document
+/// contract and the review screen, and so is not this task's.
+const filmPlatformId = 0;
+const filmPlatformName = '';
+
+/// A film detection to a TMDB match (T-0162).
+///
+/// Reuses [ResolverWorker]'s scorer and [minAutoScore] deliberately: the
+/// measured behaviour of the Levenshtein scorer is not a property of IGDB, and
+/// a second threshold would be a second thing to tune with nothing measured
+/// behind it.
+///
+/// **What it does not reuse is the platform gate**, because a film has no
+/// platform. `platformAgreement`, `volumeNumbersAgree` and the cross-band tie
+/// rule all exist to make a guess about a console safe, and none of them has
+/// anything to say here. What replaces the gate as the second signal is the
+/// release year: a filename carries one far more often than a spine does, and
+/// two films sharing a title are separated by it almost by definition.
+class TmdbResolverWorker extends Worker<Detection, ResolvedGame> {
+  TmdbResolverWorker(this.tmdb);
+
+  final TmdbClient tmdb;
+
+  @override
+  Future<ResolvedGame> process(Detection task) async {
+    final raw = task.rawTitle.trim();
+    if (raw.isEmpty) return ResolvedGame(detection: task);
+
+    final hits = await tmdb.searchMovie(raw, year: task.sourceYear);
+    if (hits.isEmpty) return ResolvedGame(detection: task);
+
+    final folded = raw.toLowerCase();
+    final queries = {folded, stripLegalMarks(folded)};
+
+    final scored = [
+      for (final hit in hits)
+        (hit: hit, score: _scoreOf(queries, hit)),
+    ]..sort((a, b) => b.score.compareTo(a.score));
+
+    return ResolvedGame(
+      detection: task,
+      best: _bestFilm(scored, task.sourceYear),
+      candidates: [
+        for (final entry in scored)
+          _candidate(entry.hit, entry.score,
+              alternative: _matchedOriginal(queries, entry.hit)
+                  ? entry.hit.originalTitle
+                  : null)
+      ],
+    );
+  }
+
+  /// The better of the two names TMDB gives a film.
+  ///
+  /// A release filename is often the original-language name while TMDB's
+  /// canonical title is the localised one, so scoring only the canonical form
+  /// loses the match without saying so -- the same reason
+  /// [ResolverWorker.process] scores IGDB's alternative names.
+  static double _scoreOf(Set<String> queries, TmdbHit hit) => math.max(
+        ResolverWorker._bestScore(queries, hit.title),
+        hit.originalTitle == null
+            ? 0.0
+            : ResolverWorker._bestScore(queries, hit.originalTitle!),
+      );
+
+  /// Whether the original-language title is what actually matched, so review
+  /// can show it rather than leaving a match nobody can check.
+  static bool _matchedOriginal(Set<String> queries, TmdbHit hit) =>
+      hit.originalTitle != null &&
+      ResolverWorker._bestScore(queries, hit.originalTitle!) >
+          ResolverWorker._bestScore(queries, hit.title);
+
+  static Candidate _candidate(TmdbHit hit, double score,
+          {String? alternative}) =>
+      Candidate(
+        igdbId: hit.tmdbId,
+        title: hit.title,
+        platformId: filmPlatformId,
+        platformName: filmPlatformName,
+        score: score,
+        matchedAlternativeName: alternative,
+        releaseYear: hit.releaseYear,
+      );
+
+  /// The auto-match, or null for the human.
+  ///
+  /// Two gates, and the second is the film-shaped half of the tie rule. A
+  /// score below [minAutoScore] is never automatic -- [ResolverWorker]'s rule
+  /// unchanged. A top score TIED with the runner-up is refused **unless the
+  /// detection carried a year and exactly one of the tied films matches it**:
+  /// a remake shares its title with its original exactly and scores 1.000
+  /// against it, and the year is the only thing separating the two. Refusing a
+  /// tie the year could have settled is what T-0165 measured as the cost of a
+  /// gate that cannot see the year, on the games side.
+  static Candidate? _bestFilm(
+      List<({TmdbHit hit, double score})> scored, int? year) {
+    final top = scored.first;
+    if (top.score < minAutoScore) return null;
+
+    final tied =
+        scored.where((e) => (e.score - top.score).abs() < 1e-9).toList();
+    if (tied.length == 1) return _candidate(top.hit, top.score);
+
+    if (year == null) return null;
+    final byYear = tied.where((e) => e.hit.releaseYear == year).toList();
+    if (byYear.length != 1) return null;
+    return _candidate(byYear.first.hit, byYear.first.score);
+  }
 }

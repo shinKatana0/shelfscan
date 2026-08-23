@@ -96,12 +96,31 @@ enum MediaType {
 /// fingerprint `control_set_test.dart` pins -- and one name for two concepts
 /// is what this type exists to stop.
 ///
-/// EXTERNAL CONTRACT on the export side. `game` is the only value that has
-/// been round-tripped through Tonkatsu Box's importer, which is what T-0009
-/// verified; `anime` is Tonkatsu's own vocabulary for a kind it manages, but
-/// this spelling of it is an assumption until an import measures it.
+/// EXTERNAL CONTRACT on the export side, and the enum NAME is the wire value:
+/// `TonkatsuExporter` writes `workKind.name` straight into `media_type`, so a
+/// value here may only be spelled the way Tonkatsu spells it.
+///
+/// Checked against Tonkatsu's own published collections (T-0162), which is the
+/// verification decision 0015 asked the first task adding a second kind to do.
+/// The four spellings that repository publishes are `game`, `movie`, `tv_show`
+/// and `animation`, and two things follow that were not assumed correctly
+/// before. `movie` is the film value -- not `film`, which is what every
+/// document here called it in prose. And `anime` below is WRONG: Tonkatsu
+/// files an anime film and an anime series alike under `animation`, telling
+/// them apart by `platform_id` rather than by the kind. Renaming it is
+/// T-0288's, not this task's -- the review screen renders this value and was
+/// being built in parallel.
+///
+/// `game` is still the only value round-tripped through the importer (T-0009);
+/// `movie` is verified against the format's own files rather than an import.
 enum WorkKind {
   game,
+
+  /// Tonkatsu's spelling for a film. `external_id` for one of these is a TMDB
+  /// id, not an IGDB id, and a published movie item carries no `platform_id`
+  /// at all -- both are the exporter's business, not this enum's.
+  movie,
+
   anime;
 
   /// Absent is [game] -- the whole collection was games before this field
@@ -109,14 +128,17 @@ enum WorkKind {
   /// a carrier the model could not tell, and there is no equivalent here, so
   /// a typo in a hand-edited document would land silently on a claim about
   /// what the row is. `review.json` is hand-editable by design (T-0050).
+  /// Both messages list [values] rather than spelling the kinds out: a third
+  /// kind was added here once and the two hardcoded sentences did not move.
+  static String get _allowed => values.map((e) => e.name).join(', ');
+
   static WorkKind parse(Object? value, String path) {
-    final name = _shapeOrNull<String>(value, path, 'game or anime');
+    final name = _shapeOrNull<String>(value, path, 'one of $_allowed');
     if (name == null) return WorkKind.game;
     return WorkKind.values.firstWhere(
       (e) => e.name == name,
-      orElse: () =>
-          throw ReviewFormatException(path, 'is "$name"; it must be game or '
-              'anime'),
+      orElse: () => throw ReviewFormatException(
+          path, 'is "$name"; it must be one of $_allowed'),
     );
   }
 }
@@ -330,6 +352,7 @@ class Detection {
     String? notes,
     String? sourceId,
     int? sourceYear,
+    WorkKind workKind = WorkKind.game,
   }) {
     assert(
         origin == DetectionOrigin.metadata ||
@@ -347,6 +370,7 @@ class Detection {
       sourceEntry: _presentName(sourceEntry),
       sourceId: _presentName(sourceId),
       sourceYear: sourceYear,
+      workKind: workKind,
     );
   }
 
@@ -367,20 +391,22 @@ class Detection {
   /// [Detection] and produces a [ResolvedGame], so a kind decided after
   /// resolution would be decided too late to route anything.
   ///
+  /// [FilenameSource] is the first thing to set it away from [WorkKind.game]
+  /// (T-0162), and it INFERS the value rather than being told: a disk source
+  /// has no prompt to carry a per-run hint, so the extension and then the
+  /// grammar of the name decide, and a name neither settles declines. The
+  /// vision path still hardcodes [WorkKind.game].
+  ///
   /// Mutable, alone among this class's fields, because the review step
-  /// corrects it (decision 0015, the owner's mitigation): the kind is
-  /// INFERRED on a source that has no prompt, a filename never announces that
-  /// it is not what it looks like, and a person looking at the row is the only
-  /// party who can see that the inference was wrong. [ResolvedGame.best] and
-  /// [ResolvedGame.status] are non-final for the same reason and are the
-  /// precedent.
+  /// corrects that inference (decision 0015, the owner's mitigation): a
+  /// filename never announces that it is not what it looks like, and a person
+  /// looking at the row is the only party who can see the inference was wrong.
+  /// [ResolvedGame.best] and [ResolvedGame.status] are non-final for the same
+  /// reason and are the precedent.
   ///
   /// Correcting it is not a rename: it changes which catalogue answers the
   /// row, so [ResolvedGame.correctWorkKind] clears the match and marks the row
   /// rather than writing the new word beside the old match.
-  ///
-  /// No source reads a kind yet, so nothing but review sets it away from
-  /// [WorkKind.game].
   WorkKind workKind;
 
   /// 0..1, the vision model's own estimate.

@@ -11,6 +11,7 @@ export 'src/photo_format.dart';
 export 'src/providers/igdb.dart';
 export 'src/providers/ollama_vision.dart';
 export 'src/providers/openai_compatible_vision.dart';
+export 'src/providers/tmdb.dart';
 export 'src/providers/vision.dart';
 export 'src/sources/filename_source.dart';
 export 'src/sources/gog_library.dart';

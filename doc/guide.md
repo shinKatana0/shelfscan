@@ -782,6 +782,46 @@ verdict on the titles is the measurement. Nothing in a file *name* separates
 `NoteWellSetup.exe` from `setup_moor_1.9.exe`, and no rule reading only a name
 ever will.
 
+### It reads films too now, and that widens the contract rather than fixing it
+
+Since T-0162 this command also reads **films**. A video file whose name is
+release-shaped — `Some.Title.1999.1080p.BluRay.x264-GROUP.mkv` — becomes a film
+row and is looked up in TMDB instead of IGDB; a game installer beside it is
+still a game row and still goes to IGDB. The kind is decided per file, so one
+folder holding both is read once and produces both, and you do not choose a
+mode before the run.
+
+**The contract above gets weaker, not stronger.** It used to be *point this at
+a games folder only*. It is now:
+
+> **Point this at a media folder, and review every row.**
+
+The failure it guards against has not gone anywhere — it has multiplied. There
+were two ways a name could be read as the wrong thing (an application taken for
+a game, or nothing taken for anything); there are now three, because a name can
+also be read as the wrong *kind*. And **every one of them fails silently**, for
+the reason that has not changed since the first version of this command: a
+filename never announces that it is not what it looks like. A holiday video
+named like a release is a film row; a film named like an installer is a game
+row; neither says so.
+
+Two things keep that honest, and neither is automatic:
+
+- **A file that settles nothing is declined rather than guessed at.** A video
+  carrying neither a year nor a resolution produces no row at all, and is
+  reported to you as skipped — the same treatment a name with no title in it
+  gets. Declining is the success case here.
+- **The kind is shown on the review screen and you can change it.** That is the
+  only thing that turns a silent wrong guess into a visible one, so the
+  instruction to *review every row* now means the kind as well as the title.
+  Correcting it re-runs the lookup against the other catalogue.
+
+**TMDB needs its own credential**, a third after IGDB and the vision model.
+Without it, film rows behave exactly like game rows without IGDB credentials:
+they reach review carrying the title read off the filename, match nothing, and
+export to CSV but not to `.xcoll`, which is a file of catalogue ids and has
+nothing to put in one.
+
 So a short, closed list of well-known personal and system directories is
 refused outright:
 
