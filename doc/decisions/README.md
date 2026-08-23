@@ -1,6 +1,6 @@
 # Decision records
 
-Fourteen decisions that a competent reader, looking at this code, would ask
+Fifteen decisions that a competent reader, looking at this code, would ask
 *why is it like this* about — and whose answer is not the obvious one.
 
 Each record has four sections: the context, the decision, **the measurement that
@@ -62,6 +62,7 @@ anyone who ever does hold that record.
 | [0012](0012-what-is-dropped-is-named-never-counted.md) | What is dropped is named, never counted | This project's most-filed defect class is silence; and where an exact count is not available the interface states a bound rather than inventing a number. |
 | [0014](0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md) | Stay in 0.x until the two file formats stop moving | `*.review.json` and which rows reach `.xcoll` have both changed shape this month, and no document written by one version has yet been loaded by another. |
 | [0015](0015-the-kind-of-work-is-a-property-of-the-row.md) | The kind of work is a property of the row, not of the run | The export target is a mixed-media manager and the models already answer a mixed shelf, so a games-or-anime mode would only be discarding rows that were read correctly. |
+| [0016](0016-a-row-is-identified-by-the-catalogue-that-answered.md) | A row is identified by the catalogue that answered and that catalogue's id | Two of the three fields in this tree that hold an external id already say which service issued it; the third is named after one catalogue and now carries another's. |
 
 **0013 is not missing.** It records how this project's own working record is
 organised, which is development rather than product, so it stays with the board
