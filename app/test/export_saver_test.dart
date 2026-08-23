@@ -5,14 +5,19 @@
 /// suggested file name, the type filter, cancellation, and that the chosen
 /// path really receives the rendered string.
 ///
-/// The Android branch (temp file + share sheet) is NOT covered here: it
-/// needs a device/emulator, see the T-0005 worker report.
+/// The Android share sheet itself is still NOT driven here -- that needs a
+/// device, see the T-0005 worker report and T-0015. What is covered is the one
+/// decision that branch makes: which share results mean the export was saved
+/// and which mean the user backed out. [shareOutcome] exists to be reachable
+/// from here, because reporting a cancelled export as a saved one is the worst
+/// thing this file can do and a device test is not available to catch it.
 library;
 
 import 'dart:io';
 
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shelfscan_app/export_saver.dart';
 
 class FakeFileSelector extends FileSelectorPlatform {
@@ -87,5 +92,45 @@ void main() {
     expect(mimeTypeFor('csv'), 'text/csv');
     expect(mimeTypeFor('xcoll'), 'application/json'); // external contract
     expect(mimeTypeFor('zzz'), 'application/octet-stream');
+  });
+
+  group('what the share sheet answered decides saved from cancelled', () {
+    const somewhere = '/tmp/shelf.csv';
+
+    test('a dismissed sheet is a cancelled export, never a saved one', () {
+      final outcome = shareOutcome(
+          const ShareResult('', ShareResultStatus.dismissed), somewhere);
+
+      expect(outcome.kind, SaveKind.cancelled);
+      expect(outcome.path, isNull);
+    });
+
+    test('a selected action is a share, carrying the temp path', () {
+      final outcome = shareOutcome(
+          const ShareResult('an.app', ShareResultStatus.success), somewhere);
+
+      expect(outcome.kind, SaveKind.shared);
+      expect(outcome.path, somewhere);
+    });
+
+    test('an unavailable result is not read as a cancellation', () {
+      // The sheet could not report what the user did. Only `dismissed` is a
+      // refusal, and answering `cancelled` here would claim a certainty the
+      // platform never gave.
+      expect(shareOutcome(ShareResult.unavailable, somewhere).kind,
+          SaveKind.shared);
+    });
+
+    test('the Android branch routes its result through shareOutcome', () {
+      // Read as text: the branch is behind Platform.isAndroid, so a host test
+      // cannot enter it, and pinning the mapping proves nothing unless the
+      // branch is what uses it.
+      final source = File('lib/export_saver.dart').readAsStringSync();
+
+      expect(source, contains('SharePlus.instance.share('),
+          reason: 'the source scan found no share call, so the check below '
+              'would pass on a file that shares nothing');
+      expect(source, contains('return shareOutcome(result, file.path);'));
+    });
   });
 }
