@@ -67,6 +67,10 @@ void main() {
       aliases: await loadTitleAliases(),
     );
 
-    expect(resolver.aliases, containsPair('biohazard', 'resident evil'));
+    // One entry down since T-0308: a keyed run is a router, and the table is
+    // the games catalogue's -- the resolver the alias table is about.
+    final games = (resolver as CatalogueRouter).catalogues[WorkKind.game]!
+        as ResolverWorker;
+    expect(games.aliases, containsPair('biohazard', 'resident evil'));
   });
 }

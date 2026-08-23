@@ -483,18 +483,38 @@ class ProviderPolicy {
   /// answered by [checkMatching] rather than tested again here: one rule,
   /// one author, and the screen showing the sentence is reading it from the
   /// same call.
+  ///
+  /// **A keyed run returns a [CatalogueRouter] and not a bare
+  /// [ResolverWorker] (T-0308), and only [WorkKind.game] is registered on
+  /// it.** Everything else falls to [SkipResolver], which is the owner's
+  /// decision: a row of a kind this app cannot look up is keyless -- the
+  /// title as detected, CSV yes, `.xcoll` no -- exactly as every row is in a
+  /// run with no credentials at all. What it replaces is the reason the
+  /// router's fallback is required rather than defaulted: one IGDB resolver
+  /// for every row searched a film in the games catalogue.
+  ///
+  /// **There is no TMDB entry here and there cannot be one yet.** The CLI
+  /// takes that token from the environment; this shell keeps credentials in
+  /// the OS keychain (decision 0011) and Settings has no field for a third
+  /// one. Adding it is user-facing and is its own task, so the film kind
+  /// reaches [SkipResolver] on every path through this app.
   static ResolverWorker buildResolver(
     ProviderSettings settings, {
     Map<String, String>? aliases,
     TitleMatching matching = TitleMatching.igdb,
   }) {
     if (checkMatching(settings, matching).keyless) return SkipResolver();
-    return ResolverWorker(
-      IgdbClient(
-        clientId: settings.igdbClientId,
-        clientSecret: settings.igdbClientSecret,
-      ),
-      aliases: aliases,
+    return CatalogueRouter(
+      catalogues: {
+        WorkKind.game: ResolverWorker(
+          IgdbClient(
+            clientId: settings.igdbClientId,
+            clientSecret: settings.igdbClientSecret,
+          ),
+          aliases: aliases,
+        ),
+      },
+      fallback: SkipResolver(),
     );
   }
 

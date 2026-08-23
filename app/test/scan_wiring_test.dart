@@ -111,6 +111,20 @@ Future<ReviewDocument> _runScan(ResolverWorker resolver) => Orchestrator(
       resolverWorker: resolver,
     ).runScan([_photo('shelf1.jpg')]);
 
+/// A detection of [kind], with every field the pipeline does not read here
+/// at its emptiest. Invented titles throughout.
+Detection _row(String title, WorkKind kind) => Detection(
+      rawTitle: title,
+      mediaType: MediaType.unknown,
+      confidence: 1.0,
+      sourcePhoto: '',
+      workKind: kind,
+    );
+
+/// The IGDB resolver a keyed run registers for [WorkKind.game].
+ResolverWorker gameCatalogueOf(ResolverWorker resolver) =>
+    (resolver as CatalogueRouter).catalogues[WorkKind.game]! as ResolverWorker;
+
 void main() {
   tearDown(() => ProviderPolicy.debugLocalAllowedOverride = null);
 
@@ -135,8 +149,51 @@ void main() {
           ProviderSettings(igdbClientId: 'id', igdbClientSecret: 'secret'));
 
       expect(resolver, isNot(isA<SkipResolver>()));
-      expect(resolver.igdb.clientId, 'id');
-      expect(resolver.igdb.clientSecret, 'secret');
+      // Since T-0308 the credentials are one entry down: what a keyed run
+      // gets is a router, and IGDB is what it registered for one kind.
+      expect(gameCatalogueOf(resolver).igdb.clientId, 'id');
+      expect(gameCatalogueOf(resolver).igdb.clientSecret, 'secret');
+    });
+
+    // The defect T-0308 fixed: with credentials, ONE resolver answered every
+    // row, and it was the IGDB one -- so a film was searched in the games
+    // catalogue. These assert on where a row is sent, which is the only place
+    // that failure was ever visible.
+    test('a keyed run routes each kind, and only games reach IGDB', () {
+      final resolver = ProviderPolicy.buildResolver(
+          ProviderSettings(igdbClientId: 'id', igdbClientSecret: 'secret'));
+
+      expect(resolver, isA<CatalogueRouter>());
+      final router = resolver as CatalogueRouter;
+      expect(router.catalogues.keys, [WorkKind.game]);
+      expect(router.fallback, isA<SkipResolver>());
+      for (final kind in WorkKind.values.where((k) => k != WorkKind.game)) {
+        expect(router.catalogues[kind], isNull,
+            reason: '$kind has no catalogue in this shell, so it must fall to '
+                'the keyless resolver rather than to IGDB');
+      }
+    });
+
+    test('a film row in a keyed run asks IGDB nothing and comes back '
+        'unresolved', () async {
+      // The owner's decision, and the one path anyone can run: no TMDB token
+      // can exist in this shell, so this is what a film row does today.
+      final igdb = CountingIgdbClient();
+      final resolver = CatalogueRouter(
+        catalogues: {WorkKind.game: ResolverWorker(igdb)},
+        fallback: SkipResolver(),
+      );
+
+      final resolvedFilm =
+          await resolver.process(_row('The Harbour Lantern', WorkKind.movie));
+      expect(igdb.searches, 0);
+      expect(resolvedFilm.best, isNull);
+      expect(resolvedFilm.candidates, isEmpty);
+      expect(resolvedFilm.detection.rawTitle, 'The Harbour Lantern');
+
+      // The other half of the same claim: games are unaffected.
+      await resolver.process(_row('Nocturne 5 Gold', WorkKind.game));
+      expect(igdb.searches, 1);
     });
 
     test('a keyless scan issues zero IGDB requests and leaves games '
