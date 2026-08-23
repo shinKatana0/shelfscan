@@ -1543,6 +1543,20 @@ const _apiUrl = 'https://api.anthropic.com/v1/messages';
 /// The cap the Anthropic request carries, named rather than written twice so
 /// the message reporting a `stop_reason: max_tokens` cannot quote a number the
 /// request did not send.
+///
+/// **The lowest of the three this repository sends, and the only one nobody
+/// has priced** (T-0281). The other two are 8192: `_maxOutputTokens` in
+/// openai_compatible_vision.dart clears a reasoning model's measured tail,
+/// `_numPredict` in ollama_vision.dart clears a dense shelf inside the call
+/// timeout. They are not one constant and should not become one -- three
+/// different models, three different things being bounded.
+///
+/// What 4096 is worth flagging for is arithmetic, not a measurement: this
+/// answer is ~48 tokens a row whatever writes it, so 4096 is about 85 rows,
+/// and T-0278's ladder puts an 84-spine frame at 3023 tokens and a 120-spine
+/// one at 5504. A dense frame would therefore stop here. Carried across models
+/// and never run -- no key for this provider has ever been available, which is
+/// the same reason the class comment below gives for every other number on it.
 const _anthropicMaxOutputTokens = 4096;
 
 /// Vision provider backed by the Anthropic Messages API.
