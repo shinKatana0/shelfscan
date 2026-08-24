@@ -184,6 +184,22 @@ void main() {
       expect(item.sourceYear, 1998);
     });
 
+    test('the entry is the one a flat folder already produced', () {
+      // Why nothing downstream is a new path: the walk hands the same file
+      // name over with the same empty container whether the film sits loose in
+      // the scanned folder or one level down in its own. T-0344 measured the
+      // flat side end to end; this change makes the nested side reach it.
+      const film = 'Tidewrack.1998.1080p.BluRay.x264-LANTERN.mkv';
+      _file(_root!, film);
+      final flat = readInstallDirectory(_root!).entries.single;
+      File('${_root!.path}/$film').deleteSync();
+      _file(_folder('Tidewrack (1998)'), film);
+      final nested = readInstallDirectory(_root!).entries.single;
+
+      expect(nested.name, flat.name);
+      expect(nested.container, flat.container);
+    });
+
     test('a series folder is one honest decline, not a game row', () {
       final series = _folder('Dusk Rail');
       for (var i = 1; i <= 3; i++) {
