@@ -244,6 +244,49 @@ void main() {
         findsOneWidget);
   });
 
+  group('the platform slot is a claim, so only a kind that has a platform '
+      'gets one (T-0340)', () {
+    // `?` there says the branding could not be read -- [Detection.platformHint]
+    // is null if unclear. A spine can be illegible; a film has no platform at
+    // all (decision 0016), so the same character on a film row announces a
+    // failure that did not happen.
+    testWidgets('a game row whose branding was illegible still says so',
+        (tester) async {
+      final doc = _doc([
+        ResolvedGame(
+          detection: Detection(
+            rawTitle: 'WORN LABEL',
+            mediaType: MediaType.disc,
+            confidence: 1.0,
+            sourcePhoto: 'shelf1.jpg',
+          ),
+        ),
+      ]);
+      await _pump(tester, doc, FakeExportSaver());
+
+      expect(
+          find.text('? - raw: "WORN LABEL" - not in .xcoll -- csv carries it'),
+          findsOneWidget);
+    });
+
+    // The case a null check alone would miss, and the reason the guard asks
+    // the kind: `correctWorkKind` clears the match and not the detection, so
+    // a row a person moved from game to film still carries the console hint
+    // the spine was read with. Printing it would be worse than the `?`.
+    testWidgets('a film row prints no platform, not even a hint it kept',
+        (tester) async {
+      await _pump(tester, _doc([_game('TIDEWRACK', workKind: WorkKind.movie)]),
+          FakeExportSaver());
+
+      expect(
+          find.text('raw: "TIDEWRACK" - Film - '
+              'not in .xcoll -- csv carries it'),
+          findsOneWidget);
+      expect(find.textContaining('PS4'), findsNothing);
+      expect(find.textContaining('? - '), findsNothing);
+    });
+  });
+
   group('notes on the row (T-0093)', () {
     testWidgets('a row that carries one shows it, last', (tester) async {
       final doc = _doc([
