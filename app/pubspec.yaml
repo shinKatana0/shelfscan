@@ -24,6 +24,11 @@ dependencies:
   # secrets go to the OS keychain, plain preferences to shared_preferences.
   flutter_secure_storage: ^11.0.0
   shared_preferences: ^2.3.2
+  # Flutter renders no SVG natively and nothing already in the graph does.
+  # TMDB publishes its mark in five SVG variants and no raster format, so
+  # rasterising would mean producing a derivative in a format the mark's owner
+  # does not publish, against a page that states no alteration rule (T-0385).
+  flutter_svg: ^2.0.10
   # TODO: image_picker (camera capture)
 
 dev_dependencies:
@@ -47,6 +52,14 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    # NEITHER OF THESE REACHES A BUILT APP (T-0386). A key beginning `../` is
+    # written relative to `build/flutter_assets/` and so lands OUTSIDE it;
+    # packaging copies that directory and leaves the escaped files behind.
+    # Tests pass because the test bundle sits beside the same escaped copies.
+    #
     # Repository-level data file, shared with the CLI: one alias table, not
     # an app copy that drifts from it.
     - ../data/title_aliases.json
+    # TMDB's mark, as published. Repository-level for the same reason as the
+    # alias table above; unaltered for the reason beside flutter_svg.
+    - ../assets/tmdb/blue_long_1.svg

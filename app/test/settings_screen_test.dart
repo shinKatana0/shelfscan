@@ -8,8 +8,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shelfscan_app/main.dart' show appSeedColor;
 import 'package:shelfscan_app/provider_config.dart';
+import 'package:shelfscan_app/screens/scan_screen.dart';
 import 'package:shelfscan_app/screens/settings_screen.dart';
 import 'package:shelfscan_app/settings_store.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
@@ -772,6 +775,81 @@ void main() {
             reason: 'the attribution may not describe the path as exercised');
       }
     }
+  });
+
+  // T-0385. The terms permit a TMDB mark in an application only on a
+  // condition -- "Any use of any TMDB logos in Your Application must be less
+  // prominent than the logos or marks that primarily describe or identify
+  // Your Application" -- and that comparison is settled here out of the widget
+  // tree. It has to be: doc/conventions.md section 3 forbids driving the GUI,
+  // so a compliance claim that needs somebody to look at the screen is a claim
+  // this project cannot make at all.
+  testWidgets(
+      'the TMDB mark is the published asset, and smaller than the wordmark '
+      'that identifies this application', (tester) async {
+    // The identifying mark is the application's name in the app bar of its
+    // primary screen. Read off the real ScanScreen under the real theme,
+    // because the size belongs to the theme and not to this file -- a copied
+    // number would stop tracking the thing it is compared against.
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(colorSchemeSeed: appSeedColor, useMaterial3: true),
+      home: ScanScreen(
+        settings: ProviderSettings(backend: VisionBackend.local),
+        store:
+            SettingsStore(secrets: RecordingStore(), prefs: RecordingStore()),
+      ),
+    ));
+    final wordmark = find.descendant(
+      of: find.byType(AppBar),
+      matching: find.text('shelfscan'),
+    );
+    expect(wordmark, findsOneWidget);
+    final wordmarkType = tester
+        .widget<RichText>(
+            find.descendant(of: wordmark, matching: find.byType(RichText)))
+        .text
+        .style!
+        .fontSize!;
+    final wordmarkBox = tester.getRect(wordmark).height;
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(colorSchemeSeed: appSeedColor, useMaterial3: true),
+      home: SettingsScreen(
+          settings: ProviderSettings(), store: _Backends().store),
+    ));
+    final logo = find.byKey(const Key('settings-tmdb-logo'));
+    expect(logo, findsOneWidget);
+
+    // Rendered from the committed file, by its own key. TMDB publishes SVG
+    // and no raster format, and states no alteration rule, so a PNG here
+    // would be a derivative in a shape its owner neither publishes nor has
+    // said anything about; naming the path pins which file is on screen.
+    expect(tmdbLogoAsset, '../assets/tmdb/blue_long_1.svg');
+    expect(tester.widget<SvgPicture>(logo).height, tmdbLogoHeight);
+
+    // Unaltered, and it decodes -- the two halves of "renders from the
+    // published SVG" that can be had without looking at a screen. The
+    // intrinsic size is the published viewBox: a recoloured, re-cropped or
+    // re-exported copy would not land on it, and a file the renderer cannot
+    // parse throws here instead of showing a blank.
+    final art = await vg.loadPicture(const SvgAssetLoader(tmdbLogoAsset), null);
+    expect(art.size.width, closeTo(423.04, 0.5));
+    expect(art.size.height, closeTo(35.4, 0.5));
+
+    // Aspect preserved, so the height above governs the whole mark: no BoxFit
+    // stretches it and nothing widens it independently.
+    final box = tester.getRect(logo);
+    expect(box.height, tmdbLogoHeight);
+    expect(box.width / box.height,
+        closeTo(art.size.width / art.size.height, 0.01));
+
+    // Both comparisons, because they fail differently. The first is the
+    // requirement as stated -- the mark against the type size of the mark it
+    // must yield to. The second is what the two actually occupy once laid
+    // out, which is what catches a height that grows through a wrapper
+    // rather than through the constant.
+    expect(tmdbLogoHeight, lessThan(wordmarkType));
+    expect(tester.getRect(logo).height, lessThan(wordmarkBox));
   });
 
   testWidgets('a storage failure is reported instead of silently losing keys',
