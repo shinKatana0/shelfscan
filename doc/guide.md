@@ -430,7 +430,7 @@ options `scan` takes, and no others:
     -o <file>            where to write the review document
     --provider <name>    anthropic | ollama | openai
     --fallback <name>    anthropic | ollama | openai | none
-    --aliases <file>     regional title table (data/title_aliases.json)
+    --aliases <file>     regional title table (under app/assets/data/)
     --installs <dir>     add a folder of installed games to this run
     --library            add the GOG Galaxy library to this run
     --galaxy-db <path>   where that database is, if not where it is expected

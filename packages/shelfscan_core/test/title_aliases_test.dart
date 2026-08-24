@@ -176,7 +176,7 @@ void main() {
       expect(warnings.single, contains(file.path));
     });
 
-    test('the committed data file at the repository root parses', () {
+    test('the committed data file parses', () {
       // The file the CLI and the app both ship; a typo in it would otherwise
       // only surface as a silent fallback at runtime.
       final file = findAliasFile(Directory.current);
@@ -188,10 +188,9 @@ void main() {
       // The CLI is run from the repository root and from
       // packages/shelfscan_core; one fixed relative path serves only one.
       final nested = Directory('${temp.path}/a/b')..createSync(recursive: true);
-      Directory('${temp.path}/${aliasFileName.split('/').first}')
-          .createSync();
-      File('${temp.path}/$aliasFileName')
-          .writeAsStringSync('{"rockman": "mega man"}');
+      final planted = File('${temp.path}/$aliasFileName');
+      planted.parent.createSync(recursive: true);
+      planted.writeAsStringSync('{"rockman": "mega man"}');
 
       expect(findAliasFile(nested)?.readAsStringSync(),
           '{"rockman": "mega man"}');

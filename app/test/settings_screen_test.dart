@@ -824,7 +824,7 @@ void main() {
     // and no raster format, and states no alteration rule, so a PNG here
     // would be a derivative in a shape its owner neither publishes nor has
     // said anything about; naming the path pins which file is on screen.
-    expect(tmdbLogoAsset, '../assets/tmdb/blue_long_1.svg');
+    expect(tmdbLogoAsset, 'assets/tmdb/blue_long_1.svg');
     expect(tester.widget<SvgPicture>(logo).height, tmdbLogoHeight);
 
     // Unaltered, and it decodes -- the two halves of "renders from the

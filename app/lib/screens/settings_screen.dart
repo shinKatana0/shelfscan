@@ -36,7 +36,7 @@ const tmdbApiSettingsUrl = 'https://www.themoviedb.org/settings/api';
 /// producing a derivative in a format the mark's owner does not publish,
 /// against a page that states no alteration rule to lean on (T-0385). That is
 /// what buys `flutter_svg`; the same file is what the READMEs embed.
-const tmdbLogoAsset = '../assets/tmdb/blue_long_1.svg';
+const tmdbLogoAsset = 'assets/tmdb/blue_long_1.svg';
 
 /// Rendered height in logical pixels -- a compliance argument, not layout
 /// taste. The terms permit a TMDB mark in an application only on a condition:
