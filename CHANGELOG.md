@@ -10,9 +10,108 @@ published, so there is no earlier history to list here. What that work decided,
 and why, is in [`doc/decisions/`](doc/decisions/); the figures behind it are in
 [`doc/measurements.md`](doc/measurements.md).
 
+**"Verified" is used sparingly here and always means the same thing:** run
+from one end to the other, into another program, and checked. One path has
+that — photographs → `.xcoll` → an import into Tonkatsu Box. Everything else
+is written and tested, and where it has been run at all the entry says how
+far. [`doc/measurements.md`](doc/measurements.md) bounds every such claim and
+is the authority behind it.
+
+## [Unreleased]
+
+Both `pubspec.yaml` files still read `0.1.0` and `v0.1.0` is still the only
+tag, so this is not a release — it is what the tree does that the tagged
+release did not.
+
+### Added
+- **Films are read as films.** A video file whose name is release-shaped —
+  `Some.Title.1999.1080p.BluRay.x264-GROUP.mkv` — comes back as a film row
+  rather than a game row, and a film kept in its own folder comes back as one
+  film row rather than as a game named after the folder. The kind is decided
+  per file, so a folder holding a film and a game installer is read once and
+  gives both. Both shells walk a folder by the same shared rule, so a folder
+  that is a film in the CLI is a film in the app.
+- **A second catalogue, for the rows the games one cannot answer.** A film row
+  goes to TMDB and never to IGDB, in any configuration, and TMDB wants a
+  credential of its own — an environment variable in the CLI, a Settings field
+  in the app. Without one the film rows are keyless and keep the title that
+  was read. **How far this has been run:** against the live service from the
+  CLI only, on a few public example titles on one evening. No run through the
+  app has ever had an answer from TMDB, and how well TMDB answers real release
+  names is unmeasured anywhere. `doc/measurements.md`, *TMDB's `year` filters
+  and the first live film searches*, is the authority and states the rest of
+  the limits.
+- **Anime is a kind, and no anime row has ever matched anything.** A video
+  named the fansub way — `[Group] Title - 04 [1080p].mkv` — comes back as one
+  row for the series. `S01E04` and `1x04` are declined on purpose: they say
+  *series* without saying which kind of series, and answering would file every
+  television release as anime. An anime film goes to TMDB's film search and an
+  anime series to its tv search — **and the tv search has never been called
+  against the live service by anything.** That half is written and tested and
+  nothing more.
+- **The kind of work is a field on the row, and you correct it.** Review shows
+  what each row was read as and lets you change it, so a film read as a game,
+  or the reverse, is settled by the person rather than by a better guess
+  (decision 0015).
+- **A row that maps to several catalogue entries expands into them** at
+  review, so a box or a compilation no longer has to leave as one item.
+- **Android is in the tree and it builds.** `app/android/` is committed, and
+  debug and release apks both build from it; the toolchain, and the failures
+  on the way that name something other than the missing step, are in
+  [`doc/android-build.md`](doc/android-build.md). **Nothing has been installed
+  or run:** there is no device and no emulator here, so every Android line
+  below is *built* and never *working*. With that said —
+  - HEIC photos are accepted on Android, decoded by the platform's own codec
+    over a method channel rather than by a plugin.
+  - *Local* is selectable there, and it means a model on **another** machine:
+    an Ollama you name on your own network. It is offered but never the
+    default, is blocked until an address is typed, and carries a warning of
+    its own, because the photographs cross that network unencrypted.
+  - The TMDB credential can be held in Settings, in the OS keychain, beside
+    the others.
+- **Keyless is a mode you choose before the scan**, with what it will cost
+  said where you choose it, rather than a state you fall into by leaving two
+  fields blank.
+
+### Changed
+- **The CSV's id column is `external_id`, and it names which catalogue
+  answered** — `igdb:1234`, `tmdb:1234` — where it was `igdb_id` carrying a
+  bare number. A row is identified by the catalogue that answered it
+  (decision 0016), because there is now more than one — and until there was,
+  a column named for one catalogue could carry every id it would ever hold.
+  Anything reading these exports by header needs the new name; the column
+  order did not change.
+- **`.xcoll` takes a film** as a `movie` item carrying the film catalogue's id
+  and no `platform_id` key at all — a film has no platform, and the writer
+  leaves the key out rather than inventing a zero. No `.xcoll` holding a film
+  has been imported into a catalog app here, so that step is written and
+  tested rather than verified, like every other export that did not come from
+  a photograph.
+- **The provider list leads with local, then your own OpenAI-compatible
+  endpoint, then Anthropic** — in the app, in the CLI banner and in the
+  guides. What did not move: local is still the desktop default, and no
+  external endpoint is a default anywhere.
+- **Three Flutter plugins moved together** to get off the Kotlin Gradle
+  Plugin, so an Android build no longer prints the warning that future Flutter
+  versions will fail on it.
+
+### Fixed
+- A photograph holding more spines than the local model will report is still
+  declined, but the request now carries a generation cap and the advice
+  arrives in a fraction of the wait, instead of after minutes of the model
+  repeating what it already read. The cap buys the time and not the outcome;
+  `doc/measurements.md` has both halves.
+- A control is absent where it cannot work rather than offered and refused:
+  the GOG Galaxy library is not offered off Windows, since Galaxy is a Windows
+  program.
+- A row with no candidates stops asking you to pick one.
+- A folder scan says what it will and will not read *before* it runs, instead
+  of implying that every entry in the folder is read as a game.
+
 ## [0.1.0] — 2026-08-17
 
-The first public release. Highlights, not a task list:
+The first public release, described as it stood at the tag; where the tree has
+moved since, [Unreleased](#unreleased) says so. Highlights, not a task list:
 
 ### Added
 - Scan a folder of shelf photos with a local vision model (Ollama, the
@@ -21,16 +120,18 @@ The first public release. Highlights, not a task list:
 - Additional detection sources that need no photograph: a games folder and
   a GOG Galaxy library (Windows — Galaxy is a Windows program), reconciled with
   the shelf through one dedupe. These are newer than the photo path and have
-  had far less exercise; a couple of hand-picked library rows have reached a
-  Tonkatsu Box import, a whole library has not.
+  had far less exercise: they have been run against real folders, and they
+  stop at the export — no disk-sourced `.xcoll` has been imported into a
+  catalog app here.
 - Optional IGDB resolution with your own Twitch credentials.
 - Human review of every item before export — in the CLI over
   `*.review.json`, or on the app's review screen.
 - Export to Tonkatsu Box `.xcoll` (pinned `version: 2`) and to CSV. The
   `.xcoll` path is the one verified end to end, by an import into Tonkatsu Box;
   the CSV has never been imported into a catalog app here.
-- A Flutter app for Windows, and a CLI as the desktop harness. **Windows only:**
-  the Android half of the pipeline is written and tested but has never been
-  built or run — there is no `app/android/`, and it has never run on a device. Nor is there an
-  installer or a published binary; you build from source.
+- A Flutter app for Windows, and a CLI as the desktop harness. **Windows only
+  at this release:** the Android half of the pipeline was written and tested
+  but had never been built or run — there was no `app/android/` yet, and
+  nothing had run on a device. There is no installer and no published binary;
+  you build from source.
 - HEIC photos converted on Windows via WIC; named and skipped elsewhere.
