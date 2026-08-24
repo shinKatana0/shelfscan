@@ -124,11 +124,24 @@ abstract final class DeclineReason {
 
   /// A video name whose grammar says series episode rather than film (T-0162).
   ///
-  /// An exclusion and not a failure, and the distinction is worth stating
-  /// because it will change. A series is a real thing this collection could
-  /// hold -- Tonkatsu files one -- but a row for it is not one row (T-0163),
-  /// so nothing here can emit it yet. Whichever task teaches this source
-  /// series will turn this decline into rows, not into a different reason.
+  /// **Half of this became rows, T-0368, and the reason did not change** --
+  /// which is what the sentence this comment used to end on asked for. The
+  /// fansub shape, `[Group] Name - 04 [1080p]`, is decision 0015's anime
+  /// grammar and now yields one [WorkKind.animationSeries] row named for the
+  /// series; the paragraph that predicted otherwise -- *a row for a series is
+  /// not one row (T-0163)* -- was wrong, and [_parseSeriesName] says why.
+  ///
+  /// What still declines under this exact string is the scene series shape,
+  /// `S01E04`, `1x04` and a spelt `Season 2`. It is still true of them: they
+  /// number an episode and they are not a film. What they do NOT say is which
+  /// kind of series, and this project has a kind for an anime series and none
+  /// for a live-action one -- Tonkatsu's fourth spelling, `tv_show`, has no
+  /// [WorkKind] yet. Answering `animation` to `S01E04` would file every TV
+  /// release as anime in somebody else's collection, and decision 0015 is
+  /// explicit that where the grammar settles nothing the source declines
+  /// instead of guessing. So the half that is still a decline is the half the
+  /// grammar genuinely cannot answer, and it is one `tv_show` kind away from
+  /// being rows too.
   static const seriesEpisode = 'a series episode, not a film';
 
   /// A video name carrying neither a year nor a resolution (T-0162).
@@ -432,18 +445,22 @@ Set<String> _titleWords(String title) =>
 /// the mixed case, and the budget above decides it -- one entry cannot be two
 /// works, so the folder keeps the reading it already had.
 ///
-/// **Two answers, and each is the video files agreeing.** A single film title,
-/// folded through [titleKey], hands the folder to that film's name; two are as
-/// ambiguous as the two installers [installerNamingFolder] refuses, and a
-/// `sample.mkv` beside them is neither, declining [DeclineReason.noWorkKind]
+/// **Three answers, and each is the video files agreeing.** A single film
+/// title, folded through [titleKey], hands the folder to that film's name; two
+/// are as ambiguous as the two installers [installerNamingFolder] refuses, and
+/// a `sample.mkv` beside them is neither, declining [DeclineReason.noWorkKind]
 /// before it can be counted. Failing a film, a folder whose video names are
-/// all episodes hands over one of them, so a series folder reaches the owner
-/// as the decline T-0162 wrote for it rather than as a game row named after
-/// the series. Neither answer invents a string: what goes over is a real file
+/// episodes of one series hands over one of them, and since T-0368 that name
+/// yields the series row rather than the decline T-0162 wrote -- the same
+/// [titleKey] threshold applies, because twelve episodes of one series agree
+/// on a title and two series in one folder do not. Failing both, a folder of
+/// episodes the grammar cannot name a kind for hands over one anyway, so it
+/// still reaches the owner as that decline rather than as a game row named
+/// after the series. No answer invents a string: what goes over is a real file
 /// name, read by the same grammar that reads a loose one.
 String? videoNamingFolder(Iterable<String> fileNames) {
-  final films = <String>[], episodes = <String>[];
-  final titles = <String>{};
+  final films = <String>[], series = <String>[], episodes = <String>[];
+  final filmTitles = <String>{}, seriesTitles = <String>{};
   for (final name in fileNames) {
     final dot = name.lastIndexOf('.');
     final extension = dot <= 0 ? '' : _fold(name.substring(dot + 1));
@@ -456,12 +473,16 @@ String? videoNamingFolder(Iterable<String> fileNames) {
     final title = parse.title;
     if (title != null && parse.workKind == WorkKind.movie) {
       films.add(name);
-      titles.add(titleKey(title));
+      filmTitles.add(titleKey(title));
+    } else if (title != null && parse.workKind == WorkKind.animationSeries) {
+      series.add(name);
+      seriesTitles.add(titleKey(title));
     } else if (parse.declined == DeclineReason.seriesEpisode) {
       episodes.add(name);
     }
   }
-  if (films.isNotEmpty) return titles.length == 1 ? films.first : null;
+  if (films.isNotEmpty) return filmTitles.length == 1 ? films.first : null;
+  if (series.isNotEmpty) return seriesTitles.length == 1 ? series.first : null;
   return episodes.isEmpty ? null : episodes.first;
 }
 
@@ -806,6 +827,7 @@ _Stem? _stripExtensions(String raw) {
 /// folder of `.mkv` holds, and a name carrying no marker at all is exactly the
 /// case 0015 says to decline instead of guessing.
 FileNameParse _parseVideoName(String raw) {
+  if (_looksFansubEpisode(raw)) return _parseSeriesName(raw);
   if (_looksEpisodic(raw)) {
     return const FileNameParse.declined(
         DeclineReason.seriesEpisode, Severity.exclusion);
@@ -838,6 +860,59 @@ FileNameParse _parseVideoName(String raw) {
     title,
     year: year,
     workKind: WorkKind.movie,
+    platformHint: null,
+  );
+}
+
+/// A fansub-shaped episode name to ONE row for the series it is an episode of
+/// (T-0368).
+///
+/// **The row is the series, and the episode number is what makes N files one
+/// row rather than N.** Every episode of a series parses to the same title
+/// with the same absent platform hint, which is exactly the pair
+/// `dedupeDetections` folds on, so a folder of twelve episodes arrives at
+/// review as one row through machinery that was already there. Nothing here
+/// counts episodes or records which ones are present.
+///
+/// **Why this is NOT [ResolvedGame.parts], which is the shape the brief for
+/// this task asked to be checked rather than assumed.** The two relations run
+/// in opposite directions. A box is one row that a catalogue answered with
+/// several entries, and `expandParts` turns it into N rows because the person
+/// owns N separately-catalogued things. A series is N files that are readings
+/// of ONE work, folded into one row at stage 2 -- and there is nothing to
+/// expand it back into, because an episode is not a catalogue entry: nothing
+/// answers one, `CatalogueEntry.ref` would have no id to hold, and the export
+/// target has no item for an episode at all. Tonkatsu files a whole series as
+/// a single `animation` item with `platform_id` `1`. Expanding a series would
+/// produce rows no catalogue can identify and no target can carry, which is
+/// the state T-0163 pinned a test against rather than worked around.
+///
+/// So the parts model is not reused, and not because it was awkward: a box
+/// maps one row to several entries and a series maps several entries to one
+/// row. Seasons could one day be parts -- a season IS a catalogue entry -- and
+/// that is a catalogue answering, not a name being read.
+///
+/// The title is what precedes the episode number, with the bracket groups --
+/// the sub group and the quality tag -- removed first. No year is read: the
+/// number a fansub name prints is an episode, and a year on it would be a
+/// season's rather than the series'.
+FileNameParse _parseSeriesName(String raw) {
+  var text = raw;
+  for (final group in _bracketGroups.allMatches(text).toList().reversed) {
+    text = text.replaceRange(group.start, group.end, ' ');
+  }
+  text = text.replaceAll(RegExp(r'[._~]+'), ' ');
+  text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+  final episode = _dashEpisode.firstMatch(text);
+  final head = episode == null ? text : text.substring(0, episode.start);
+  final title = _clean(head);
+  if (title == null) {
+    return const FileNameParse.declined(
+        DeclineReason.noTitle, Severity.exclusion);
+  }
+  return FileNameParse.title(
+    title,
+    workKind: WorkKind.animationSeries,
     platformHint: null,
   );
 }
@@ -884,9 +959,24 @@ bool _isVideoTag(String token) {
 /// subtitle, and reading `Some Film - 2 1999 1080p` as an episode would lose a
 /// film to a rule written for a series.
 bool _looksEpisodic(String raw) =>
+    _looksFansubEpisode(raw) ||
     _seasonEpisode.hasMatch(raw) ||
-    _episodeWord.hasMatch(raw) ||
-    (_bracketGroups.hasMatch(raw) && _dashEpisode.hasMatch(raw));
+    _episodeWord.hasMatch(raw);
+
+/// The guarded shape of the four, split out because it is the only one that
+/// says which KIND of series (decision 0015, T-0368).
+///
+/// `[Group] Name - 04 [1080p]` is the fansub grammar the decision record names
+/// as anime's, and a bracket group is not something the scene shape carries --
+/// `Name.Year.1080p.Source-GROUP` prints its group behind a hyphen. The other
+/// three shapes number an episode of a series of unstated kind and go on
+/// declining ([DeclineReason.seriesEpisode]).
+///
+/// Deliberately NOT widened to "a bracket group beside any episode marker":
+/// [_bracketGroups] matches parentheses too, so that reading turns
+/// `Some Show (2019) S01E04` into anime on the strength of a year.
+bool _looksFansubEpisode(String raw) =>
+    _bracketGroups.hasMatch(raw) && _dashEpisode.hasMatch(raw);
 
 final _seasonEpisode = RegExp(
     r'(?<![a-z0-9])(?:s\d{1,2}[\s._-]?e\d{1,3}|\d{1,2}x\d{2})(?![0-9])',

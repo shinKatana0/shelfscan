@@ -658,8 +658,13 @@ void main() {
         WorkKind.parse('film', 'detection.work_kind');
         fail('should have thrown');
       } on ReviewFormatException catch (e) {
+        // `key` and not `name`: this message tells a person hand-editing a
+        // `review.json` what they may write there, and the identifier stopped
+        // being that string in T-0368. The assertion passed on the identifier
+        // only while the two agreed -- which is the shape of the defect
+        // T-0290 fixed in the exporter, here in a test.
         for (final kind in WorkKind.values) {
-          expect('$e', contains(kind.name));
+          expect('$e', contains(kind.key));
         }
       }
     });

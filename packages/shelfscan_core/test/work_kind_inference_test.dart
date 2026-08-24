@@ -172,22 +172,26 @@ void main() {
     });
   });
 
-  group('a series episode is not a film, and declines', () {
-    test('the season/episode shape', () {
+  group('a series episode is not a film', () {
+    // T-0368 split this group in two. The fansub shape is anime and is now a
+    // row; the other two number an episode of a series whose KIND the name
+    // does not state, and this project has no `tv_show` to give them.
+    test('the season/episode shape still declines', () {
       expect(_decline('Tidewrack.Lament.S01E04.1080p.WEB-DL.mkv'),
           DeclineReason.seriesEpisode);
       expect(_decline('Tidewrack Lament 1x04 720p.mkv'),
           DeclineReason.seriesEpisode);
     });
 
-    test('the spelt-out shape', () {
+    test('the spelt-out shape still declines', () {
       expect(_decline('Tidewrack Lament Season 2 1080p.mkv'),
           DeclineReason.seriesEpisode);
     });
 
-    test('the fansub shape, which is the one with a bare episode number', () {
-      expect(_decline('[SubGroup] Tidewrack Lament - 04 [1080p].mkv'),
-          DeclineReason.seriesEpisode);
+    test('the fansub shape is an anime series row', () {
+      final row = _row('[SubGroup] Tidewrack Lament - 04 [1080p].mkv');
+      expect(row.workKind, WorkKind.animationSeries);
+      expect(row.rawTitle, 'Tidewrack Lament');
     });
 
     test('a spaced hyphen before a number is NOT an episode on its own', () {

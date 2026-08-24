@@ -75,24 +75,40 @@ abstract class Exporter {
 /// all but `0` for a film and `1` for a series.
 enum _PlatformId {
   /// The catalogue platform id the resolver matched.
-  fromMatch,
+  fromMatch(null),
 
   /// No key at all. A film has no platform, so writing one would invent it.
-  absent,
+  absent(null),
 
-  /// Tonkatsu's film-or-series discriminator, which this pipeline cannot
-  /// answer: no source produces an animation row -- `FilenameSource` declines
-  /// an episode outright and the vision path knows only games -- so the only
-  /// way a row reaches this state is a person correcting its kind at review,
-  /// and that correction says nothing about film or series either. `0` would
-  /// be a claim nobody made, and `0` is exactly the shape this file already
-  /// refuses elsewhere: a valid-looking id in a column other tools key on.
-  /// So the row is declined by [TonkatsuExporter.canExport] and named to the
-  /// user as dropped. Whatever teaches this pipeline the difference is what
-  /// replaces this value -- and since [WorkKind.wire] is a field rather than
-  /// the identifier, two kinds may share the string `animation` and differ
-  /// only in the number they put here.
-  undecidable,
+  /// Tonkatsu's film-or-series discriminator, on a row where nobody has
+  /// answered it.
+  ///
+  /// `0` would be a claim nobody made, and `0` is exactly the shape this file
+  /// refuses elsewhere: a valid-looking id in a column other tools key on. So
+  /// the row is declined by [TonkatsuExporter.canExport] and named to the user
+  /// as dropped.
+  ///
+  /// **What narrowed, T-0368.** This was every animation row, because nothing
+  /// upstream could tell the two apart. Now a fansub-shaped file name answers
+  /// `series` on its own and a person answers either at review, so what is
+  /// left here is the one honest gap: a row corrected to `Anime` and left
+  /// there. The refusal is the same refusal and it is still true of that row;
+  /// what changed is that it is no longer the only thing an animation row can
+  /// be.
+  undecidable(null),
+
+  /// An anime film (T-0162).
+  film(0),
+
+  /// An anime series (T-0162).
+  series(1);
+
+  const _PlatformId(this.literal);
+
+  /// The number this target's item carries where the answer is the kind's
+  /// rather than the match's. Null for the three answers that are not a
+  /// literal, which is what [TonkatsuExporter._item] branches on.
+  final int? literal;
 }
 
 /// Tonkatsu Box exporter -- light .xcoll format.
@@ -133,40 +149,46 @@ class TonkatsuExporter extends Exporter {
         'author': author,
         'created': DateTime.now().toUtc().toIso8601String(),
         'description': _describe(games),
-        'items': [
-          for (final g in games)
-            {
-              // EXTERNAL CONTRACT, and the key collides with this project's
-              // own vocabulary: `media_type` here is Tonkatsu's field for the
-              // KIND of work, not the carrier the CSV column of that name
-              // carries. [WorkKind] is the kind; the two are separate types
-              // because they were one word (decision 0015).
-              'media_type': g.detection.workKind.wire,
-              // A bare integer with the catalogue implied by `media_type`,
-              // which is this target's contract and not this project's:
-              // [Candidate.externalId] states the catalogue, so the namespace
-              // is split off here and checked rather than cast ([_externalId]).
-              'external_id': _externalId(g)!,
-              // Present, absent or a reason to refuse the row -- [_PlatformId]
-              // holds the three answers and where each was read from. A null
-              // platform reaches here only from a hand-edited document, and
-              // the key is omitted rather than written null, which this pinned
-              // contract has no reading for.
-              if (_platformId(g.detection.workKind) == _PlatformId.fromMatch &&
-                  g.best!.platformId != null)
-                'platform_id': g.best!.platformId,
-            }
-        ],
+        'items': [for (final g in games) _item(g)],
       });
+
+  /// One item of the pinned format. Only ever called for a row
+  /// [canExport] has already accepted, which is what makes both `!` safe.
+  static Map<String, Object?> _item(ResolvedGame g) {
+    final platformId = _platformId(g.detection.workKind);
+    // Present, absent, or a number that belongs to the KIND rather than to
+    // the match -- [_PlatformId] holds all of it and where each was read
+    // from. A null platform on a matched game reaches here only from a
+    // hand-edited document, and the key is then omitted rather than written
+    // null, which this pinned contract has no reading for.
+    final value = platformId == _PlatformId.fromMatch
+        ? g.best!.platformId
+        : platformId.literal;
+    return {
+      // EXTERNAL CONTRACT, and the key collides with this project's own
+      // vocabulary: `media_type` here is Tonkatsu's field for the KIND of
+      // work, not the carrier the CSV column of that name carries. [WorkKind]
+      // is the kind; the two are separate types because they were one word
+      // (decision 0015).
+      'media_type': g.detection.workKind.wire,
+      // A bare integer with the catalogue implied by `media_type`, which is
+      // this target's contract and not this project's: [Candidate.externalId]
+      // states the catalogue, so the namespace is split off here and checked
+      // rather than cast ([_externalId]).
+      'external_id': _externalId(g)!,
+      if (value != null) 'platform_id': value,
+    };
+  }
 
   /// Two refusals on top of the default rule, and they refuse different
   /// things.
   ///
-  /// An animation row is refused by [_PlatformId.undecidable]: this target's
-  /// item for that kind states film-or-series in a field nothing upstream of
-  /// here can fill. That row can be identified perfectly well -- what it lacks
-  /// is not an id, and reading it as one sends the next person looking for a
-  /// catalogue client that already exists.
+  /// An UNANSWERED animation row is refused by [_PlatformId.undecidable]: this
+  /// target's item for that kind states film-or-series in a field nobody has
+  /// filled. That row can be identified perfectly well -- what it lacks is not
+  /// an id, and reading it as one sends the next person looking for a
+  /// catalogue client that already exists. An answered one exports like any
+  /// other row (T-0368).
   ///
   /// A row whose id this target cannot fill is refused by [_externalId].
   ///
@@ -202,12 +224,22 @@ class TonkatsuExporter extends Exporter {
 
   /// The catalogue this target's `media_type` implies for [kind] (T-0162).
   ///
-  /// Null for a kind this target declines anyway, so [_externalId] says
-  /// nothing about a catalogue nobody has had to choose.
+  /// **All three animation kinds answer TMDB, including the one this target
+  /// declines.** They said `null` while no animation row could be exported at
+  /// all, under the comment *null for a kind this target declines anyway* --
+  /// which stopped being true the moment a row could be answered (T-0368).
+  /// Leaving it would have refused an answered anime row for a second reason
+  /// dressed as the first: the row would look like one whose catalogue nobody
+  /// has chosen, when Tonkatsu files anime under a TMDB id and T-0162 measured
+  /// it. [_PlatformId.undecidable] is what refuses the unanswered row, and it
+  /// is the only thing that should.
   static String? _catalogue(WorkKind kind) => switch (kind) {
         WorkKind.game => igdbCatalogue,
         WorkKind.movie => tmdbCatalogue,
-        WorkKind.animation => null,
+        WorkKind.animation ||
+        WorkKind.animationFilm ||
+        WorkKind.animationSeries =>
+          tmdbCatalogue,
       };
 
   /// What Tonkatsu's item for this kind puts in `platform_id`.
@@ -220,6 +252,8 @@ class TonkatsuExporter extends Exporter {
         WorkKind.game => _PlatformId.fromMatch,
         WorkKind.movie => _PlatformId.absent,
         WorkKind.animation => _PlatformId.undecidable,
+        WorkKind.animationFilm => _PlatformId.film,
+        WorkKind.animationSeries => _PlatformId.series,
       };
 
   /// What the exported items were actually read from.

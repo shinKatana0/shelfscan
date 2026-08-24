@@ -43,6 +43,14 @@ const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 /// so the row is dropped however well it matched. Picking a match would not
 /// help, and saying so would be the clause telling the user to do a thing that
 /// cannot work. 32 characters, inside the budget measured above.
+///
+/// **Unchanged by T-0368, which is the point worth recording.** The question
+/// it asks is now answerable -- the row's sheet carries film and series since
+/// the owner ruled that the person decides -- and the row was tappable all
+/// along, so the clause needed no instruction added to it and no character
+/// changed. It also stopped being every animation row: it is shown only where
+/// the answer is still missing, which is a row corrected to `Anime` and left
+/// there.
 const _noXcollKindClause = 'not in .xcoll -- film or series?';
 
 /// The same slot again for a row no pick can rescue, whatever its kind.
@@ -77,11 +85,19 @@ const _noXcollCsvClause = 'not in .xcoll -- csv carries it';
 /// edit here -- which is what wiring a film catalogue (T-0308) would produce.
 /// Animation is outside the guard because its refusal is not about the
 /// candidates: `platform_id` is unanswerable there whatever the row matched.
+/// The two ANSWERED animation kinds are inside it (T-0368) -- once film or
+/// series is settled such a row is refused, if at all, for the same reasons a
+/// film row is, so it takes the same two clauses and gains no wording of its
+/// own.
 String _noXcollClauseFor(ResolvedGame game) =>
     switch (game.detection.workKind) {
       WorkKind.animation => _noXcollKindClause,
       _ when !_pickReachesXcoll(game) => _noXcollCsvClause,
-      WorkKind.game || WorkKind.movie => _noXcollClause,
+      WorkKind.game ||
+      WorkKind.movie ||
+      WorkKind.animationFilm ||
+      WorkKind.animationSeries =>
+        _noXcollClause,
     };
 
 /// Whether picking one of this row's candidates would let `.xcoll` carry it.
@@ -1607,6 +1623,11 @@ class _RowSheet extends StatelessWidget {
           // (decision 0015), and the row itself stays silent at `game`
           // because every document written so far is games. So this is the
           // one place the value is always readable.
+          //
+          // Over [WorkKind.named] and not [WorkKind.values] since T-0368: the
+          // two answered animation kinds are a refinement of `Anime` rather
+          // than two more entries here, so this list is the three it has
+          // always been and only an anime row is offered the fourth tile.
           ListTile(
             title: const Text('Kind of work'),
             // The cost sentence is T-0311's, unchanged. What T-0317 adds is
@@ -1628,15 +1649,58 @@ class _RowSheet extends StatelessWidget {
                     'picked back from them.',
             ].join(' ')),
           ),
-          for (final kind in WorkKind.values)
+          for (final kind in WorkKind.named)
             ListTile(
               key: Key('work-kind-${kind.name}'),
-              leading: Icon(kind == game.detection.workKind
+              leading: Icon(kind == game.detection.workKind.asNamed
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked),
               title: Text(kind.label),
-              onTap: () => Navigator.of(context).pop(_CorrectKind(kind)),
+              // The kind ALREADY on the row pops that row's own value and not
+              // the group's, so tapping `Anime` on a row that is already an
+              // anime series is the no-op `correctWorkKind` promises rather
+              // than a move back to the unanswered kind -- which would throw
+              // away the person's film-or-series answer and its match.
+              onTap: () => Navigator.of(context).pop(_CorrectKind(
+                  kind == game.detection.workKind.asNamed
+                      ? game.detection.workKind
+                      : kind)),
             ),
+          // The second question, and ONLY on the rows that are asked it
+          // (T-0368). Tonkatsu states film-or-series for an anime in
+          // `platform_id`, so `TonkatsuExporter` cannot carry the row until
+          // somebody answers, and the owner's ruling is that the somebody is
+          // the person holding the object -- the same answer they gave about
+          // the row unit for a box. A game and a film are asked nothing new:
+          // the list above is the three kinds it always was, and this block
+          // does not exist on their sheets.
+          if (game.detection.workKind.isAnimation) ...[
+            const ListTile(
+              title: Text('Film or series'),
+              // Says what it costs, the way the kind tile above does, because
+              // it costs the same thing for the same reason: the two answers
+              // are two different TMDB searches, so a match taken under one is
+              // not an answer under the other.
+              subtitle: Text(
+                  'An anime is filed as one or the other, and .xcoll cannot '
+                  'take the row until it is. Changing it clears the match.'),
+            ),
+            for (final kind in const [
+              WorkKind.animationFilm,
+              WorkKind.animationSeries
+            ])
+              ListTile(
+                key: Key('work-kind-${kind.name}'),
+                // Nothing is marked on a row still at [WorkKind.animation],
+                // which is the honest rendering of a question nobody has
+                // answered -- the row says so too, in [_noXcollKindClause].
+                leading: Icon(kind == game.detection.workKind
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked),
+                title: Text(kind.label),
+                onTap: () => Navigator.of(context).pop(_CorrectKind(kind)),
+              ),
+          ],
         ],
       ),
     );

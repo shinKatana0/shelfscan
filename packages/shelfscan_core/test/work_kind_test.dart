@@ -96,7 +96,26 @@ void main() {
         WorkKind.game: 'game',
         WorkKind.movie: 'movie',
         WorkKind.animation: 'animation',
+        WorkKind.animationFilm: 'animation',
+        WorkKind.animationSeries: 'animation',
       });
+    });
+
+    // The half `wire` alone cannot carry (T-0368). Three kinds share one
+    // `media_type` because the importer files them together, so the key this
+    // project's OWN document is written with has to be unique or a load
+    // forgets which of the three was saved.
+    test('and every kind has its own work_kind key', () {
+      expect({for (final kind in WorkKind.values) kind: kind.key}, {
+        WorkKind.game: 'game',
+        WorkKind.movie: 'movie',
+        WorkKind.animation: 'animation',
+        WorkKind.animationFilm: 'animation_film',
+        WorkKind.animationSeries: 'animation_series',
+      });
+      expect(WorkKind.values.map((k) => k.key).toSet(),
+          hasLength(WorkKind.values.length),
+          reason: 'a review.json key is unique or the round trip is lossy');
     });
 
     test('and shows a person a different word', () {
@@ -104,6 +123,8 @@ void main() {
         WorkKind.game: 'Game',
         WorkKind.movie: 'Film',
         WorkKind.animation: 'Anime',
+        WorkKind.animationFilm: 'Anime film',
+        WorkKind.animationSeries: 'Anime series',
       });
       for (final kind in WorkKind.values) {
         expect(kind.label, isNot(kind.wire), reason: 'a label is not a value');
@@ -135,9 +156,17 @@ void main() {
           reason: 'the wire value is WorkKind.wire and nothing else');
 
       // The other direction, because a scan that cannot match anything
-      // reports zero just as confidently as a clean tree: the two writers
-      // this rule exists for must both be found by the same pass.
-      expect(codeNaming('workKind.wire'), hasLength(2));
+      // reports zero just as confidently as a clean tree: the writers this
+      // rule exists for must be found by the same pass.
+      //
+      // One each since T-0368, where the two files stopped writing the same
+      // string: `media_type` is the export target's and `work_kind` is this
+      // project's own, and a kind finer than the target's vocabulary makes
+      // them different values.
+      expect(codeNaming('workKind.wire'), hasLength(1),
+          reason: 'the .xcoll writer, and only it, writes media_type');
+      expect(codeNaming('workKind.key'), hasLength(1),
+          reason: 'the review.json writer, and only it, writes work_kind');
     });
   });
 
