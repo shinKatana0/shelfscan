@@ -84,10 +84,12 @@ const _mixedFolders = {
 ///
 /// **`(T-0158)` sits on the sentence it measured and covers nothing else**: a
 /// Downloads folder read by name titled every installer in it and not one was
-/// a game. That a film comes back as a game is T-0349's trace of one
-/// folder-per-film layout, and T-0162's third way for a name to be read wrong
-/// -- a hazard nobody has put a rate on, so it carries no citation and does
-/// not borrow that one.
+/// a game. That a film comes back as a game is T-0162's third way for a name
+/// to be read wrong -- a hazard nobody has put a rate on, so it carries no
+/// citation and does not borrow that one. It survives T-0352, which closed the
+/// folder-per-film layout it was written for: a film beside a game's own
+/// installer, two films in one folder, and a film in a container this does not
+/// read as video are all still game rows.
 const _warning =
     'Every file and folder in it is read by name, subdirectories included, '
     'and a name is all this reads: a film can come back as a game, and an '
@@ -161,6 +163,17 @@ bool _isRoot(String path) {
 /// costs no read the metadata scan above has not made already and no entry at
 /// all -- one per subdirectory, before and after.
 ///
+/// A directory whose video files agree on what they hold goes over under one of
+/// them instead ([videoNamingFolder], T-0349), and that question is asked
+/// first: an installer name is a better TITLE for what the folder already was,
+/// a video name is the only thing that says what KIND it is. A directory name
+/// carries no extension, so it never reaches core's kind fork -- a folder
+/// holding one film came back a game row named after the folder, carrying the
+/// `PC` hint the parser gives any name that says nothing about a console. The
+/// rule is core's and is called, not reimplemented: the CLI's twin walk asks
+/// the same function in the same order, off the same child names both already
+/// list for `goggame-*.info` (T-0352).
+///
 /// A read that fails is never dropped: an unlistable directory falls back to
 /// its own name, and an unreadable `goggame-*.info` is handed over without
 /// content, which the metadata source declines by name.
@@ -186,10 +199,20 @@ Future<GameFolder> readGameFolder(String path) async {
       final contents = await _children(child);
       final metadata = _metadataIn(contents);
       if (metadata.isEmpty) {
-        final inside = installerNamingFolder(childName, [
+        final fileNames = [
           for (final file in contents)
             if (file is File) _lastSegment(file.path)
-        ]);
+        ];
+        final video = videoNamingFolder(fileNames);
+        if (video != null) {
+          // No container, unlike the installer below. A container is read as a
+          // title when the entry's own name carries none, and this folder's
+          // name is the string that reads as a game -- handing it over would
+          // put the defect back one fallback away (T-0349).
+          entries.add(SourceEntry(name: video));
+          continue;
+        }
+        final inside = installerNamingFolder(childName, fileNames);
         entries.add(inside == null
             ? SourceEntry(name: childName)
             : SourceEntry(name: inside, container: childName));

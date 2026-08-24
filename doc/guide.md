@@ -782,10 +782,12 @@ there is no vision call to configure.
 It reads the names of the files and folders in the directory, plus any
 `goggame-*.info` a GOG installer left beside a game. It goes **one level down
 and no further**, and inside a game's own folder it reads only
-`goggame-*.info` — plus, when the folder itself is named something like "New
-Folder", the one installer in it that names a game. A game's `data/`, `Saves/`
-and `Redist/` subtrees never reach the pipeline, which is what keeps the
-review list a list of games.
+`goggame-*.info` — plus two narrow exceptions, each of which decides which
+single entry the folder hands over rather than adding one: when the folder is
+named something like "New Folder", the one installer in it that names a game;
+and when the folder's video files agree on what they hold, the one film in it
+that says so. A game's `data/`, `Saves/` and `Redist/` subtrees never reach the
+pipeline, which is what keeps the review list a list of games.
 
 **Every run says what it is doing, because this contract cannot be enforced
 from the inside:**
@@ -806,8 +808,20 @@ ever will.
 Since T-0162 this command also reads **films**. A video file whose name is
 release-shaped — `Some.Title.1999.1080p.BluRay.x264-GROUP.mkv` — becomes a film
 row rather than a game row; a game installer beside it stays a game row. The
-kind is decided per file, so one folder holding both is read once and produces
-both, and you do not choose a mode before the run.
+kind is decided per file, so the folder you point at can hold both, is read
+once, and produces both — you do not choose a mode before the run.
+
+**One level down it is one row per folder, and that is the limit worth
+knowing.** A film kept in its own folder — the ordinary way films are kept —
+comes back as a film row carrying the title and the release year read off the
+file inside, rather than as a game named after the folder and hinted `PC`; a
+folder of episodes comes back as one honest skip rather than as a game row
+named after the series. But a subdirectory hands over one entry whatever it
+holds, and one entry cannot be two works: a folder holding a game's installer
+*and* a film is read as the game, and the film in it is lost the same way a
+second game in one folder already is. **The app's folder picker walks the same
+way and answers the same** — both shells ask one shared rule, so a folder that
+is a film here is a film there (T-0349, T-0352).
 
 **Films are read, and a film is looked up in a film catalogue.** Deciding that
 a name is a film is one half; sending it to TMDB rather than to the games
