@@ -652,15 +652,31 @@ As with the ATL error above, the MSBuild wrapper text is localized; the tokens
 that survive translation are `MSB3073`, `cmake_install.cmake`,
 `INSTALL.vcxproj` and `native_assets`.
 
-Provider policy differs per platform and lives in one file
-(`app/lib/provider_config.dart`): Windows offers local (default),
-Anthropic, or any OpenAI-compatible endpoint you name; **Android is
-cloud-only** — on-device models are too weak for shelf spines, so the
-Android app needs your own vision key. Both cloud choices warn, where you
-make them, that every photo is uploaded in full; the named-endpoint one
-adds the free-tier training sentence, which a paid Anthropic account does
-not need. The app reads each photo with one model only — the CLI's
-`--fallback` second reader has no counterpart there.
+Provider policy lives in one file (`app/lib/provider_config.dart`), and
+both platforms offer the same three backends: local (Ollama), Anthropic,
+or any OpenAI-compatible endpoint you name. What differs is what *local*
+means. On Windows it is a model on the machine in front of you, and it is
+the default. **On Android it is a model on another machine:** the phone
+reads nothing itself — on-device models are too weak for shelf spines, and
+that measurement has not changed — so Local there is an Ollama server you
+name on your own network, typically the same desktop that already serves
+the Windows app. Nothing can guess that address for you (`localhost` on a
+phone *is* the phone), so on Android Local is offered but never the
+default, and it will not start until you have put the server's address in
+Settings as `http://ADDRESS:PORT`.
+
+**That path keeps your photos off the internet; it does not encrypt
+them.** Each one crosses your own network to that server over plain HTTP,
+unencrypted and unauthenticated, so anything else on that network can read
+it on the way. The app says so where you pick the backend, beside the
+cloud warnings. And it is **untried**: no phone has yet been pointed at a
+desktop Ollama through this app, so what is written here is what the code
+does, not a run anyone has watched.
+
+Both cloud choices warn, where you make them, that every photo is uploaded
+in full; the named-endpoint one adds the free-tier training sentence, which
+a paid Anthropic account does not need. The app reads each photo with one
+model only — the CLI's `--fallback` second reader has no counterpart there.
 
 **Photos: the app takes what the CLI takes**, from the same table in
 `shelfscan_core`, and decides by the file's contents rather than by its
@@ -912,7 +928,10 @@ directory, never next to your original.
   point `SHELFSCAN_OLLAMA_URL` (CLI) or the Ollama URL in Settings (app)
   at something else — so "never leaves the machine" holds exactly as long
   as that address is your machine. Aimed at a box on your LAN, it ships
-  the photos there over plain HTTP.
+  the photos there over plain HTTP. **On Android that is the only shape
+  Local has:** the phone runs no model, so the address is always another
+  machine and the photos always cross your network unencrypted and
+  unauthenticated. They still reach nothing on the internet.
 - **An OpenAI-compatible endpoint (`--provider openai`, the app's
   Endpoint backend):** every photo is uploaded in full to whatever
   endpoint you named in `SHELFSCAN_OPENAI_BASE_URL` or in Settings. This
