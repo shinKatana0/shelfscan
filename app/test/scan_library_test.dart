@@ -151,6 +151,7 @@ Future<(_RecordingVision, _Reader)> _pump(
   Completer<void>? readerGate,
   String visionTitle = 'READ',
   GameFolder? folder,
+  String? operatingSystem,
 }) async {
   final vision = _RecordingVision(gates: gates, title: visionTitle);
   final held = library ?? _library([_release(_moorId, 'MOOR')]);
@@ -169,6 +170,7 @@ Future<(_RecordingVision, _Reader)> _pump(
       debugVisionProvider: vision,
       debugLibraryReader: reader.read,
       debugFolderReader: (path) async => folder ?? _folder(path, const []),
+      debugOperatingSystem: operatingSystem,
     ),
   ));
   return (vision, reader);
@@ -200,6 +202,47 @@ void main() {
     expect(reader.calls, 1);
     expect(find.byKey(const Key('library-input')), findsOneWidget);
     expect(_scanEnabled(tester), isTrue);
+  });
+
+  // T-0344. The owner pressed this on a phone and nothing happened. Galaxy is
+  // a Windows program, so on any other host there is no database and no press
+  // could have worked -- the control is therefore not offered, and the reason
+  // takes its place. Both directions are pinned here because the host these
+  // tests run on can only ever be one of them.
+  group('a host that cannot have Galaxy is not offered it (T-0344)', () {
+    testWidgets('the control is absent, not dead', (tester) async {
+      final (_, reader) = await _pump(tester,
+          picker: _BothPicker(), operatingSystem: 'android');
+
+      expect(find.byKey(const Key('add-gog-library')), findsNothing);
+      // Not merely disabled: a greyed control that does nothing when pressed
+      // is what was reported, and would read as the same defect.
+      expect(find.text('Add GOG library'), findsNothing);
+      expect(reader.calls, 0);
+
+      // The two inputs this host does have are untouched.
+      expect(find.text('Add photos'), findsOneWidget);
+      expect(find.byKey(const Key('add-games-folder')), findsOneWidget);
+    });
+
+    testWidgets('the offer is replaced by why, in the reader\'s own words',
+        (tester) async {
+      await _pump(tester, picker: _BothPicker(), operatingSystem: 'android');
+
+      expect(find.byKey(const Key('library-hint')), findsNothing);
+      expect(find.byKey(const Key('no-library-here')), findsOneWidget);
+      // galaxyUnsupported, so the screen and the reader name the platform
+      // identically and cannot drift.
+      expect(find.text(galaxyUnsupported('android')!), findsOneWidget);
+    });
+
+    testWidgets('a host that can have it is offered it', (tester) async {
+      await _pump(tester, picker: _BothPicker(), operatingSystem: 'windows');
+
+      expect(find.byKey(const Key('add-gog-library')), findsOneWidget);
+      expect(find.byKey(const Key('library-hint')), findsOneWidget);
+      expect(find.byKey(const Key('no-library-here')), findsNothing);
+    });
   });
 
   testWidgets('it says how old the cache is, before the row count means '

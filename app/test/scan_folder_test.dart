@@ -123,7 +123,7 @@ Future<_RecordingVision> _pump(
 }
 
 Future<void> _addFolder(WidgetTester tester) async {
-  await tester.tap(find.text('Add games folder'));
+  await tester.tap(find.text('Add media folder'));
   await tester.pumpAndSettle();
 }
 
@@ -159,10 +159,78 @@ void main() {
     await _pump(tester, picker: picker);
 
     // Before anything is picked, the empty screen already names the second
-    // input as an installed-games folder rather than as "a folder".
+    // input by what is kept in it rather than as "a folder".
     expect(find.byKey(const Key('folder-hint')), findsOneWidget);
     await _addFolder(tester);
-    expect(picker.askedPrompt, 'Pick the folder your games are installed in');
+    // T-0158's steer, verbatim where it is read at the moment of choosing:
+    // the button lost the word "games" in T-0345 and this prompt did not.
+    expect(
+        picker.askedPrompt,
+        'Pick the folder your games are installed in or your films are '
+        'kept in');
+  });
+
+  // T-0345. The label said "games" while the same walk had read films since
+  // T-0162, so a person with a folder of films had no reason to press it. The
+  // establishment run is in doc/reports/T-0344.md: film-shaped names come back
+  // through this control as film rows, unchanged, so what was wrong was the
+  // label and not the reader.
+  group('the folder control says what the scan actually reads (T-0345)', () {
+    testWidgets('no control offers games only', (tester) async {
+      await _pump(tester, picker: _BothPicker(directory: _gogGames));
+
+      expect(find.text('Add media folder'), findsOneWidget);
+      expect(find.text('Add games folder'), findsNothing);
+      expect(find.textContaining('games and films'), findsOneWidget);
+    });
+
+    testWidgets('and the question before a mixed folder names both',
+        (tester) async {
+      await _pump(tester,
+          picker: _BothPicker(directory: _downloads),
+          folder: _folder(_downloads, const ['NoteWellSetup.exe']));
+
+      await tester.tap(find.text('Add media folder'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Read games and films out of $_downloads?'),
+          findsOneWidget);
+    });
+
+    testWidgets('a folder of films reaches review as film rows',
+        (tester) async {
+      // The walk itself is real I/O and never completes in this fake async
+      // (see the seam's own comment), so the entries a folder of films
+      // produces are handed in and what is pinned here is that the screen
+      // carries them into a run and the kind survives to review.
+      const films = 'films';
+      final vision = await _pump(tester,
+          picker: _BothPicker(directory: films),
+          folder: _folder(films, const [
+            'Tidewrack.1998.1080p.BluRay.x264-LANTERN.mkv',
+            'Pale.Anchor.1994.720p.WEB-DL.h264-MOOR.mp4',
+          ]));
+
+      await _addFolder(tester);
+      await tester.tap(find.text('Scan'));
+      await tester.pumpAndSettle();
+
+      expect(vision.seen, isEmpty, reason: 'no photograph, no vision call');
+      expect(find.textContaining('Review ('), findsOneWidget);
+      expect(find.textContaining('Tidewrack'), findsWidgets);
+      // The kind clause the review row prints for anything but a game
+      // (T-0340). Two rows, two films.
+      expect(find.textContaining('- Film'), findsNWidgets(2));
+    });
+
+    testWidgets('and nothing offers or implies anime', (tester) async {
+      // No source produces one: the filename grammar declines an episodic
+      // name by DeclineReason.seriesEpisode, so a label covering anime would
+      // cover nothing.
+      await _pump(tester, picker: _BothPicker(directory: _gogGames));
+
+      expect(find.textContaining('nime'), findsNothing);
+    });
   });
 
   testWidgets('two presses inside one frame open one dialog (T-0116)',
@@ -211,7 +279,7 @@ void main() {
     await tester.pump();
 
     final button = tester.widget<TextButton>(
-        find.widgetWithText(TextButton, 'Add games folder'));
+        find.widgetWithText(TextButton, 'Add media folder'));
     expect(button.onPressed, isNull);
     await tester.tap(find.byKey(const Key('add-games-folder')),
         warnIfMissed: false);
@@ -273,7 +341,7 @@ void main() {
           picker: _BothPicker(directory: _downloads),
           folder: _folder(_downloads, const ['NoteWellSetup.exe']));
 
-      await tester.tap(find.text('Add games folder'));
+      await tester.tap(find.text('Add media folder'));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('folder-concern')), findsOneWidget);
@@ -291,7 +359,7 @@ void main() {
           picker: _BothPicker(directory: _downloads),
           folder: _folder(_downloads, const ['NoteWellSetup.exe']));
 
-      await tester.tap(find.text('Add games folder'));
+      await tester.tap(find.text('Add media folder'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('folder-concern-accept')));
       await tester.pumpAndSettle();
@@ -303,7 +371,7 @@ void main() {
     testWidgets('a games folder is not questioned at all', (tester) async {
       await _pump(tester, picker: _BothPicker(directory: _gogGames));
 
-      await tester.tap(find.text('Add games folder'));
+      await tester.tap(find.text('Add media folder'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('folder-concern')), findsNothing);
       expect(find.text('GOG Games'), findsOneWidget);

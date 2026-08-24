@@ -4,6 +4,8 @@
 /// loaded at startup from the OS keychain / preferences (see settings_store).
 library;
 
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
@@ -36,13 +38,14 @@ class ScanScreen extends StatefulWidget {
     this.debugHeicDecoder,
     this.debugFolderReader,
     this.debugLibraryReader,
+    this.debugOperatingSystem,
   });
 
   /// Loaded once at startup and edited by the settings screen in place.
   final ProviderSettings settings;
   final SettingsStore store;
 
-  /// Where the photographs and the games folder come from -- the real file
+  /// Where the photographs and the media folder come from -- the real file
   /// dialogs in production, a fake in a widget test.
   final InputPicker picker;
 
@@ -89,6 +92,15 @@ class ScanScreen extends StatefulWidget {
   @visibleForTesting
   final Future<GalaxyLibrary> Function()? debugLibraryReader;
 
+  /// Test seam: the host this screen is drawn for, instead of the real one.
+  ///
+  /// Widget tests run on the developer's machine, so `Platform` answers one
+  /// host there and the branch that has to be pinned is the other one.
+  /// `provider_config.dart` takes the same seam for the same reason, and
+  /// production code never assigns either.
+  @visibleForTesting
+  final String? debugOperatingSystem;
+
   @override
   State<ScanScreen> createState() => _ScanScreenState();
 }
@@ -96,7 +108,7 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   final List<PhotoInput> _photos = [];
 
-  /// Folders of games, added from their own control (T-0161).
+  /// Folders of games and films, added from their own control (T-0161).
   ///
   /// A second list rather than a mode on [_photos]: the two inputs share the
   /// Scan button and nothing else. A folder makes no vision call, costs
@@ -114,6 +126,25 @@ class _ScanScreenState extends State<ScanScreen> {
   /// [GalaxyLibrary.asOf] is what the staleness line is written from and the
   /// entries are what the run is handed.
   GalaxyLibrary? _library;
+
+  /// Why this host cannot have a GOG library at all, or null when it can
+  /// (T-0344).
+  ///
+  /// **Not offered, rather than offered and refused.** Galaxy is a Windows
+  /// program, so on any other host there is no database, nothing to pick and
+  /// nothing a press could achieve -- and a control whose press cannot achieve
+  /// anything is a failed action dressed as a feature, which is the shape
+  /// T-0311 to T-0340 spent two days taking off the review screen. Disabling
+  /// it instead would have looked to the user exactly like the defect they
+  /// reported: pressed, and nothing happened.
+  ///
+  /// Hiding alone would teach nothing, so the reason takes the offer's place
+  /// on the empty screen rather than the offer simply vanishing. It is
+  /// [galaxyUnsupported], the reader's own refusal, so the screen and the
+  /// reader name the platform in the same words. The reader keeps its check --
+  /// the CLI reaches it too -- and the screen no longer depends on it.
+  late final String? _noGalaxy = galaxyUnsupported(
+      widget.debugOperatingSystem ?? Platform.operatingSystem);
 
   /// Why there is no review screen, in one sentence -- never a label in front
   /// of one.
@@ -313,7 +344,7 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  /// Add a folder of games, from its own control (T-0161).
+  /// Add a folder of games and films, from its own control (T-0161, T-0345).
   ///
   /// Behind the same [_picking] guard as [_pickPhotos] and for the same
   /// reason, which here also covers one control being pressed while the
@@ -333,7 +364,8 @@ class _ScanScreenState extends State<ScanScreen> {
     var path = '';
     try {
       path = await widget.picker.pickFolder(
-            prompt: 'Pick the folder your games are installed in',
+            prompt: 'Pick the folder your games are installed in or your '
+                'films are kept in',
           ) ??
           '';
       if (path.isEmpty || !mounted) return;
@@ -375,7 +407,7 @@ class _ScanScreenState extends State<ScanScreen> {
       context: context,
       builder: (context) => AlertDialog(
         key: const Key('folder-concern'),
-        title: Text('Read games out of $path?'),
+        title: Text('Read games and films out of $path?'),
         content: Text(concern),
         actions: [
           TextButton(
@@ -403,7 +435,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
   /// Add the GOG library, from its own control (T-0179).
   ///
-  /// **Its own control and not a second use of "Add games folder"**, on the
+  /// **Its own control and not a second use of "Add media folder"**, on the
   /// same test T-0115 and T-0118 set when they each removed a control for
   /// duplicating one beside it: those two were second routes to the *same*
   /// function, and these two are not. A folder is a path the user chooses and
@@ -438,10 +470,10 @@ class _ScanScreenState extends State<ScanScreen> {
       if (!mounted) return;
       setState(() => _library = library);
     } on Object catch (e) {
-      // Where the picker's other refusals go, and the platform refusal comes
-      // through here too: on Android there is no Galaxy and the reader says
-      // so, exactly as `heicDecodeUnsupported` names a host that cannot
-      // convert rather than a conversion that failed.
+      // Where the picker's other refusals go. The reader's platform refusal
+      // no longer arrives here: since T-0344 the control is not offered where
+      // [_noGalaxy] answers, so what lands here is a database absent, locked
+      // or unreadable on a host that could have had one.
       if (mounted) {
         setState(() =>
             _rejected.add(RejectedPhoto(name: _libraryLabel, reason: '$e')));
@@ -1276,27 +1308,36 @@ class _ScanScreenState extends State<ScanScreen> {
             child: !_hasInput
                 ? Column(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text('Pick shelf photos to begin'),
+                              const Text('Pick shelf photos to begin'),
                               // The empty screen is the first place the second
-                              // input can be named, and naming it as "the
-                              // folder your games are installed in" is half of
-                              // T-0161's steer away from a downloads folder.
-                              Text(
-                                  'or add the folder your PC games are '
-                                  'installed in',
+                              // input can be named, and naming the folder it
+                              // wants is half of T-0161's steer away from a
+                              // downloads folder. It names films because the
+                              // same walk has read them since T-0162 and this
+                              // line was the only place a person with a folder
+                              // of them would have looked (T-0345).
+                              const Text(
+                                  'or add the folder your PC games and films '
+                                  'are kept in',
                                   key: Key('folder-hint')),
                               // The third input, named where the second one is
                               // and for the same reason: one run may hold all
                               // three, and a disc and an install of one game
                               // are one row only if they are in the same run
-                              // (T-0179).
-                              Text('or the GOG library this PC has synced',
-                                  key: Key('library-hint')),
+                              // (T-0179). Where it cannot exist, the same slot
+                              // carries why instead of an offer (T-0344).
+                              if (_noGalaxy case final reason?)
+                                Text(reason,
+                                    key: const Key('no-library-here'))
+                              else
+                                const Text(
+                                    'or the GOG library this PC has synced',
+                                    key: Key('library-hint')),
                             ],
                           ),
                         ),
@@ -1356,24 +1397,30 @@ class _ScanScreenState extends State<ScanScreen> {
                   ),
                   // Its own control, not a mode on the one beside it (a
                   // real call, 2026-08-16, and the code agrees: no vision
-                  // call, no cost, no key, its own failures). The label names
-                  // the folder it wants rather than "Add folder", because the
-                  // control is the first of the three places T-0158's
-                  // every-title-an-application has to be steered away from.
+                  // call, no cost, no key, its own failures). It said "games"
+                  // until T-0345, by which time the same walk had read films
+                  // since T-0162 and the CLI's own notice already said "point
+                  // this at a media folder". T-0158's
+                  // every-title-an-application steer is unchanged and lives
+                  // where it is read at the moment of choosing -- the picker's
+                  // prompt and the concern dialog. "media" is the same 16
+                  // characters, so the Wrap measures as it did.
                   TextButton.icon(
                     key: const Key('add-games-folder'),
                     onPressed: _busy ? null : _pickFolder,
                     icon: const Icon(Icons.create_new_folder_outlined),
-                    label: const Text('Add games folder'),
+                    label: const Text('Add media folder'),
                   ),
                   // The third input, and its own control for the reasons on
-                  // [_addLibrary].
-                  TextButton.icon(
-                    key: const Key('add-gog-library'),
-                    onPressed: _busy ? null : _addLibrary,
-                    icon: const Icon(Icons.cloud_download_outlined),
-                    label: const Text('Add $_libraryLabel'),
-                  ),
+                  // [_addLibrary]. Absent, not disabled, where [_noGalaxy]
+                  // answers.
+                  if (_noGalaxy == null)
+                    TextButton.icon(
+                      key: const Key('add-gog-library'),
+                      onPressed: _busy ? null : _addLibrary,
+                      icon: const Icon(Icons.cloud_download_outlined),
+                      label: const Text('Add $_libraryLabel'),
+                    ),
                   FilledButton.icon(
                     onPressed: _busy || !_hasInput ? null : _runScan,
                     icon: const Icon(Icons.play_arrow),
