@@ -723,11 +723,11 @@ void main() {
     expect(copied, tmdbApiSettingsUrl);
   });
 
-  // TMDB's terms require an application using their API to say that it does,
-  // and that TMDB has not endorsed or certified it (T-0379). The three
-  // READMEs carry the same statement for a reader who never installs; this is
-  // the in-app half, and why it is on this screen rather than the review one
-  // is argued in the comment beside the widget.
+  // TMDB's terms mandate this sentence word for word, with only the bracketed
+  // word substituted (T-0383; T-0379 shipped a paraphrase). The three READMEs
+  // carry the same sentence for a reader who never installs; this is the
+  // in-app half, and why it is on this screen rather than the review one is
+  // argued in the comment beside the widget.
   testWidgets('the TMDB attribution is stated, and asserts no relationship',
       (tester) async {
     // Unconditional on purpose: the requirement is about the application, and
@@ -738,9 +738,16 @@ void main() {
     ]) {
       await _pump(tester, settings, _Backends());
 
+      // Asserted whole rather than in fragments, because the requirement is
+      // the whole sentence: the wording this replaced contained every
+      // fragment anyone thought to check for and was still a paraphrase. The
+      // literal below is a second, independent copy of the required text --
+      // importing the screen's own string would make the comparison vacuous.
       final text = _textOf(tester, 'settings-tmdb-attribution');
-      expect(text, contains('uses the TMDB API'));
-      expect(text, contains('not endorsed or certified by TMDB'));
+      expect(
+          text,
+          'This application uses TMDB and the TMDB APIs but is not endorsed, '
+          'certified, or otherwise approved by TMDB.');
 
       // The sentence exists to deny a relationship, so a warm phrasing
       // defeats it however true the rest of the line is.
