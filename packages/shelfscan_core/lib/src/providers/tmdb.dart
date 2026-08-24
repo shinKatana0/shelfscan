@@ -15,12 +15,21 @@
 /// carries — but it is a hard filter rather than a preference, which is
 /// [TmdbClient.searchMovie]'s subject and cost this project T-0336.
 ///
-/// **RUN AGAINST THE LIVE SERVICE ONCE, FOR ONE QUESTION.** Five searches on
-/// 2026-08-23 settled what the `year` parameter does, and nothing else. Every
-/// other claim here is still offline against a fake client: the request this
-/// builds and the parsing of a recorded-shape response are verified, and that
-/// TMDB answers that shape is read off its published API rather than
-/// measured. No TMDB credential exists on the machine this is developed on.
+/// **RUN AGAINST THE LIVE SERVICE, AND THE RUN DOES NOT COVER THIS FILE.**
+/// The search path was exercised on live answers — the request this builds,
+/// the bearer header, and the parse of what came back — which is what settled
+/// the `year` question below, and is the whole of what has been measured:
+/// `doc/measurements.md`, "TMDB's `year` filters, and the first live film
+/// searches", whose closing limits are as much of the measurement as its
+/// figures.
+///
+/// **Every other claim here is still offline against a fake client, and a
+/// fake answers as it is told to** — which is how the `year` comment below
+/// came to be false. No live answer has been a rate limit, a 401, a 404 or a
+/// dead host, so the messages in `_failure` and in the two unreachable
+/// classes describe TMDB rather than report it; and none has carried an
+/// original title differing from its title, so [TmdbHit.originalTitle] — the
+/// field non-English releases need — is unexercised.
 /// See `doc/reports/T-0162.md` and `doc/reports/T-0336.md`.
 library;
 
