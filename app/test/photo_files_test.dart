@@ -235,14 +235,15 @@ void main() {
     });
   });
 
-  test('a non-Windows host rejects HEIC by name rather than trying', () async {
+  test('a host with no system codec rejects HEIC by name rather than trying',
+      () async {
     final loaded = await loadPickedPhotos(
       [(name: 'phone.heic', bytes: _heic)],
-      decodeHeic: (_) => Future.error(
-          HeicDecodeException(heicDecodeUnsupported('android')!)),
+      decodeHeic: (_) =>
+          Future.error(HeicDecodeException(heicDecodeUnsupported('linux')!)),
     );
 
     expect(loaded.photos, isEmpty);
-    expect(loaded.rejected.single.reason, contains('Windows-only'));
+    expect(loaded.rejected.single.reason, contains('Windows and Android'));
   });
 }

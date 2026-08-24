@@ -26,10 +26,13 @@ List<File> _heics() {
 }
 
 void main() {
-  test('a non-Windows host names itself rather than failing obscurely', () {
-    expect(heicDecodeUnsupported('windows'), isNull);
-    for (final os in ['android', 'linux', 'macos']) {
-      expect(heicDecodeUnsupported(os), contains('Windows-only'));
+  test('a host with no system codec names itself rather than failing '
+      'obscurely', () {
+    for (final os in ['windows', 'android']) {
+      expect(heicDecodeUnsupported(os), isNull);
+    }
+    for (final os in ['linux', 'macos']) {
+      expect(heicDecodeUnsupported(os), contains('Windows and Android'));
     }
   });
 
