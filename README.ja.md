@@ -719,7 +719,7 @@ flutter build windows --debug
 shelfscan scan <photos_dir> [-o review.json]
                             [--provider anthropic|ollama|openai]
                             [--fallback anthropic|ollama|openai|none]
-                            [--aliases data/title_aliases.json]
+                            [--aliases <file>]
                             [--installs <games_dir>] [--library]
                             [--galaxy-db <path>]
 shelfscan scan-installs <games_dir> [-o review.json] [--aliases <file>]
@@ -809,7 +809,7 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
 
 日本市場の背表紙には *Biohazard* と書かれているが、IGDB はそのゲームを
 *Resident Evil* として知っており、読んだままのタイトルで検索しても何も返さない。
-*Rockman* と *Mega Man* も同じである。`data/title_aliases.json` は検索の前に
+*Rockman* と *Mega Man* も同じである。`app/assets/data/title_aliases.json` は検索の前に
 タイトルを書き換えるもので、意図的に手で編集できるようにしてある。外れを当たりに
 変える手段のうち、コードの変更が要らない唯一のものだからである。
 
@@ -833,7 +833,7 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
   背表紙の生テキストとも比較する。したがってエイリアスは、IGDB にそのゲームを
   返させさえすればよく、正確な名前である必要はない。
 - `--aliases <file>` は別のファイルを使う。フラグがなければ、作業ディレクトリから
-  上へ辿って `data/title_aliases.json` を探す。同じコマンドがリポジトリのルート
+  上へ辿って `app/assets/data/title_aliases.json` を探す。同じコマンドがリポジトリのルート
   からでも `packages/shelfscan_core` からでも動くのはそのためである。
 - ファイルは実行のたびに先頭で読まれる。編集し、保存し、再実行する。ビルドし直す
   ものも再起動するものもない。ファイルを編集して既存のレビューファイルに `resolve`
@@ -844,7 +844,7 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
   である:
 
   ```
-  WARN: No alias file at data/title_aliases.json -- falling back to 3 built-in aliases.
+  WARN: No alias file at app/assets/data/title_aliases.json -- falling back to 3 built-in aliases.
   ```
 
 - この表を読むのはゲームの解決だけなので、IGDB の資格情報が無い実行はこれを
@@ -853,7 +853,7 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
 
 **ファイルを編集しても、アプリを再ビルドするまで実行中のアプリは変わらない。**
 アプリは自前のコピーではなく同じファイルを使うが、それを Flutter のバンドル
-アセットとして取り込んでおり（`app/pubspec.yaml` → `../data/title_aliases.json`）、
+アセットとして取り込んでおり（`app/pubspec.yaml` → `assets/data/title_aliases.json`）、
 アセットはビルド時に焼き込まれる。だから編集はコマンドライン版には次の実行で
 届き、アプリには次の `flutter run` / `flutter build` で届く。インストール済みの
 アプリはあなたの編集したファイルを決して読まない。Android にはそもそもそんな
@@ -1088,4 +1088,4 @@ or otherwise approved by TMDB.
 認定も、その他の是認も受けていない。これらの API への接続は、利用者自身が用意した
 TMDB のトークンがあるときにだけ行われる。
 
-<img src="assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">
+<img src="app/assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">

@@ -716,7 +716,7 @@ rejected with that reason and you convert it first.
 shelfscan scan <photos_dir> [-o review.json]
                             [--provider anthropic|ollama|openai]
                             [--fallback anthropic|ollama|openai|none]
-                            [--aliases data/title_aliases.json]
+                            [--aliases <file>]
                             [--installs <games_dir>] [--library]
                             [--galaxy-db <path>]
 shelfscan scan-installs <games_dir> [-o review.json] [--aliases <file>]
@@ -803,7 +803,7 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
 
 A Japanese-market spine reads *Biohazard*; IGDB knows the game as *Resident
 Evil* and answers a search for the title as read with nothing at all. The
-same for *Rockman* and *Mega Man*. `data/title_aliases.json` rewrites the
+same for *Rockman* and *Mega Man*. `app/assets/data/title_aliases.json` rewrites the
 title before the search, and it is hand-editable on purpose — of the things
 that turn a miss into a match, it is the only one that needs no code change.
 
@@ -827,7 +827,7 @@ The file as shipped, in full:
   every IGDB row against the raw spine text as well. An alias therefore only
   has to get IGDB to return the game, not to name it exactly.
 - `--aliases <file>` uses a different file. Without the flag the CLI walks
-  up from the working directory looking for `data/title_aliases.json`, which
+  up from the working directory looking for `app/assets/data/title_aliases.json`, which
   is why the same command works from the repository root and from
   `packages/shelfscan_core`.
 - The file is read at the start of every run: edit, save, re-run. Nothing to
@@ -838,7 +838,7 @@ The file as shipped, in full:
   so — a bad alias table is a worse scan, not a failed one:
 
   ```
-  WARN: No alias file at data/title_aliases.json -- falling back to 3 built-in aliases.
+  WARN: No alias file at app/assets/data/title_aliases.json -- falling back to 3 built-in aliases.
   ```
 
 - It is read by the games resolver only, so a run with no IGDB credentials
@@ -847,7 +847,7 @@ The file as shipped, in full:
 
 **Editing the file does not change the running app until you rebuild it.**
 The app uses the same file rather than a copy of its own, but it takes it as
-a bundled Flutter asset (`app/pubspec.yaml` → `../data/title_aliases.json`),
+a bundled Flutter asset (`app/pubspec.yaml` → `assets/data/title_aliases.json`),
 and assets are baked in at build time. So an edit reaches the CLI on the very
 next run, and the app on the next `flutter run` / `flutter build`. An
 installed app never reads your edited file — on Android there is no such file
@@ -1161,5 +1161,5 @@ This application uses TMDB and the TMDB APIs but is not endorsed, certified,
 or otherwise approved by TMDB. It reaches those APIs only with a TMDB token
 you supply yourself.
 
-<img src="assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">
+<img src="app/assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">
 </content>

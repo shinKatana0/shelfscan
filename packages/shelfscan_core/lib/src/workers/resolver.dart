@@ -19,9 +19,9 @@ import 'base.dart';
 
 /// Fallback alias table, used when a shell supplies none.
 ///
-/// The growing table lives in `data/title_aliases.json`; this exists only so
-/// that a run with a missing or malformed data file still gets the three
-/// aliases the pipeline has always had, rather than none.
+/// The growing table lives in `app/assets/data/title_aliases.json`; this
+/// exists only so that a run with a missing or malformed data file still
+/// gets the three aliases the pipeline has always had, rather than none.
 const builtinTitleAliases = <String, String>{
   'biohazard': 'resident evil',
   'rockman': 'mega man',
@@ -227,7 +227,7 @@ String _volumeKey(String text) {
       .join(' ');
 }
 
-/// Parses the `data/title_aliases.json` contents: a flat JSON object mapping
+/// Parses the alias table's contents: a flat JSON object mapping
 /// a regional title fragment to its IGDB-canonical equivalent.
 ///
 /// Only parsing -- reading the bytes belongs to the shell, because
@@ -307,7 +307,7 @@ class ResolverWorker extends CatalogueWorker {
   Set<WorkKind> get answers => const {WorkKind.game};
 
   /// Regional title fragment -> IGDB-canonical fragment, injected by the
-  /// shell from `data/title_aliases.json`.
+  /// shell from `app/assets/data/title_aliases.json`.
   final Map<String, String> aliases;
 
   @override

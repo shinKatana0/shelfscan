@@ -744,7 +744,7 @@ Windows этого не делает, из-за чего телефонные ф
 shelfscan scan <photos_dir> [-o review.json]
                             [--provider anthropic|ollama|openai]
                             [--fallback anthropic|ollama|openai|none]
-                            [--aliases data/title_aliases.json]
+                            [--aliases <file>]
                             [--installs <games_dir>] [--library]
                             [--galaxy-db <path>]
 shelfscan scan-installs <games_dir> [-o review.json] [--aliases <file>]
@@ -838,7 +838,7 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
 
 На японском корешке написано *Biohazard*; IGDB знает игру как *Resident Evil* и
 на поиск по прочитанному заголовку не отвечает вообще ничем. То же с *Rockman* и
-*Mega Man*. `data/title_aliases.json` переписывает заголовок до поиска, и он
+*Mega Man*. `app/assets/data/title_aliases.json` переписывает заголовок до поиска, и он
 редактируется руками намеренно — из всего, что превращает промах в попадание,
 это единственное, чему не нужны правки кода.
 
@@ -863,7 +863,7 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
   каждую строку IGDB ещё и с сырым текстом с корешка. Так что синониму достаточно
   заставить IGDB вернуть игру, а не назвать её точно.
 - `--aliases <file>` берёт другой файл. Без флага утилита идёт вверх от рабочего
-  каталога в поисках `data/title_aliases.json` — поэтому одна и та же команда
+  каталога в поисках `app/assets/data/title_aliases.json` — поэтому одна и та же команда
   работает и из корня репозитория, и из `packages/shelfscan_core`.
 - Файл читается в начале каждого запуска: правьте, сохраняйте, запускайте заново.
   Ничего пересобирать или перезапускать не нужно. Правка файла и повторный
@@ -874,7 +874,7 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
   провалившееся:
 
   ```
-  WARN: No alias file at data/title_aliases.json -- falling back to 3 built-in aliases.
+  WARN: No alias file at app/assets/data/title_aliases.json -- falling back to 3 built-in aliases.
   ```
 
 - Таблицу читает только сопоставление игр, так что запуск без доступов к IGDB
@@ -883,7 +883,7 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
 
 **Правка файла не меняет запущенное приложение, пока вы его не пересоберёте.**
 Приложение использует тот же файл, а не свою копию, но берёт его как встроенный
-ресурс Flutter (`app/pubspec.yaml` → `../data/title_aliases.json`), а ресурсы
+ресурс Flutter (`app/pubspec.yaml` → `assets/data/title_aliases.json`), а ресурсы
 запекаются во время сборки. Так что правка доходит до консольной утилиты уже на
 следующем запуске, а до приложения — на следующем `flutter run` /
 `flutter build`. Установленное приложение ваш отредактированный файл не читает
@@ -1128,4 +1128,4 @@ or otherwise approved by TMDB.
 и никак иначе не утверждено TMDB. Обращение к этим API происходит только с
 токеном TMDB, который вы предоставляете сами.
 
-<img src="assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">
+<img src="app/assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">

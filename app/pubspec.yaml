@@ -52,14 +52,15 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    # NEITHER OF THESE REACHES A BUILT APP (T-0386). A key beginning `../` is
-    # written relative to `build/flutter_assets/` and so lands OUTSIDE it;
-    # packaging copies that directory and leaves the escaped files behind.
-    # Tests pass because the test bundle sits beside the same escaped copies.
+    # Both of these lived above `app/` and were declared by a `../` path
+    # until T-0386. A key is written relative to `build/flutter_assets/`, so
+    # a `../` key lands OUTSIDE the bundle and packaging leaves the file
+    # behind -- while `flutter test` builds beside the escaped copies and
+    # resolves them, so no test could see it. Nothing bundled may sit above
+    # this file; `tool/check-bundle-assets.dart` fails a build where one does.
     #
-    # Repository-level data file, shared with the CLI: one alias table, not
-    # an app copy that drifts from it.
-    - ../data/title_aliases.json
-    # TMDB's mark, as published. Repository-level for the same reason as the
-    # alias table above; unaltered for the reason beside flutter_svg.
-    - ../assets/tmdb/blue_long_1.svg
+    # The alias table is still one file rather than an app copy that drifts:
+    # the CLI reads this same path, walking up for it (`aliasFileName`).
+    - assets/data/title_aliases.json
+    # TMDB's mark, as published and unaltered (see beside flutter_svg).
+    - assets/tmdb/blue_long_1.svg

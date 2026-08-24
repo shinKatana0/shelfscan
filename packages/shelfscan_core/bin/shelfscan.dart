@@ -155,11 +155,11 @@
 /// using the detection's own title and platform hint.
 ///
 /// Regional titles (Biohazard vs Resident Evil) are rewritten before the
-/// IGDB search using `data/title_aliases.json`, found by walking up from the
-/// working directory; `--aliases <file>` points at a different one. The file
-/// is a flat JSON object, `"regional fragment": "igdb fragment"`, and editing
-/// it needs no rebuild. Missing or malformed, it degrades to three built-in
-/// aliases with a warning.
+/// IGDB search using `app/assets/data/title_aliases.json`, found by walking
+/// up from the working directory; `--aliases <file>` points at a different
+/// one. The file is a flat JSON object, `"regional fragment": "igdb
+/// fragment"`, and editing it needs no rebuild. Missing or malformed, it
+/// degrades to three built-in aliases with a warning.
 library;
 
 import 'dart:convert';
@@ -1298,7 +1298,7 @@ Never _usage() {
       '  shelfscan scan <photos_dir> [-o review.json]\n'
       '                              [--provider anthropic|ollama|openai]\n'
       '                              [--fallback anthropic|ollama|openai|none]\n'
-      '                              [--aliases data/title_aliases.json]\n'
+      '                              [--aliases <file>]\n'
       '                              [--installs <games_dir>] [--library]\n'
       '                              [--galaxy-db <path>]\n'
       '  shelfscan scan-installs <games_dir> [-o review.json]\n'
@@ -1703,14 +1703,21 @@ VisionProvider? fallbackProviderFor(String? name, Map<String, String> env,
 }
 
 /// Path of the committed alias table, relative to the repository root.
-const aliasFileName = 'data/title_aliases.json';
+///
+/// It sits under `app/` and not at the root because the app can only bundle
+/// what is below `app/`: a Flutter asset declared by a `../` path is written
+/// outside the bundle and never reaches a built app (T-0386). Reading it here
+/// keeps one table for both shells, which is the point of the file; the CLI
+/// gains a path and no dependency, and a tree without `app/` still runs on
+/// the built-in aliases with the warning below.
+const aliasFileName = 'app/assets/data/title_aliases.json';
 
 /// Nearest [aliasFileName] at or above [from], or null if there is none.
 ///
 /// The CLI is run both from the repository root and from
 /// `packages/shelfscan_core` (that is where `dart run shelfscan_core:shelfscan`
-/// is issued), while the file lives at the root -- one fixed relative path
-/// would therefore work from only one of the two.
+/// is issued) -- one fixed relative path would therefore work from only one of
+/// the two.
 File? findAliasFile(Directory from) {
   for (var dir = from.absolute;; dir = dir.parent) {
     final file = File('${dir.path}/$aliasFileName');

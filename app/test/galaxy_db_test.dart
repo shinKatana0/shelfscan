@@ -24,8 +24,8 @@ import 'package:shelfscan_core/shelfscan_core.dart';
 /// [_cliReader] reaches it from `app/`, which is where this suite runs.
 const _cliPath = 'packages/shelfscan_core/bin/galaxy_db.dart';
 
-/// The CLI's copy, as text. Both shells live in one repository and the app's
-/// tests already reach out of `app/` for `data/title_aliases.json`.
+/// The CLI's copy, as text -- both shells live in one repository, so the
+/// other one is a relative path away.
 ///
 /// Newlines are folded to `\n`: the repository has no `.gitattributes`, so on
 /// Windows git checks this file out with CRLF while the string literals

@@ -130,15 +130,15 @@ packages/shelfscan_core/
     ├── http_timeout.dart      # every outbound call is bounded, in one place
     └── unreachable.dart       # "that endpoint answered nothing", one vocabulary
 
-data/
-└── title_aliases.json         # regional title -> IGDB canon; read by both shells
-
 app/                           # Flutter shell: Windows + Android
+├── assets/
+│   ├── data/title_aliases.json  # regional title -> IGDB canon; both shells
+│   └── tmdb/blue_long_1.svg     # TMDB's mark, as published
 └── lib/
     ├── main.dart
     ├── provider_config.dart  # provider policy per platform — lives here and nowhere else
     ├── settings_store.dart   # secrets -> OS keychain, the rest -> preferences
-    ├── title_aliases.dart    # loads data/title_aliases.json (bundled asset)
+    ├── title_aliases.dart    # loads the alias table (bundled asset)
     ├── export_saver.dart     # save dialog (desktop) / share sheet (Android)
     ├── photo_files.dart      # which picked files are photos, by signature
     ├── heic_wic.dart         # HEIC -> JPEG in-process, WIC over dart:ffi
@@ -240,10 +240,13 @@ Platform boundary rules:
   and produces the same `PhotoInput`.
 - ~~Alias table can graduate from a dict to a data file + IGDB
   `alternative_names` lookups inside the resolver only.~~ — done (T-0004).
-  New regional titles go in `data/title_aliases.json`, no Dart edit. The
-  resolver takes the parsed map as a constructor argument because it may not
-  read files itself (platform boundary above): the CLI reads the file, the
-  app loads the same file as a bundled asset.
+  New regional titles go in `app/assets/data/title_aliases.json`, no Dart
+  edit. The resolver takes the parsed map as a constructor argument because it
+  may not read files itself (platform boundary above): the CLI reads the file,
+  the app loads the same file as a bundled asset. It lives under `app/`
+  because that is the only place a Flutter asset can live — a key declared by
+  a `../` path is written outside the bundle and reaches no built app
+  (T-0386).
 
 ### Where a new source plugs in
 
