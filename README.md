@@ -37,8 +37,12 @@ The honest half, up front. Every line here is measured, and the section it
 links to has the numbers.
 
 - **Android is the thinner of the two platforms.** Both Windows and Android
-  are built and run from this tree, but two things are Windows-only by
-  construction: HEIC photos from a phone are converted through
+  are built from this tree; only the Windows one has been **run** here. Debug
+  and release apks build ([`doc/android-build.md`](doc/android-build.md)), and
+  neither has ever been installed on anything: there is no device and no
+  emulator on this machine, which is why nothing on the Android side is
+  reported here as working rather than as built. Two further things are
+  Windows-only by construction: HEIC photos from a phone are converted through
   the Windows Imaging Component, and the GOG Galaxy library is read from
   Galaxy's own database, and Galaxy is a Windows program. There is no
   installer and no published binary — you build it from source
@@ -160,10 +164,19 @@ into a catalog app here**, so that half is written and tested rather than
 verified, like every other disk-source export. The full account is in
 [the guide](doc/guide.md#it-reads-films-too-now-and-that-widens-the-contract-rather-than-fixing-it).
 
-**Anime is not a working kind.** The review screen offers the value and a
-person may correct a row to it, but no source produces one, no catalogue
-answers it, and `.xcoll` declines such a row outright rather than inventing the
-film-or-series flag the format wants beside it.
+**Anime is a kind now, and no anime row has ever matched anything.** A video
+named the fansub way — `[Group] Title - 04 [1080p].mkv` — comes back as an
+anime series row, and the review screen offers the value on any row, with
+*film or series* asked after it. `S01E04` and `1x04` are still declined
+deliberately: they say *series* without saying which kind, and answering would
+file every television release as anime. Both answered kinds go to TMDB — an
+anime film through the film search, an anime series through the tv search —
+and `.xcoll` takes either. **What has never happened is the match.** The tv
+search has not been called against the live service by anything, ever; the
+live searches described above were films. So that path is written and tested
+and nothing more. A row left at plain `Anime`, with film-or-series
+unanswered, is still refused by `.xcoll` outright rather than given an
+invented one.
 
 The operational half — what a run prints, and why reading names for three kinds
 of thing makes this command's safety contract weaker rather than stronger — is
@@ -500,7 +513,7 @@ keychain, never in a file inside the repository.
 
 ### The app
 
-Both targets have been built and run from this tree. Neither builds on a
+Both targets have been built from this tree. Neither builds on a
 `flutter doctor` that prints green, and the prerequisites each one is missing
 are written down rather than left to be rediscovered: **Windows** immediately
 below, **Android** in [`doc/android-build.md`](doc/android-build.md) — the
