@@ -157,10 +157,9 @@
 /// Regional titles (Biohazard vs Resident Evil) are rewritten before the
 /// IGDB search using `app/assets/data/title_aliases.json`, found by walking
 /// up from the working directory; `--aliases <file>` points at a different
-/// one. The file
-/// is a flat JSON object, `"regional fragment": "igdb fragment"`, and editing
-/// it needs no rebuild. Missing or malformed, it degrades to three built-in
-/// aliases with a warning.
+/// one. The file is a flat JSON object, `"regional fragment": "igdb
+/// fragment"`, and editing it needs no rebuild. Missing or malformed, it
+/// degrades to three built-in aliases with a warning.
 library;
 
 import 'dart:convert';
