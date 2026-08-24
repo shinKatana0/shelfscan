@@ -307,6 +307,19 @@ void main() {
       expect(message, endsWith("(Failed host lookup: 'api.igdb.com')"));
     });
 
+    // T-0355. The cross-family wording is pinned in
+    // `unreachable_supertype_test.dart`; what is this file's is that the
+    // clause did not displace what a resolve failure has to say about itself.
+    test('the browser check arrives before what the failure costs', () async {
+      final message = '${await _errorFrom(_dropping(onToken: false))}';
+
+      expect(message, contains('Open that address in a browser'));
+      expect(message, contains('rather than at the lookup'));
+      expect(message.indexOf('Open that address'),
+          lessThan(message.indexOf('Nothing read off the photographs is lost')));
+      expect(message, contains('matched by hand there'));
+    });
+
     test('and it is not retried', () async {
       expect(await _errorFrom(_dropping(onToken: true)),
           isNot(isA<RetryableException>()));

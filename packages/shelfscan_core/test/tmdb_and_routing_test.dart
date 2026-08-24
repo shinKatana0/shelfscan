@@ -210,6 +210,21 @@ void main() {
           throwsA(isA<TmdbUnreachableException>()
               .having((e) => e.endpointIsUserSet, 'endpointIsUserSet', isFalse)));
     });
+
+    // T-0355. The cross-family wording is pinned in
+    // `unreachable_supertype_test.dart`; this file's half is that the clause
+    // did not displace what a failed film lookup costs, and that a search
+    // reached over a GET still names the browser check -- the clause is true
+    // here for a different reason (see `tmdb.dart`), not by inheritance.
+    test('the browser check arrives before what the failure costs', () {
+      final message = TmdbUnreachableException('no route').message;
+
+      expect(message, contains('Open that address in a browser'));
+      expect(message, contains('rather than at the lookup'));
+      expect(message.indexOf('Open that address'),
+          lessThan(message.indexOf('Rows still reach review unmatched')));
+      expect(message, endsWith('(no route)'));
+    });
   });
 
   group('the film resolver', () {
