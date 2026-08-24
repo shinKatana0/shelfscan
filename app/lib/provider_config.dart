@@ -724,6 +724,20 @@ class ProviderPolicy {
   /// sorting only films, without games* -- and is what the CLI has always
   /// done.
   ///
+  /// **The token registers the two anime kinds a person can answer as well,
+  /// each on the TMDB endpoint it belongs to (T-0369), and the CLI's
+  /// `resolverFor` registers exactly the same four.** An anime film is a film
+  /// and an anime series is television, which TMDB separates by endpoint --
+  /// so [WorkKind.animationFilm] joins [WorkKind.movie] on the film search and
+  /// [WorkKind.animationSeries] goes to the series one. [WorkKind.animation],
+  /// whose film-or-series question nobody has answered, is registered nowhere:
+  /// there is no endpoint for *one of the two*, and a search that picked would
+  /// answer half of those rows with an id for the other sort of thing.
+  ///
+  /// No kind is named at this site. `registrationsOf` reads the kinds off the
+  /// catalogue, so which endpoint answers which kind is stated once, on
+  /// `TmdbResolverWorker`, rather than once per shell.
+  ///
   /// **The catalogue has answered, and never to this shell.** The CLI's film
   /// path was run against the live service once, on three public films on one
   /// evening (`doc/measurements.md`, "TMDB's `year` filters"). Read the limits
@@ -732,6 +746,12 @@ class ProviderPolicy {
   /// nothing whatever about this shell, which had no token to register until
   /// now. What this field buys a user is that same route, travelled by them
   /// first.
+  ///
+  /// **And the series endpoint has been called by nobody at all**, in either
+  /// shell. The film path at least ran once; `/3/search/tv` is code written
+  /// against TMDB's published API and exercised only against a fake -- which
+  /// is exactly how the film path's own `year` comment came to be false
+  /// (T-0336). What a live run must show is in `doc/reports/T-0369.md`.
   static ResolverWorker buildResolver(
     ProviderSettings settings, {
     Map<String, String>? aliases,
@@ -741,20 +761,20 @@ class ProviderPolicy {
     // chosen mode and the empty-catalogue case together, so what is left below
     // is one conditional per credential and a map that cannot come out empty.
     if (checkMatching(settings, matching).keyless) return SkipResolver();
+    final tmdb =
+        settings.hasTmdbToken ? TmdbClient(token: settings.tmdbToken) : null;
     return CatalogueRouter(
       catalogues: {
         if (settings.hasIgdbCredentials)
-          WorkKind.game: ResolverWorker(
+          ...registrationsOf(ResolverWorker(
             IgdbClient(
               clientId: settings.igdbClientId,
               clientSecret: settings.igdbClientSecret,
             ),
             aliases: aliases,
-          ),
-        if (settings.hasTmdbToken)
-          WorkKind.movie: TmdbResolverWorker(
-            TmdbClient(token: settings.tmdbToken),
-          ),
+          )),
+        if (tmdb != null) ...registrationsOf(TmdbResolverWorker.movies(tmdb)),
+        if (tmdb != null) ...registrationsOf(TmdbResolverWorker.series(tmdb)),
       },
       fallback: SkipResolver(),
     );

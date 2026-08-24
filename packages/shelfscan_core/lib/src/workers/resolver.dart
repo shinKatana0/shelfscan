@@ -261,11 +261,50 @@ Map<String, String> parseTitleAliases(String json) {
   return aliases;
 }
 
-class ResolverWorker extends Worker<Detection, ResolvedGame> {
+/// A catalogue that states which kinds of work its own search can answer.
+///
+/// **The kind a row is registered under and the question the catalogue's
+/// search actually asks are two different things, and nothing before T-0369
+/// compared them.** Decision 0016 made a row's identity the pair
+/// `(catalogue, id)` and had `TonkatsuExporter` refuse a row whose namespace
+/// disagreed with what its kind implies -- which catches an IGDB id under a
+/// film kind and cannot catch a film id under a series kind, because both
+/// carry `tmdb:`. The namespace names the service; it does not name the
+/// endpoint, and TMDB tells a film from a series by endpoint.
+///
+/// So the catalogue says it instead, and [registrationsOf] is how a shell
+/// builds [CatalogueRouter.catalogues] from that statement rather than from a
+/// kind it typed out itself. A shell that never names a kind cannot name the
+/// wrong one.
+abstract class CatalogueWorker extends Worker<Detection, ResolvedGame> {
+  /// The kinds this catalogue's search answers -- never a kind it would
+  /// answer with an id for a different sort of thing.
+  Set<WorkKind> get answers;
+}
+
+/// [catalogue] as [CatalogueRouter.catalogues] entries: one per kind it says
+/// it answers, and none it does not.
+///
+/// The whole of a shell's registration step, so that the map is derived rather
+/// than typed. `{WorkKind.animationSeries: TmdbResolverWorker.movies(c)}` is
+/// the one-line mistake this task exists to make unwritable, and it is
+/// unwritable here because no kind is written at all.
+Map<WorkKind, Worker<Detection, ResolvedGame>> registrationsOf(
+        CatalogueWorker catalogue) =>
+    {for (final kind in catalogue.answers) kind: catalogue};
+
+class ResolverWorker extends CatalogueWorker {
   ResolverWorker(this.igdb, {Map<String, String>? aliases})
       : aliases = aliases ?? builtinTitleAliases;
 
   final IgdbClient igdb;
+
+  /// IGDB is a games catalogue and answers nothing else. The narrowest of the
+  /// three statements on this seam, and the one that was always implicit --
+  /// registering this worker for any other kind is the defect T-0308's
+  /// required fallback was added to make visible.
+  @override
+  Set<WorkKind> get answers => const {WorkKind.game};
 
   /// Regional title fragment -> IGDB-canonical fragment, injected by the
   /// shell from `data/title_aliases.json`.
@@ -803,6 +842,12 @@ class SkipResolver extends ResolverWorker {
               client: _RefusingClient(),
             ));
 
+  /// Every kind, because this one answers any row and matches none of them.
+  /// Overridden rather than inherited: [ResolverWorker]'s `{game}` is a claim
+  /// about IGDB, and nothing here asks IGDB anything.
+  @override
+  Set<WorkKind> get answers => WorkKind.values.toSet();
+
   @override
   Future<ResolvedGame> process(Detection task) async =>
       ResolvedGame(detection: task);
@@ -845,10 +890,44 @@ class CatalogueRouter extends ResolverWorker {
           clientId: '',
           clientSecret: '',
           client: _RefusingClient(),
-        ));
+        )) {
+    for (final entry in catalogues.entries) {
+      final catalogue = entry.value;
+      if (catalogue is CatalogueWorker &&
+          !catalogue.answers.contains(entry.key)) {
+        throw ArgumentError.value(
+            catalogue.runtimeType.toString(),
+            entry.key.key,
+            'this catalogue answers ${catalogue.answers.map((k) => k.key)} '
+                'and would answer this kind with an id for one of those '
+                'instead');
+      }
+    }
+  }
 
   /// The catalogue for each kind. A kind absent here goes to [fallback].
+  ///
+  /// **A [CatalogueWorker] here must answer the kind it is filed under, and
+  /// the constructor throws rather than asserts** (T-0369). A wrong entry is a
+  /// shell's typo, so it is a developer error and [ArgumentError] is what that
+  /// is; an `assert` would be stripped from a release build, which is the one
+  /// build where a wrong id reaches somebody's collection file. It cannot be
+  /// caught later either -- an anime series answered from the film endpoint
+  /// carries a `tmdb:` id like the right one, and decision 0016's namespace
+  /// check in `TonkatsuExporter` compares namespaces.
+  ///
+  /// A plain [Worker] states nothing and is checked against nothing: a test
+  /// double that answers a label is not claiming to be a catalogue. What
+  /// closes that gap for the two shells is that they build this map with
+  /// [registrationsOf], which cannot produce a mismatched entry, and a test
+  /// per shell asserts they do.
   final Map<WorkKind, Worker<Detection, ResolvedGame>> catalogues;
+
+  /// The kinds this router has a catalogue for. Not [ResolverWorker]'s
+  /// `{game}`, which would be a claim about an IGDB client this class holds
+  /// only to satisfy its supertype and never calls.
+  @override
+  Set<WorkKind> get answers => catalogues.keys.toSet();
 
   /// What answers a kind no catalogue is registered for.
   ///
@@ -872,7 +951,15 @@ class CatalogueRouter extends ResolverWorker {
       (catalogues[task.workKind] ?? fallback).process(task);
 }
 
-/// A film detection to a TMDB match (T-0162).
+/// A film or series detection to a TMDB match (T-0162, T-0369).
+///
+/// **One worker, two endpoints, and which one it is is fixed at
+/// construction.** [TmdbResolverWorker.movies] searches films and
+/// [TmdbResolverWorker.series] searches television; everything between the
+/// request and the [Candidate] is the same code on both, which is deliberate.
+/// The tv search has never been run against the service, so the smaller the
+/// unrun surface the better: it is one path, three response keys and one
+/// query parameter ([TmdbSearch]), and no scoring, gate or retry of its own.
 ///
 /// Reuses [ResolverWorker]'s scorer and [minAutoScore] deliberately: the
 /// measured behaviour of the Levenshtein scorer is not a property of IGDB, and
@@ -885,10 +972,36 @@ class CatalogueRouter extends ResolverWorker {
 /// anything to say here. What replaces the gate as the second signal is the
 /// release year: a filename carries one far more often than a spine does, and
 /// two films sharing a title are separated by it almost by definition.
-class TmdbResolverWorker extends Worker<Detection, ResolvedGame> {
-  TmdbResolverWorker(this.tmdb);
+class TmdbResolverWorker extends CatalogueWorker {
+  /// TMDB's film search: [WorkKind.movie], and [WorkKind.animationFilm] with
+  /// it. An anime film is a film in TMDB -- that catalogue has no separate
+  /// animation database, and the only thing that makes the row an anime is
+  /// what Tonkatsu writes in `platform_id` (T-0162, decision 0016).
+  TmdbResolverWorker.movies(this.tmdb) : search = TmdbSearch.movie;
+
+  /// TMDB's television search: [WorkKind.animationSeries] and nothing else.
+  ///
+  /// Not [WorkKind.movie] and not [WorkKind.animationFilm], which is the
+  /// whole point of there being two constructors. And not
+  /// [WorkKind.animation]: that kind is the film-or-series question still
+  /// unanswered, so neither endpoint is the right one for it and picking
+  /// either would answer a question the person has not.
+  TmdbResolverWorker.series(this.tmdb) : search = TmdbSearch.series;
 
   final TmdbClient tmdb;
+
+  /// Which endpoint this worker asks. Fixed at construction rather than
+  /// derived per row from `task.workKind`: deriving it would put the
+  /// kind-to-endpoint mapping inside this class, where no shell and no test
+  /// can see what it registered, and the mapping is exactly the thing that
+  /// has to be visible.
+  final TmdbSearch search;
+
+  @override
+  Set<WorkKind> get answers => switch (search) {
+        TmdbSearch.movie => const {WorkKind.movie, WorkKind.animationFilm},
+        TmdbSearch.series => const {WorkKind.animationSeries},
+      };
 
   @override
   Future<ResolvedGame> process(Detection task) async {
@@ -896,11 +1009,11 @@ class TmdbResolverWorker extends Worker<Detection, ResolvedGame> {
     if (raw.isEmpty) return ResolvedGame(detection: task);
 
     final year = task.sourceYear;
-    var hits = await tmdb.searchMovie(raw, year: year);
+    var hits = await tmdb.search(search, raw, year: year);
 
     // The film-shaped zero-result retry, and the second one on this seam
     // (T-0336). TMDB's `year` is a filter rather than a preference -- measured
-    // live, see [TmdbClient.searchMovie] -- so a filename year one off the
+    // live, see [TmdbClient.search] -- so a filename year one off the
     // catalogued one answers zero rows instead of the film, and the comment
     // that used to rule that out named the very case that causes it: a
     // festival release against a general one, a territory date.
@@ -912,7 +1025,7 @@ class TmdbResolverWorker extends Worker<Detection, ResolvedGame> {
     // filename carried no year, so that row asks once and stops.
     var withoutYear = false;
     if (hits.isEmpty && year != null) {
-      hits = await tmdb.searchMovie(raw);
+      hits = await tmdb.search(search, raw);
       withoutYear = hits.isNotEmpty;
     }
     if (hits.isEmpty) return ResolvedGame(detection: task);

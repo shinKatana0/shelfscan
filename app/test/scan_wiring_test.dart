@@ -204,12 +204,71 @@ void main() {
       ));
 
       final router = resolver as CatalogueRouter;
-      expect(router.catalogues.keys, [WorkKind.game, WorkKind.movie]);
+      expect(router.catalogues.keys, [
+        WorkKind.game,
+        WorkKind.movie,
+        WorkKind.animationFilm,
+        WorkKind.animationSeries,
+      ]);
       final films = router.catalogues[WorkKind.movie]! as TmdbResolverWorker;
       expect(films.tmdb.token, 'tmdb-not-a-token');
       // Games still go to IGDB, which is the failure T-0308's router exists
       // to prevent, asserted from the other side.
       expect(gameCatalogueOf(resolver).igdb.clientId, 'id');
+    });
+
+    // T-0369. Until it, this shell registered the film kind and nothing else,
+    // so every anime row went to the fallback and came back unmatched -- the
+    // person could answer film-or-series at review and `.xcoll` still refused
+    // the row by the base clause.
+    test('the same token registers the two ANSWERED anime kinds', () {
+      final router = ProviderPolicy.buildResolver(
+          ProviderSettings(tmdbToken: 'tmdb-not-a-token')) as CatalogueRouter;
+
+      final film =
+          router.catalogues[WorkKind.animationFilm]! as TmdbResolverWorker;
+      final series =
+          router.catalogues[WorkKind.animationSeries]! as TmdbResolverWorker;
+
+      // The trap: TMDB tells a film from a series by ENDPOINT, and both ids
+      // carry the same `tmdb:` namespace, so nothing downstream could catch a
+      // series answered from the film search.
+      expect(film.search, TmdbSearch.movie);
+      expect(series.search, TmdbSearch.series);
+      expect(identical(router.catalogues[WorkKind.movie], film), isTrue);
+      // One client, one token: the anime kinds cost no second credential.
+      expect(identical(film.tmdb, series.tmdb), isTrue);
+    });
+
+    test('the UNANSWERED anime kind is registered in no configuration', () {
+      // No endpoint answers "one of the two", and `TonkatsuExporter` refuses
+      // that row for a reason a match would not change.
+      final settings = [
+        ProviderSettings(igdbClientId: 'id', igdbClientSecret: 'secret'),
+        ProviderSettings(tmdbToken: 'tmdb-not-a-token'),
+        ProviderSettings(
+            igdbClientId: 'id',
+            igdbClientSecret: 'secret',
+            tmdbToken: 'tmdb-not-a-token'),
+      ];
+
+      for (final s in settings) {
+        final router = ProviderPolicy.buildResolver(s) as CatalogueRouter;
+        expect(router.catalogues.containsKey(WorkKind.animation), isFalse);
+      }
+    });
+
+    test('every registration is one the catalogue itself says it answers', () {
+      final router = ProviderPolicy.buildResolver(ProviderSettings(
+        igdbClientId: 'id',
+        igdbClientSecret: 'secret',
+        tmdbToken: 'tmdb-not-a-token',
+      )) as CatalogueRouter;
+
+      for (final entry in router.catalogues.entries) {
+        expect(entry.value, isA<CatalogueWorker>());
+        expect((entry.value as CatalogueWorker).answers, contains(entry.key));
+      }
     });
 
     // The inversion of the limitation this test pinned until T-0367: the
@@ -223,7 +282,11 @@ void main() {
           ProviderSettings(tmdbToken: 'tmdb-not-a-token'));
 
       final router = resolver as CatalogueRouter;
-      expect(router.catalogues.keys, [WorkKind.movie]);
+      expect(router.catalogues.keys, [
+        WorkKind.movie,
+        WorkKind.animationFilm,
+        WorkKind.animationSeries,
+      ]);
       final films = router.catalogues[WorkKind.movie]! as TmdbResolverWorker;
       expect(films.tmdb.token, 'tmdb-not-a-token');
       expect(
