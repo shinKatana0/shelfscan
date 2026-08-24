@@ -582,9 +582,12 @@ The last entry is **No match**, which clears the match and rejects the item.
   can describe several spines, so there may be more, and the promise that
   nothing was invented for them. Each photo gets an **Add** button that files
   the item you type into that photo's group.
-- **`Keyless run -- nothing was looked up`** — this run had no IGDB stage, so
-  every row is the title as it was read. Not coloured as an error: it is the
-  mode you chose, and it names the export that carries the rows.
+- **`Keyless run -- nothing was looked up`** — it means what it says: no
+  catalogue was reached at all, so every row is the title as it was read. That
+  is not the same as *no IGDB stage*. A run holding a TMDB token and no IGDB
+  pair looks its film rows up, so it gets no banner, and its game rows carry
+  the per-row mark instead. Not coloured as an error: it is the mode you chose,
+  and it names the export that carries the rows.
 
 ### What cannot reach `.xcoll`, and why
 
@@ -886,10 +889,21 @@ filename, matches nothing, and exports to CSV but not to `.xcoll`, which is a
 file of catalogue ids and has nothing to put in one. Games are unaffected, and
 a run holding IGDB credentials but no TMDB token says exactly that on stdout
 before it starts — you are told which case you are in rather than left to
-infer it from a row that came back empty. **The app is always in this case:**
-it keeps credentials in the OS keychain and its Settings screen has two fields
-rather than three, so there is nowhere to put a TMDB token and a film row there
-is keyless on every path.
+infer it from a row that came back empty.
+
+**The app takes the same token, in its own way.** Settings has a field for it
+beside the IGDB pair, and it goes to the OS keychain where the app keeps every
+other credential — so the paragraph above describes the app *without* a token
+rather than the app. With one stored, a film row there is looked up, and the
+token is enough on its own: a run holding TMDB and no IGDB looks the films up
+and leaves the game rows keyless, which is the usual arrangement the other way
+round. Choosing **Keyless** above the **Scan** button is still obeyed whatever
+is stored — what you pick is what you asked for, and a credential only decides
+what the run could have reached.
+
+**What no run through the app has ever had is an answer from TMDB.** The live
+searches below are the CLI's. The app's field reaches the same client by the
+same route, which is a statement about the wiring and not about the result.
 
 **No film reaches the games catalogue, in any configuration.** Both shells now
 build one resolver per kind rather than one resolver: game rows to IGDB, film

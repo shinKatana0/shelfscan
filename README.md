@@ -79,14 +79,15 @@ links to has the numbers.
   to end" still belongs to the photographs alone. Nor has a CSV ever been
   imported into CLZ Games here: the format is generic and tested, the import is
   not.
-- **Films are looked up, and only the CLI can reach the catalogue that does
+- **Films are looked up, and both shells can reach the catalogue that does
   it.** A video file whose name is release-shaped becomes a film row rather
   than a game row, and the kind is shown and correctable at review. A film row
-  goes to TMDB and never to the games catalogue, in any configuration. But the
-  token that buys the lookup is a CLI environment variable and **the app has
-  nowhere to put one**, so a film row there is keyless on every path — as is
-  one in a CLI run without the token. How well TMDB answers real release names
-  is unmeasured: the path has been run, not surveyed
+  goes to TMDB and never to the games catalogue, in any configuration. The
+  lookup wants a token of its own — an environment variable in the CLI, a
+  Settings field in the app — and a film row without one is keyless in either
+  shell. **No run through the app has ever had an answer from TMDB**, and how
+  well TMDB answers real release names is unmeasured anywhere: the path has
+  been run in the CLI, not surveyed
   ([how far that goes](#films-are-read-as-films-and-how-far-that-goes)).
 - **A folder of installers is not a games folder.** Names alone cannot tell
   `NoteWellSetup.exe` from `setup_moor_1.9.exe` — measured on a real `Downloads`
@@ -130,13 +131,20 @@ you rather than picked. What that establishes is that the path works end to
 end. It is not a measurement of how well TMDB answers real release names across
 a collection, and nothing here has run it over anime or at any scale.
 
-**The token is a CLI environment variable — `SHELFSCAN_TMDB_TOKEN`, listed in
-`.env.example`. The app cannot hold one at all**, because it keeps credentials
-in the OS keychain and Settings has two fields rather than three. A film row in
-the app is therefore keyless on every path through it.
+**The token goes wherever you are running from.** In the CLI it is the
+environment variable `SHELFSCAN_TMDB_TOKEN`, listed in `.env.example`; in the
+app it is a Settings field, kept in the OS keychain with every other
+credential. In the app it keys a run on its own — with a TMDB token and no
+IGDB pair the film rows are looked up and the game rows are the keyless ones.
+Choosing **Keyless** there is obeyed whatever is stored: the mode is what you
+asked for, and a credential only decides what the run could have reached.
+
+**No run through the app has ever had an answer from TMDB**, though. The live
+searches above are the CLI's. What the app has is the wiring to the same
+client, which is not the same claim.
 
 **Keyless is the case most readers are in, and nothing about it changed.**
-Without the token a film row reaches review carrying the title read off its
+Without a token a film row reaches review carrying the title read off its
 filename, matches nothing, and exports to CSV but not to `.xcoll`, which is a
 file of catalogue ids and has nothing to put in one — exactly as a game row
 behaves without IGDB credentials. Games are unaffected either way, and a CLI
@@ -820,9 +828,9 @@ The file as shipped, in full:
   WARN: No alias file at data/title_aliases.json -- falling back to 3 built-in aliases.
   ```
 
-- It is used by the resolve stage only, so on a keyless run (no IGDB
-  credentials, no resolve stage) nothing reads it and editing it changes
-  nothing.
+- It is read by the games resolver only, so a run with no IGDB credentials
+  never reads it and editing it changes nothing — including a run that has a
+  resolve stage because a TMDB token keyed it.
 
 **Editing the file does not change the running app until you rebuild it.**
 The app uses the same file rather than a copy of its own, but it takes it as
