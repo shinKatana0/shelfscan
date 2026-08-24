@@ -250,9 +250,15 @@ Future<ProcessResult> _cli(_Fixture fixture, List<String> args) async {
     Platform.resolvedExecutable,
     [cliSnapshot(), ...args],
     workingDirectory: fixture.root.path,
-    // Blanked so a machine holding IGDB credentials cannot turn the two
-    // credential transcripts into their other branch, or send a request.
-    environment: const {'IGDB_CLIENT_ID': '', 'IGDB_CLIENT_SECRET': ''},
+    // Blanked so a machine holding credentials cannot turn the two credential
+    // transcripts into their other branch, or send a request. The TMDB token
+    // is blanked for the same reason: with one set the run prints the
+    // attribution notice, which no guide block quotes.
+    environment: const {
+      'IGDB_CLIENT_ID': '',
+      'IGDB_CLIENT_SECRET': '',
+      'SHELFSCAN_TMDB_TOKEN': '',
+    },
     stdoutEncoding: utf8,
     stderrEncoding: utf8,
   );

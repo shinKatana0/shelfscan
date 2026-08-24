@@ -147,6 +147,7 @@ Future<ProcessResult> _runCli(List<String> args, {String? ollamaUrl}) =>
       environment: {
         'IGDB_CLIENT_ID': '',
         'IGDB_CLIENT_SECRET': '',
+        'SHELFSCAN_TMDB_TOKEN': '',
         'SHELFSCAN_OLLAMA_FALLBACK_MODEL': '',
         if (ollamaUrl != null) 'SHELFSCAN_OLLAMA_URL': ollamaUrl,
       },

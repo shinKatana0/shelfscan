@@ -107,6 +107,7 @@ Future<ProcessResult> _runCli(List<String> args, {required Uri ollama}) =>
         // documented skip-the-resolve-stage behaviour.
         'IGDB_CLIENT_ID': '',
         'IGDB_CLIENT_SECRET': '',
+        'SHELFSCAN_TMDB_TOKEN': '',
       },
       stdoutEncoding: utf8,
       stderrEncoding: utf8,

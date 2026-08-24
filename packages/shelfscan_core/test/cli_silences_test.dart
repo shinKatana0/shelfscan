@@ -53,7 +53,11 @@ void _file(Directory parent, String name, [String content = '']) =>
 Future<ProcessResult> _runCli(List<String> args) => Process.run(
       Platform.resolvedExecutable,
       [cliSnapshot(), ...args],
-      environment: {'IGDB_CLIENT_ID': '', 'IGDB_CLIENT_SECRET': ''},
+      environment: {
+        'IGDB_CLIENT_ID': '',
+        'IGDB_CLIENT_SECRET': '',
+        'SHELFSCAN_TMDB_TOKEN': '',
+      },
       stdoutEncoding: utf8,
       stderrEncoding: utf8,
     );
