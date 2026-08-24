@@ -1,5 +1,5 @@
 /// What the CLI registers on the routing seam, and what a film row actually
-/// does in the one configuration anybody here can run (T-0308).
+/// does in a run that has no TMDB token (T-0308).
 ///
 /// T-0162 built `CatalogueRouter` so that a shell registers an entry and no
 /// production line moves, and then no shell registered one: `_makeResolver`
@@ -8,17 +8,19 @@
 /// rather than the seam -- `tmdb_and_routing_test.dart` owns the seam and the
 /// client.
 ///
-/// **No TMDB token exists on the machine this was written on.** The branch
-/// that registers [TmdbResolverWorker] is asserted structurally: that the
-/// environment variable reaches it, and that the film kind is what it answers.
-/// Nothing here claims a film resolves. T-0162's client has never been called
-/// against the service, so what registering it buys is that a film is routed
-/// to a catalogue nobody here has called -- not that films are looked up.
+/// **Nothing here makes a request, so a green run says nothing about a film
+/// resolving.** The branch that registers [TmdbResolverWorker] is asserted
+/// structurally: that the environment variable reaches it, and that the film
+/// kind is what it answers. T-0162's client has since been called against the
+/// live service and films came back (`doc/measurements.md`, "TMDB's `year`
+/// filters, and the first live film searches"), and none of that is what
+/// these tests check. What registering it buys is that a film is put in front
+/// of a film catalogue -- whether it is found there is the client's business.
 ///
-/// **The keyless half is run end to end**, because it is the owner's decision
-/// and the path a run on this machine takes: with IGDB credentials and no TMDB
-/// token a film row keeps the title read off its filename, asks IGDB nothing,
-/// exports to CSV and is refused by `.xcoll`.
+/// **The keyless half is run end to end**, because it is the owner's
+/// decision: with IGDB credentials and no TMDB token a film row keeps the
+/// title read off its filename, asks IGDB nothing, exports to CSV and is
+/// refused by `.xcoll`.
 ///
 /// Every title, filename, id and credential below is invented
 /// (`doc/conventions.md` §3b).

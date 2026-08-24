@@ -1772,11 +1772,14 @@ String? tmdbTokenFrom(Map<String, String> env) =>
 /// fallback exists to make visible: one resolver for every row searches a film
 /// in the games catalogue.
 ///
-/// **The TMDB branch has never been run.** No token exists on the machine this
-/// was written on, and none existed when T-0162 wrote the client, so it is
-/// tested against a fake `http.Client` and nothing else. Registering it routes
-/// a film to a catalogue nobody here has called; it does not make films
-/// resolve.
+/// **The TMDB branch has been run against the live service, and that is a
+/// smaller claim than it sounds.** Film rows resolved through this function,
+/// and a row the catalogue could not tell from its namesakes was left for a
+/// human rather than picked -- `doc/measurements.md`, "TMDB's `year` filters,
+/// and the first live film searches", whose closing limits are the rest of it:
+/// public release names, one machine, one evening. So registering the branch
+/// is what puts a film in front of a film catalogue; how well it is answered
+/// there is unmeasured, and nothing has been run over anime or at any scale.
 ResolverWorker resolverFor(
   Map<String, String> env, {
   Map<String, String>? aliases,
