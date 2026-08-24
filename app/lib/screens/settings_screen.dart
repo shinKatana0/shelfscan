@@ -428,18 +428,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'does not use it. Stored in the OS keychain, never in a '
                   'file in this app.',
             ),
-            // TMDB's terms require an application using their API to say that
-            // it does, and that TMDB has not endorsed or certified it. It is
-            // one sentence and it is here rather than on the review screen:
-            // this is the only place in the app a person passes through to
-            // make the API reachable at all, and the review screen carries
-            // rows for every run, nearly all of which touch no catalogue. The
-            // README (T-0379) carries the same statement for a reader who
-            // never opens Settings.
+            // Quoted, not composed. TMDB's terms mandate this sentence word
+            // for word, with only the bracketed word of "This [website,
+            // program, service, application, product]" substituted -- T-0379
+            // shipped a paraphrase of it and T-0383 replaced it. Do not
+            // reword it to fit the screen; the test holds its own literal
+            // copy rather than importing this string, so an edit here is red
+            // there.
+            //
+            // Here rather than on the review screen: this is the only place
+            // in the app a person passes through to make the API reachable at
+            // all, and the review screen carries rows for every run, nearly
+            // all of which touch no catalogue. The READMEs carry the same
+            // sentence for a reader who never opens Settings.
             const SizedBox(height: 8),
             Text(
-              'shelfscan uses the TMDB API but is not endorsed or certified '
-              'by TMDB.',
+              'This application uses TMDB and the TMDB APIs but is not '
+              'endorsed, certified, or otherwise approved by TMDB.',
               key: const Key('settings-tmdb-attribution'),
               style: Theme.of(context).textTheme.bodySmall,
             ),

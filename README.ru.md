@@ -1,4 +1,4 @@
-<!-- Translated from 4516568 (2026-08-24). The rule, and how to check
+<!-- Translated from f330b60 (2026-08-24). The rule, and how to check
      whether this is still true: README.md, "Translations".
      One thing this file does not carry: the "Translations" section's own rule
      text, which 2648d3e refined after the summary below it was written. The
@@ -1118,6 +1118,14 @@ GitHub не видна, а удалённая команда — видна.
 к ним отношения. Все названия продуктов и товарные знаки принадлежат их
 правообладателям. Метаданные игр предоставляет IGDB.
 
-shelfscan использует TMDB API, но не одобрен и не сертифицирован TMDB.
-Обращение к этому API происходит только с токеном TMDB, который вы
-предоставляете сами.
+Требуемая TMDB формулировка приводится дословно и по-английски; перевод её
+сопровождает, а не заменяет.
+
+This application uses TMDB and the TMDB APIs but is not endorsed, certified,
+or otherwise approved by TMDB.
+
+Это приложение использует TMDB и API TMDB, но не одобрено, не сертифицировано
+и никак иначе не утверждено TMDB. Обращение к этим API происходит только с
+токеном TMDB, который вы предоставляете сами.
+
+<img src="assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">

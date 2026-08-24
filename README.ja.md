@@ -1,4 +1,4 @@
-<!-- Translated from 4516568 (2026-08-24). The rule, and how to check
+<!-- Translated from f330b60 (2026-08-24). The rule, and how to check
      whether this is still true: README.md, "Translations".
      One thing this file does not carry: the "Translations" section's own rule
      text, which 2648d3e refined after the summary below it was written. The
@@ -1078,5 +1078,14 @@ pull request として扱われる。
 されておらず、関係もない。すべての製品名および商標は、それぞれの権利者に帰属する。
 ゲームのメタデータは IGDB が提供している。
 
-shelfscan は TMDB API を利用しているが、TMDB による承認も認定も受けていない。
-この API への接続は、利用者自身が用意した TMDB のトークンがあるときにだけ行われる。
+TMDB が求める文言は、英語のまま逐語で掲げる。訳文はそれに代わるものではなく、
+併記である。
+
+This application uses TMDB and the TMDB APIs but is not endorsed, certified,
+or otherwise approved by TMDB.
+
+このアプリケーションは TMDB および TMDB API を利用しているが、TMDB による承認も
+認定も、その他の是認も受けていない。これらの API への接続は、利用者自身が用意した
+TMDB のトークンがあるときにだけ行われる。
+
+<img src="assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">

@@ -1157,6 +1157,9 @@ This project is not affiliated with, endorsed by, or connected to
 Tonkatsu Box, CLZ, or GAMEYE. All product names and trademarks are the
 property of their respective owners. Game metadata is provided by IGDB.
 
-shelfscan uses the TMDB API but is not endorsed or certified by TMDB. It
-reaches that API only with a TMDB token you supply yourself.
+This application uses TMDB and the TMDB APIs but is not endorsed, certified,
+or otherwise approved by TMDB. It reaches those APIs only with a TMDB token
+you supply yourself.
+
+<img src="assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">
 </content>
