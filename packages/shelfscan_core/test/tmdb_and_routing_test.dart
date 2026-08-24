@@ -82,7 +82,7 @@ void main() {
   group('the request this build sends', () {
     test('a search goes to the documented endpoint with the title', () async {
       final t = _client((_) async => http.Response(_body([]), 200));
-      await t.client.searchMovie('Pale Anchor');
+      await t.client.search(TmdbSearch.movie, 'Pale Anchor');
 
       final uri = t.sent.single.url;
       expect(uri.host, 'api.themoviedb.org');
@@ -96,13 +96,13 @@ void main() {
       // request is all the test can see; what the service does with the
       // parameter is why `TmdbResolverWorker` retries without it.
       final t = _client((_) async => http.Response(_body([]), 200));
-      await t.client.searchMovie('Pale Anchor', year: 1987);
+      await t.client.search(TmdbSearch.movie, 'Pale Anchor', year: 1987);
       expect(t.sent.single.url.queryParameters['year'], '1987');
     });
 
     test('and is absent, not empty, when it did not', () async {
       final t = _client((_) async => http.Response(_body([]), 200));
-      await t.client.searchMovie('Pale Anchor');
+      await t.client.search(TmdbSearch.movie, 'Pale Anchor');
       expect(t.sent.single.url.queryParameters.containsKey('year'), isFalse);
     });
 
@@ -110,7 +110,7 @@ void main() {
       // The reason the client takes a read access token rather than the v3
       // api_key: a URL is the one thing an error or a log quotes by reflex.
       final t = _client((_) async => http.Response(_body([]), 200));
-      await t.client.searchMovie('Pale Anchor');
+      await t.client.search(TmdbSearch.movie, 'Pale Anchor');
 
       final request = t.sent.single;
       expect(request.headers['Authorization'], 'Bearer $_token');
@@ -120,7 +120,7 @@ void main() {
 
     test('an empty title asks nothing at all', () async {
       final t = _client((_) async => http.Response(_body([]), 200));
-      expect(await t.client.searchMovie('   '), isEmpty);
+      expect(await t.client.search(TmdbSearch.movie, '   '), isEmpty);
       expect(t.sent, isEmpty);
     });
   });
@@ -130,7 +130,8 @@ void main() {
       final t = _client((_) async => http.Response(
           _body([_film(11, 'Pale Anchor', released: '1987-04-02')]), 200));
 
-      final hit = (await t.client.searchMovie('Pale Anchor')).single;
+      final hit =
+          (await t.client.search(TmdbSearch.movie, 'Pale Anchor')).single;
       expect(hit.tmdbId, 11);
       expect(hit.title, 'Pale Anchor');
       expect(hit.releaseYear, 1987);
@@ -140,7 +141,10 @@ void main() {
     test('an empty release_date is a null year, not a zero', () async {
       final t = _client((_) async =>
           http.Response(_body([_film(11, 'Pale Anchor', released: '')]), 200));
-      expect((await t.client.searchMovie('Pale Anchor')).single.releaseYear,
+      expect(
+          (await t.client.search(TmdbSearch.movie, 'Pale Anchor'))
+              .single
+              .releaseYear,
           isNull);
     });
 
@@ -152,7 +156,7 @@ void main() {
           ]),
           200));
 
-      final hits = await t.client.searchMovie('x');
+      final hits = await t.client.search(TmdbSearch.movie, 'x');
       expect(hits[0].originalTitle, 'Ankra Palo');
       expect(hits[1].originalTitle, isNull);
     });
@@ -166,7 +170,7 @@ void main() {
           ]),
           200));
 
-      final hits = await t.client.searchMovie('x');
+      final hits = await t.client.search(TmdbSearch.movie, 'x');
       expect(hits.map((h) => h.tmdbId), [11]);
     });
   });
@@ -174,14 +178,14 @@ void main() {
   group('what a failure says, and what it refuses to say', () {
     test('a 429 is retryable, because a rate limit passes', () async {
       final t = _client((_) async => http.Response('{}', 429));
-      expect(t.client.searchMovie('x'),
+      expect(t.client.search(TmdbSearch.movie, 'x'),
           throwsA(isA<RetryableTmdbException>()));
     });
 
     test('a 401 names the variable and the token it wants', () async {
       final t = _client((_) async => http.Response('{}', 401));
       await expectLater(
-          t.client.searchMovie('x'),
+          t.client.search(TmdbSearch.movie, 'x'),
           throwsA(isA<TmdbApiException>().having((e) => e.message, 'message',
               allOf(contains(tmdbTokenVariable), contains('Read Access')))));
     });
@@ -194,7 +198,7 @@ void main() {
         final t = _client(
             (_) async => http.Response('{"secret":"$_token"}', status));
         try {
-          await t.client.searchMovie('Pale Anchor');
+          await t.client.search(TmdbSearch.movie, 'Pale Anchor');
           fail('$status should have thrown');
         } on Exception catch (e) {
           expect('$e', isNot(contains(_token)), reason: '$status');
@@ -206,7 +210,7 @@ void main() {
     test('a host that never answers is an UnreachableEndpoint', () async {
       final t = _client((_) async => throw http.ClientException('no route'));
       await expectLater(
-          t.client.searchMovie('x'),
+          t.client.search(TmdbSearch.movie, 'x'),
           throwsA(isA<TmdbUnreachableException>()
               .having((e) => e.endpointIsUserSet, 'endpointIsUserSet', isFalse)));
     });
@@ -229,7 +233,7 @@ void main() {
 
   group('the film resolver', () {
     TmdbResolverWorker worker(List<Map<String, Object?>> results) =>
-        TmdbResolverWorker(TmdbClient(
+        TmdbResolverWorker.movies(TmdbClient(
           token: _token,
           client: MockClient((_) async => http.Response(_body(results), 200)),
         ));
@@ -324,7 +328,8 @@ void main() {
       });
       return (
         worker:
-            TmdbResolverWorker(TmdbClient(token: _token, client: transport)),
+            TmdbResolverWorker.movies(
+                TmdbClient(token: _token, client: transport)),
         asked: asked,
       );
     }

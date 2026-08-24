@@ -1780,20 +1780,40 @@ String? tmdbTokenFrom(Map<String, String> env) =>
 /// public release names, one machine, one evening. So registering the branch
 /// is what puts a film in front of a film catalogue; how well it is answered
 /// there is unmeasured, and nothing has been run over anime or at any scale.
+///
+/// **The same token registers the two anime kinds a person can answer, on the
+/// two different TMDB endpoints they belong to (T-0369).** An anime film is a
+/// film and an anime series is television, so [WorkKind.animationFilm] goes
+/// to `TmdbResolverWorker.movies` beside [WorkKind.movie], and
+/// [WorkKind.animationSeries] goes to `TmdbResolverWorker.series`. No second
+/// credential and no second client -- T-0162 measured that Tonkatsu files
+/// anime under a TMDB id, and this is the client that holds one.
+///
+/// [WorkKind.animation] -- an anime row whose film-or-series question nobody
+/// has answered -- is registered nowhere, and that is an answer rather than an
+/// omission. There is no endpoint for *one of the two*: a search would have to
+/// pick, and would answer half of those rows with an id for the other sort of
+/// thing. `TonkatsuExporter` refuses that row today for a reason that stays
+/// true whichever way it is matched.
+///
+/// **Which kind goes to which endpoint is not written at this site.** The
+/// shell names catalogues and `registrationsOf` reads the kinds off them, so a
+/// series endpoint cannot be filed under a film kind by a typo here.
 ResolverWorker resolverFor(
   Map<String, String> env, {
   Map<String, String>? aliases,
 }) {
   final credentials = igdbCredentialsFrom(env);
   final token = tmdbTokenFrom(env);
+  final tmdb = token == null ? null : TmdbClient(token: token);
   final catalogues = <WorkKind, Worker<Detection, ResolvedGame>>{
     if (credentials != null)
-      WorkKind.game: ResolverWorker(
+      ...registrationsOf(ResolverWorker(
         IgdbClient(clientId: credentials.id, clientSecret: credentials.secret),
         aliases: aliases,
-      ),
-    if (token != null)
-      WorkKind.movie: TmdbResolverWorker(TmdbClient(token: token)),
+      )),
+    if (tmdb != null) ...registrationsOf(TmdbResolverWorker.movies(tmdb)),
+    if (tmdb != null) ...registrationsOf(TmdbResolverWorker.series(tmdb)),
   };
   // Shared with the Flutter app, whose `buildResolver` takes this branch on
   // the same condition since T-0367 -- no catalogue stored at all, rather

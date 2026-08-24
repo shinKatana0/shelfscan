@@ -1,5 +1,7 @@
 /// TMDB search — the film catalogue, and the second one this project talks to
-/// (T-0162, decision 0015).
+/// (T-0162, decision 0015). Since T-0369 it is also the series one, through
+/// [TmdbSearch]: TMDB separates the two by endpoint, so one client with two
+/// paths is what stops a series being answered with a film's id.
 ///
 /// Shaped after `igdb.dart` deliberately, because the resolver's seam is only
 /// worth having if a second catalogue costs a client and nothing else: a hit
@@ -13,7 +15,7 @@
 /// `FileNameParse.platformHint` is null on a film row. The year takes the
 /// gate's place instead, and it is the field a release filename almost always
 /// carries — but it is a hard filter rather than a preference, which is
-/// [TmdbClient.searchMovie]'s subject and cost this project T-0336.
+/// [TmdbClient.search]'s subject and cost this project T-0336.
 ///
 /// **RUN AGAINST THE LIVE SERVICE, AND THE RUN DOES NOT COVER THIS FILE.**
 /// The search path was exercised on live answers — the request this builds,
@@ -57,6 +59,51 @@ const tmdbTokenVariable = 'SHELFSCAN_TMDB_TOKEN';
 
 const _tmdbHost = 'api.themoviedb.org';
 
+/// Which of TMDB's two search endpoints a row is asked of, and the three keys
+/// its results come back under.
+///
+/// **TMDB separates films from television by ENDPOINT, and this enum is the
+/// whole of that difference as far as this client is concerned** (T-0369).
+/// One host, one bearer token, one response envelope -- and a movie result
+/// names its title `title` and its date `release_date` where a series names
+/// them `name` and `first_air_date`.
+///
+/// So the two searches cannot share a parse, and the way they fail to is
+/// silent: run a tv response through the movie keys and every result reads a
+/// null title, [TmdbClient._hit] drops it as malformed, and the search answers
+/// an empty list. A series that TMDB knows perfectly well comes back as a row
+/// nobody could match, with nothing anywhere saying why. The keys are on this
+/// enum rather than in two copies of the parse for that reason.
+///
+/// **Read off TMDB's published API and never measured against the service.**
+/// [movie] is the shape T-0162 built and T-0336 measured live; [series] is new
+/// in T-0369, has never been called, and the paths, the three key names and
+/// [yearParameter] are all claims a live run has yet to confirm. What such a
+/// run must show is written down in `doc/reports/T-0369.md`.
+enum TmdbSearch {
+  movie('/3/search/movie', 'title', 'original_title', 'release_date', 'year'),
+
+  /// TMDB calls this endpoint `tv`; this project calls the kind a series,
+  /// because `WorkKind.animationSeries` is what routes here and a person at
+  /// review is asked *film or series*.
+  series('/3/search/tv', 'name', 'original_name', 'first_air_date',
+      'first_air_date_year');
+
+  const TmdbSearch(
+      this.path, this.titleKey, this.originalKey, this.dateKey,
+      this.yearParameter);
+
+  final String path;
+  final String titleKey;
+  final String originalKey;
+  final String dateKey;
+
+  /// The query parameter that narrows this endpoint by year. Different
+  /// spellings for the same idea, which is TMDB's choice and not one this
+  /// client is free to normalise away.
+  final String yearParameter;
+}
+
 /// The same bound as `igdbCallTimeout` and for the same argument: a catalogue
 /// search answers in milliseconds, nothing legitimate on this path takes
 /// seconds, so a tight bound costs nothing and catches a stall while the run
@@ -78,7 +125,7 @@ class TmdbHit {
   /// TMDB's title in the language the search asked for.
   final String title;
 
-  /// The title in the film's own language, when TMDB lists a different one.
+  /// The title in the work's own language, when TMDB lists a different one.
   ///
   /// The analogue of `IgdbHit.alternativeNames` and it exists for the same
   /// measured reason: a filename is often the original-language release name
@@ -86,8 +133,9 @@ class TmdbHit {
   /// only the canonical form loses the match without saying so.
   final String? originalTitle;
 
-  /// Year of `release_date`. Null where TMDB stores none, which it does for
-  /// unreleased and poorly catalogued entries.
+  /// Year of the entry's date -- `release_date` for a film, `first_air_date`
+  /// for a series. Null where TMDB stores none, which it does for unreleased
+  /// and poorly catalogued entries.
   final int? releaseYear;
 }
 
@@ -127,7 +175,7 @@ class TmdbUnreachableException extends UnreachableEndpoint {
 
   @override
   String get message =>
-      'TMDB at $_tmdbHost did not answer, so no film title could be looked '
+      'TMDB at $_tmdbHost did not answer, so no title could be looked '
       'up. Nothing answered, so the TMDB token is not what failed. That '
       'address is fixed in this build rather than typed by you, so there is '
       'nothing to correct in your settings. $_outwardCheck '
@@ -181,9 +229,11 @@ class TmdbClient {
   final Duration timeout;
   final http.Client? _client;
 
-  /// Films TMDB knows under [title], most confident first.
+  /// What TMDB knows under [title] on the [what] endpoint, most confident
+  /// first.
   ///
-  /// **[year] FILTERS. Measured live, five searches, 2026-08-23.** This
+  /// **[year] FILTERS. Measured live, five searches, 2026-08-23, and on
+  /// [TmdbSearch.movie] alone.** This
   /// comment said the opposite until then — that TMDB's `year` prefers a
   /// match without requiring one, so a filename year off by one still finds
   /// the film — and every clause of it was false. It had been written against
@@ -202,14 +252,24 @@ class TmdbClient {
   /// `TmdbResolverWorker`'s retry without it. This client asks once and
   /// reports what came back; the retry is a decision about evidence and
   /// belongs where the evidence is weighed.
-  Future<List<TmdbHit>> searchMovie(String title, {int? year}) async {
+  ///
+  /// **None of that paragraph has been measured on [TmdbSearch.series]**, and
+  /// its parameter is not even spelled the same (`first_air_date_year`). The
+  /// year is sent anyway, for two reasons that are about cost rather than
+  /// confidence: the retry above recovers a filter that narrowed too far, and
+  /// the one source that produces a series row reads no year at all -- a
+  /// fansub name numbers an episode, so `sourceYear` is null and this
+  /// parameter is absent on every series row a run produces today. It is
+  /// reachable only from a row a person corrected at review.
+  Future<List<TmdbHit>> search(TmdbSearch what, String title,
+      {int? year}) async {
     final query = title.trim();
     if (query.isEmpty) return const [];
 
-    final uri = Uri.https(_tmdbHost, '/3/search/movie', {
+    final uri = Uri.https(_tmdbHost, what.path, {
       'query': query,
       'include_adult': 'false',
-      if (year != null) 'year': '$year',
+      if (year != null) what.yearParameter: '$year',
     });
 
     final http.Response response;
@@ -236,7 +296,7 @@ class TmdbClient {
 
     return [
       for (final result in results)
-        if (_hit(result) case final hit?) hit,
+        if (_hit(result, what) case final hit?) hit,
     ];
   }
 
@@ -245,12 +305,16 @@ class TmdbClient {
   /// Null rather than throwing: one malformed entry in a list of twenty is not
   /// a failed search, and the run's own rule is that a bad row degrades to no
   /// row rather than ending anything.
-  static TmdbHit? _hit(Object? result) {
+  ///
+  /// Every field is read through [what]'s keys, which is what stops a tv
+  /// response being dropped one result at a time under the movie spellings --
+  /// see [TmdbSearch].
+  static TmdbHit? _hit(Object? result, TmdbSearch what) {
     if (result is! Map<String, dynamic>) return null;
     final id = result['id'];
-    final title = result['title'] ?? result['original_title'];
+    final title = result[what.titleKey] ?? result[what.originalKey];
     if (id is! int || title is! String || title.trim().isEmpty) return null;
-    final original = result['original_title'];
+    final original = result[what.originalKey];
     return TmdbHit(
       tmdbId: id,
       title: title,
@@ -258,11 +322,11 @@ class TmdbClient {
           original is String && original.trim().isNotEmpty && original != title
               ? original
               : null,
-      releaseYear: _year(result['release_date']),
+      releaseYear: _year(result[what.dateKey]),
     );
   }
 
-  /// TMDB writes `release_date` as `YYYY-MM-DD`, and as `""` for a film it has
+  /// TMDB writes a date as `YYYY-MM-DD`, and as `""` for an entry it has
   /// no date for — the empty string is the common case, not the malformed one.
   static int? _year(Object? value) {
     if (value is! String || value.length < 4) return null;
@@ -282,7 +346,7 @@ class TmdbClient {
             'this build sends no longer matches its API.',
             statusCode: statusCode),
         _ => TmdbApiException(
-            'TMDB answered $statusCode. No film titles were looked up; rows '
+            'TMDB answered $statusCode. No titles were looked up; rows '
             'still reach review unmatched.',
             statusCode: statusCode),
       };
