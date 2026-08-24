@@ -1497,11 +1497,13 @@ not measured on.
   is needed to pick; it does not show anything picking. No live answer here was
   separated by a release year, so `_separatedBySourceYear` remains exercised
   offline only, against a fake.
-- **Nothing about the app.** The film path measured here is the CLI's. `app/`
-  cannot take a TMDB token at all: the CLI reads it from the environment, the
-  shell keeps credentials in the OS keychain and Settings has no field for a
-  third one, so a film row reaches `SkipResolver` on every path through the app
-  (`provider_config.dart`). Adding the field is user-facing and unbuilt.
+- **Nothing about the app.** The film path measured here is the CLI's, and
+  that has not changed. Since T-0363 the app CAN hold a TMDB token -- a
+  Settings field routed to the OS keychain, where the CLI reads its own from
+  the environment -- but no run through `app/` has ever had an answer from
+  TMDB. So the figures below say nothing about the shell most people use, and
+  a first app run against the live service would be a new measurement rather
+  than a repeat of this one.
 - **Nothing past resolution.** No film row has been exported and imported into
   a collection manager. "Verified end to end" still belongs to the photograph
   path alone (T-0009), exactly as it does for the disk sources above.
