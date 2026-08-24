@@ -1795,8 +1795,9 @@ ResolverWorker resolverFor(
     if (token != null)
       WorkKind.movie: TmdbResolverWorker(TmdbClient(token: token)),
   };
-  // Shared with the Flutter app, which takes the same branch when the user has
-  // entered no IGDB credentials in Settings.
+  // Shared with the Flutter app, whose `buildResolver` takes this branch on
+  // the same condition since T-0367 -- no catalogue stored at all, rather
+  // than no IGDB pair.
   if (catalogues.isEmpty) return SkipResolver();
   return CatalogueRouter(catalogues: catalogues, fallback: SkipResolver());
 }

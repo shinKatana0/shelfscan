@@ -226,8 +226,8 @@ class _ScanScreenState extends State<ScanScreen> {
 
   /// What this run does with the titles it reads, once the user has said
   /// (T-0230). Null until they do, and that is the whole of the default rule:
-  /// an unpicked mode follows the credentials, so registering a Twitch
-  /// application in Settings switches the next run to matching without a
+  /// an unpicked mode follows the credentials, so storing either catalogue
+  /// credential in Settings switches the next run to matching without a
   /// second gesture, while a mode the user picked outlives that trip.
   ///
   /// Deliberately not persisted, and not a [ProviderSettings] field. The
@@ -242,8 +242,8 @@ class _ScanScreenState extends State<ScanScreen> {
 
   TitleMatching get _matching =>
       _matchingChoice ??
-      (_settings.hasIgdbCredentials
-          ? TitleMatching.igdb
+      (_settings.hasAnyCatalogue
+          ? TitleMatching.matched
           : TitleMatching.keyless);
 
   ProviderSettings get _settings => widget.settings;
@@ -832,12 +832,18 @@ class _ScanScreenState extends State<ScanScreen> {
   /// Pipeline stage names as the user should read them. Falls back to the
   /// raw name so a stage added to the orchestrator later still shows up
   /// rather than disappearing from the bar.
+  ///
+  /// `resolve` said "Matching against IGDB" until T-0367 and named a
+  /// catalogue this run may never touch: films go to TMDB, and a run keyed by
+  /// a token alone reaches IGDB not at all. It is one label for every
+  /// combination, so it names the stage rather than the service -- which
+  /// catalogue answered a given row is the review screen's to say.
   static const _stageLabels = {
     'starting': 'Starting',
     'vision': 'Reading photos',
     'source': 'Reading folders',
     'dedupe': 'Merging duplicates',
-    'resolve': 'Matching against IGDB',
+    'resolve': 'Matching titles',
   };
 
   /// Determinate wherever the stage supplies a total. `dedupe` supplies none
@@ -1459,13 +1465,21 @@ class _HeldReview {
   final ReviewDocument document;
   final ResolverWorker resolver;
 
-  /// Whether this run had an IGDB stage at all (T-0230).
+  /// Whether this run had a resolve stage at all (T-0230).
   ///
   /// Read off the resolver the run actually used rather than held beside it
-  /// as a second field: [SkipResolver] IS "no IGDB stage", it is what
+  /// as a second field: [SkipResolver] IS "nothing was looked up", it is what
   /// `buildResolver` returns for both ways of arriving at a keyless run, and
   /// a copy of the mode kept here could disagree with the document the review
   /// screen is rendering.
+  ///
+  /// **Said of the run and not of IGDB, which is the whole of what T-0367
+  /// changed here.** The derivation is unchanged and is now the only wording
+  /// that was ever true of it: a run with a TMDB token and no Twitch
+  /// application looks films up, so it is not keyless, and the review
+  /// screen's banner -- *nothing was looked up* -- would be false over it.
+  /// Its game rows are keyless per kind instead, which is the state T-0308
+  /// already made ordinary and the review screen already marks per row.
   bool get keyless => resolver is SkipResolver;
 
   /// Every row the user has ruled on, approved and rejected alike. Not the

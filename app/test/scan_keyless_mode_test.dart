@@ -5,11 +5,21 @@
 /// had both named it a path -- "Path A -- keyless" -- for as long as the app
 /// had presented it as an absence.
 ///
+/// **And what a second catalogue did to the word (T-0367).** "Keyless" meant
+/// "no IGDB" while IGDB was the only catalogue there was, and a stored TMDB
+/// token then sat idle in a run the app called keyless. The mode survived the
+/// widening -- it is still what the person ASKED for -- and everything
+/// derived from the credentials moved to what the run can REACH, per kind.
+/// The four combinations are enumerated below, once, because a sentence being
+/// true of one of them is not the property under test.
+///
 /// Nothing here dials anything. Every sentence is decided from a
 /// [ProviderSettings] in memory, which is the property [MatchingCheck] shares
 /// with [BackendCheck]; the one test that runs a scan runs it against a fake
 /// vision provider, and its resolver is a [SkipResolver], whose refusing http
-/// client would throw if any IGDB traffic were attempted.
+/// client would throw if any IGDB traffic were attempted. No token here is a
+/// token: every credential is an invented string, and none of them is ever
+/// sent anywhere.
 library;
 
 import 'package:flutter/material.dart';
@@ -27,6 +37,24 @@ SettingsStore _store() =>
 
 ProviderSettings _withCredentials() =>
     ProviderSettings(igdbClientId: 'id', igdbClientSecret: 'secret');
+
+ProviderSettings _withToken() => ProviderSettings(tmdbToken: 'not-a-token');
+
+ProviderSettings _withBoth() => ProviderSettings(
+      igdbClientId: 'id',
+      igdbClientSecret: 'secret',
+      tmdbToken: 'not-a-token',
+    );
+
+/// The four credential combinations, in the order they are reasoned about:
+/// neither, IGDB only, TMDB only, both. Named so a test that means "every
+/// combination" cannot quietly mean three of them.
+final _everyCombination = <String, ProviderSettings Function()>{
+  'neither': ProviderSettings.new,
+  'IGDB only': _withCredentials,
+  'TMDB only': _withToken,
+  'both': _withBoth,
+};
 
 Future<void> _pump(WidgetTester tester, ProviderSettings settings) =>
     tester.pumpWidget(MaterialApp(
@@ -49,46 +77,99 @@ String _consequence(WidgetTester tester) => tester
 
 void main() {
   group('what the choice can know without spending anything', () {
-    test('keyless is the same answer whether or not credentials exist', () {
-      for (final settings in [ProviderSettings(), _withCredentials()]) {
+    // Every combination and not two of them: what makes a chosen keyless run
+    // keyless is the choice, so no credential may change any part of this
+    // answer -- which is the standing obligation T-0367 was given, stated as
+    // a test rather than as a sentence in a doc comment.
+    test('keyless is the same answer for every credential combination', () {
+      _everyCombination.forEach((name, build) {
         final check =
-            ProviderPolicy.checkMatching(settings, TitleMatching.keyless);
+            ProviderPolicy.checkMatching(build(), TitleMatching.keyless);
 
-        expect(check.keyless, isTrue);
-        expect(check.unconfigured, isFalse);
-        expect(check.consequence, keylessConsequence);
-      }
+        expect(check.keyless, isTrue, reason: name);
+        expect(check.unconfigured, isFalse, reason: name);
+        expect(check.consequence, keylessConsequence, reason: name);
+      });
     });
 
     test('asking to match with nothing registered degrades, it does not fail',
         () {
-      final check =
-          ProviderPolicy.checkMatching(ProviderSettings(), TitleMatching.igdb);
+      final check = ProviderPolicy.checkMatching(
+          ProviderSettings(), TitleMatching.matched);
 
       // The difference from a backend: an unconfigured backend blocks a scan,
       // this one runs it keyless and says so.
       expect(check.keyless, isTrue);
       expect(check.unconfigured, isTrue);
+      expect(check.consequence, noCatalogueNote);
       expect(check.consequence, contains('Settings'));
       expect(check.consequence, contains(TitleMatching.keyless.label));
     });
 
-    test('asking to match with both halves present matches', () {
-      final check =
-          ProviderPolicy.checkMatching(_withCredentials(), TitleMatching.igdb);
+    // The four combinations against the four answers, in one place. Three of
+    // them key a run and each names its own catalogues; only the fourth
+    // degrades, and it is the only one that enumerates nothing -- which is
+    // the rule that keeps this screen from becoming a status board.
+    test('each credential combination gets its own sentence and verdict', () {
+      final answers = {
+        'neither': (TitleMatching.keyless, true, noCatalogueNote),
+        'IGDB only': (TitleMatching.matched, false, igdbOnlyConsequence),
+        'TMDB only': (TitleMatching.matched, false, tmdbOnlyConsequence),
+        'both': (TitleMatching.matched, false, bothCataloguesConsequence),
+      };
 
-      expect(check.matching, TitleMatching.igdb);
-      expect(check.unconfigured, isFalse);
-      expect(check.consequence, igdbConsequence);
+      _everyCombination.forEach((name, build) {
+        final check =
+            ProviderPolicy.checkMatching(build(), TitleMatching.matched);
+        final (matching, unconfigured, consequence) = answers[name]!;
+
+        expect(check.matching, matching, reason: name);
+        expect(check.unconfigured, unconfigured, reason: name);
+        expect(check.consequence, consequence, reason: name);
+      });
+
+      // Four distinct sentences, so no two combinations are described alike.
+      expect(answers.values.map((a) => a.$3).toSet(), hasLength(4));
+    });
+
+    // The claim T-0367 was filed on: with a second catalogue in the language,
+    // no sentence may say the run is doing something to a catalogue it cannot
+    // reach. Asserted by name rather than by prose, because "IGDB" appearing
+    // in a sentence shown to somebody with no Twitch application is exactly
+    // the defect.
+    test('no keyed sentence names a catalogue its own run cannot reach', () {
+      expect(tmdbOnlyConsequence, isNot(contains('IGDB')));
+      expect(tmdbOnlyConsequence, contains('TMDB'));
+      expect(igdbOnlyConsequence, isNot(contains('TMDB')));
+      expect(igdbOnlyConsequence, contains('IGDB'));
+      expect(bothCataloguesConsequence, contains('IGDB'));
+      expect(bothCataloguesConsequence, contains('TMDB'));
+
+      // A `.xcoll` movie item carries no platform_id at all, so the films-only
+      // sentence may not promise platform names (WorkKind.movie, and the
+      // exporter's _PlatformId.absent).
+      expect(tmdbOnlyConsequence, isNot(contains('platform')));
+
+      // And the label is the choice rather than a catalogue: it is the one
+      // string on this control that every combination sees.
+      expect(TitleMatching.matched.label, isNot(contains('IGDB')));
+      expect(TitleMatching.matched.label, isNot(contains('TMDB')));
     });
 
     // The wording may not promise keyless detection, and may not promise on a
     // phone what only a desktop can do. T-0229 is the other half; nothing
     // written here should have to be unwritten by it.
     test('no consequence claims the photos stay on the machine', () {
-      for (final text in [keylessConsequence, igdbConsequence]) {
+      final sentences = [
+        keylessConsequence,
+        noCatalogueNote,
+        igdbOnlyConsequence,
+        tmdbOnlyConsequence,
+        bothCataloguesConsequence,
+      ];
+      for (final text in sentences) {
         for (final overclaim in ['offline', 'never leave', 'no model']) {
-          expect(text, isNot(contains(overclaim)));
+          expect(text, isNot(contains(overclaim)), reason: text);
         }
       }
       expect(keylessConsequence, contains('vision backend'));
@@ -96,19 +177,26 @@ void main() {
   });
 
   group('the resolver a chosen mode produces', () {
-    test('keyless skips the stage even with both credentials stored', () {
-      expect(
-        ProviderPolicy.buildResolver(_withCredentials(),
-            matching: TitleMatching.keyless),
-        isA<SkipResolver>(),
-      );
+    test('keyless skips the stage for every credential combination', () {
+      _everyCombination.forEach((name, build) {
+        expect(
+          ProviderPolicy.buildResolver(build(),
+              matching: TitleMatching.keyless),
+          isA<SkipResolver>(),
+          reason: name,
+        );
+      });
     });
 
-    // The rule every caller had before this parameter existed.
-    test('the default still asks IGDB when it can, and skips when it cannot',
+    // The rule every caller had before this parameter existed, widened by
+    // T-0367 to the rule the CLI's `resolverFor` always had: the stage is
+    // skipped when the catalogue map would be empty, not when IGDB is absent.
+    test('the default keys a run on either credential and skips on neither',
         () {
-      expect(ProviderPolicy.buildResolver(_withCredentials()),
-          isNot(isA<SkipResolver>()));
+      for (final settings in [_withCredentials(), _withToken(), _withBoth()]) {
+        expect(
+            ProviderPolicy.buildResolver(settings), isNot(isA<SkipResolver>()));
+      }
       expect(ProviderPolicy.buildResolver(ProviderSettings()),
           isA<SkipResolver>());
     });
@@ -137,15 +225,40 @@ void main() {
       expect(_consequence(tester), contains('CSV'));
     });
 
+    // The whole of what somebody with no credentials meets, pinned as one
+    // screen rather than as three assertions scattered through this file: it
+    // is the common path, and T-0367's brief settles that it may not change.
+    // Both sentences are the ones that were on this screen before that task,
+    // and neither names a catalogue the reader has not registered for.
+    testWidgets('with no credentials at all, both sentences are the ones that '
+        'were there before films existed', (tester) async {
+      await _pump(tester, ProviderSettings());
+
+      expect(_consequence(tester), keylessConsequence);
+      expect(_consequence(tester), isNot(contains('TMDB')));
+      expect(_consequence(tester), isNot(contains('film')));
+
+      await _choose(tester, TitleMatching.matched);
+
+      expect(_consequence(tester), noCatalogueNote);
+      expect(_consequence(tester), contains('Twitch'));
+      expect(
+        _consequence(tester),
+        isNot(contains('TMDB')),
+        reason: 'Listing a second catalogue at somebody who has neither is '
+            'the status board this screen must not become',
+      );
+    });
+
     testWidgets('asking for a match with nothing registered names the two '
         'ways forward', (tester) async {
       await _pump(tester, ProviderSettings());
 
-      await _choose(tester, TitleMatching.igdb);
+      await _choose(tester, TitleMatching.matched);
 
       // Not a blocker and not silence: register, or scan now as the mode the
       // control still shows as unselected.
-      expect(_consequence(tester), igdbUnconfiguredNote);
+      expect(_consequence(tester), noCatalogueNote);
       expect(_consequence(tester), contains('Settings'));
       expect(_consequence(tester), contains(TitleMatching.keyless.label));
     });
@@ -154,11 +267,28 @@ void main() {
         'tap away', (tester) async {
       await _pump(tester, _withCredentials());
 
-      expect(_consequence(tester), igdbConsequence);
+      expect(_consequence(tester), igdbOnlyConsequence);
 
       await _choose(tester, TitleMatching.keyless);
 
       expect(_consequence(tester), keylessConsequence);
+    });
+
+    // The owner's case, on the screen: *someone might be sorting only films,
+    // without games*. Nothing is tapped, because the point is that a stored
+    // token keys the next run by itself.
+    testWidgets('a TMDB token alone selects Match and says films are looked '
+        'up', (tester) async {
+      await _pump(tester, _withToken());
+
+      expect(_consequence(tester), tmdbOnlyConsequence);
+      expect(_consequence(tester), contains('TMDB'));
+      expect(
+        _consequence(tester),
+        isNot(contains('Twitch')),
+        reason: 'This run is keyed, so the register-with-Twitch note would be '
+            'a false statement on screen -- the defect T-0367 was filed on',
+      );
     });
 
     testWidgets('a picked mode survives credentials arriving later',
@@ -193,7 +323,26 @@ void main() {
           settings: settings, store: _store(), picker: FakeInputPicker()),
       ));
 
-      expect(_consequence(tester), igdbConsequence);
+      expect(_consequence(tester), igdbOnlyConsequence);
+    });
+
+    // The same rule, followed by the other credential (T-0367). Pasting a
+    // token into Settings has to switch the next run to matching without a
+    // second gesture, exactly as registering a Twitch application does --
+    // that is what "follows the credentials" now means.
+    testWidgets('an untouched mode follows a token arriving on its own',
+        (tester) async {
+      final settings = ProviderSettings();
+      await _pump(tester, settings);
+      expect(_consequence(tester), keylessConsequence);
+
+      settings.tmdbToken = 'not-a-token';
+      await tester.pumpWidget(MaterialApp(
+        home: ScanScreen(
+          settings: settings, store: _store(), picker: FakeInputPicker()),
+      ));
+
+      expect(_consequence(tester), tmdbOnlyConsequence);
     });
 
     // The whole path, once: choose it, scan, and land on a review screen that
@@ -222,6 +371,35 @@ void main() {
       // The mark T-0223 puts on the minority is absent, because here it would
       // be on everything.
       expect(find.textContaining('not in .xcoll'), findsNothing);
+    });
+
+    // The other side of the same derivation, and the third of the four
+    // sentences T-0367 had to make true (scan_screen's `_HeldReview.keyless`).
+    // A run keyed by a token alone is NOT keyless: films were looked up, so
+    // the banner -- *nothing was looked up* -- would be false over it, and it
+    // has to be absent. The game rows this fake produces are keyless per kind
+    // instead, which is the state T-0308 made ordinary and which the review
+    // screen marks per row. No call leaves the machine: every detection here
+    // is a game, and games route to the router's SkipResolver fallback.
+    testWidgets('a run keyed by a token alone does not claim nothing was '
+        'looked up', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: ScanScreen(
+          settings: _withToken(),
+          store: _store(),
+          picker: FakeInputPicker(),
+          debugVisionProvider: FakeVisionProvider(),
+        ),
+      ));
+
+      await tester.tap(find.text('Add photos'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Scan'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('keyless-run-banner')), findsNothing);
+      // And the rows say per row what the banner no longer says of the run.
+      expect(find.textContaining('not in .xcoll'), findsWidgets);
     });
 
     // Above the Scan button and below everything the last run had to say:

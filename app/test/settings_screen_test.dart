@@ -658,6 +658,13 @@ void main() {
     expect(note, contains(TitleMatching.keyless.label));
     expect(note, contains('scan screen'));
     expect(note, isNot(contains('fix them during review')));
+
+    // And it stopped speaking for the whole run (T-0367). It said "Without
+    // them a scan is a Keyless run", which a TMDB token alone now makes
+    // false: what a blank pair costs is a GAME row, and the TMDB section
+    // below has said exactly that about its own kind since T-0363.
+    expect(note, contains('game row'));
+    expect(note, isNot(contains('a scan is a')));
   });
 
   // TMDB issues two credentials on one page and they look nothing alike: the

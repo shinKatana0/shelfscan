@@ -342,12 +342,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // true of a run with no credentials: the resolve stage is skipped
             // outright, so those rows arrive with no candidate list and there
             // is nothing on the review screen to pick from.
+            //
+            // "Without them a scan is a Keyless run" stood here until T-0367
+            // and stopped being true the moment a TMDB token could key one on
+            // its own. What a blank pair costs is a GAME row, and the section
+            // below has said exactly that about a blank token since T-0363 --
+            // so the two now say the same shape of thing about their own kind,
+            // and neither speaks for the whole run.
             Text(
-              'Optional: needed only for the Tonkatsu .xcoll export, which '
-              'carries IGDB ids. Without them a scan is a '
-              '${TitleMatching.keyless.label} run -- it reads the photos and '
-              'exports CSV -- and that mode is named and chosen on the scan '
-              'screen.',
+              'Optional, and about games: needed for the Tonkatsu .xcoll '
+              'export, which carries IGDB ids for them. Without the pair a '
+              'game row keeps the title it was read with -- CSV yes, .xcoll '
+              'no. Looking nothing up at all is the '
+              '${TitleMatching.keyless.label} mode, named and chosen on the '
+              'scan screen.',
               key: const Key('settings-igdb-optional'),
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -391,8 +399,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text(
               'Optional, and only about films: without it a film row keeps '
               'the title it was read with -- CSV yes, Tonkatsu .xcoll no -- '
-              'exactly as every row is without the IGDB pair above. Games are '
-              'unaffected either way.',
+              'exactly as a game row is without the IGDB pair above. Games '
+              'are unaffected either way.',
               key: const Key('settings-tmdb-optional'),
               style: Theme.of(context).textTheme.bodySmall,
             ),

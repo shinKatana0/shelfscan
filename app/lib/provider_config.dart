@@ -185,11 +185,19 @@ class ProviderSettings {
   /// nothing alike and the wrong one answers 401.
   ///
   /// A secret like the four above it, and optional like the IGDB pair: what a
-  /// blank one costs is a keyless film row, which is what every film row is
-  /// today.
+  /// blank one costs is a keyless film row.
   String tmdbToken;
 
   bool get hasTmdbToken => tmdbToken.isNotEmpty;
+
+  /// Whether anything at all can be looked up, which is what decides a keyed
+  /// run from a keyless one (T-0367). Not [hasIgdbCredentials]: a catalogue
+  /// per kind means either credential keys a run, and the kinds the other one
+  /// would have answered fall to [SkipResolver] the way an unregistered kind
+  /// already did (T-0308). The CLI has read it this way since the film path
+  /// existed -- `resolverFor` skips on an empty catalogue map, not on a
+  /// missing Twitch application.
+  bool get hasAnyCatalogue => hasIgdbCredentials || hasTmdbToken;
 }
 
 /// The two named things a run can do with the titles it reads (T-0230).
@@ -200,16 +208,30 @@ class ProviderSettings {
 /// app had not. Naming it here rather than on a screen keeps it beside the
 /// backend choice, which is the other thing a run is asked before it starts.
 ///
-/// Two values and not three: "IGDB asked for but not configured" is not a
-/// third mode, it is [TitleMatching.igdb] degrading, and [MatchingCheck] is
-/// where that is said.
-enum TitleMatching { igdb, keyless }
+/// Two values and not three: "matching asked for but nothing configured" is
+/// not a third mode, it is [TitleMatching.matched] degrading, and
+/// [MatchingCheck] is where that is said.
+///
+/// **This is what the person ASKED for, and never what the run can reach
+/// (T-0367).** The two were one thing while IGDB was the only catalogue, and
+/// fusing them is what left a stored TMDB token idle. What is reachable is
+/// [ProviderSettings.hasAnyCatalogue], derived per kind; what is wanted is
+/// this, and it stays a choice: keyless costs no privacy and risks nothing,
+/// so a person holding every credential may still pick it and be obeyed.
+enum TitleMatching { matched, keyless }
 
 /// Shared for [VisionBackendLabel]'s reason: the scan screen's control and
 /// the settings screen's sentence about it must call the mode one thing.
+///
+/// [TitleMatching.matched] was labelled "Match with IGDB" until T-0367, and
+/// the catalogue came out of the label rather than out of the sentence below
+/// it: with a TMDB token and no Twitch application the label named the one
+/// catalogue this run cannot reach. The label is the choice; which catalogues
+/// answer it is [MatchingCheck.consequence]'s to say, once, from the
+/// credentials actually stored.
 extension TitleMatchingLabel on TitleMatching {
   String get label => switch (this) {
-        TitleMatching.igdb => 'Match with IGDB',
+        TitleMatching.matched => 'Match',
         TitleMatching.keyless => 'Keyless',
       };
 }
@@ -232,16 +254,65 @@ const keylessConsequence =
     'these rows -- CSV carries them all. Reading the photos still takes a '
     'vision backend.';
 
-const igdbConsequence =
-    'Titles are looked up on IGDB, which is what .xcoll carries: the ids a '
-    'catalog app turns into cover art and platform names.';
+/// What a matched run does, one sentence per stored combination (T-0367).
+///
+/// One of these three replaces the single `igdbConsequence`, which said
+/// "titles are looked up on IGDB" of every keyed run and was already wrong
+/// with a token stored -- film rows go to TMDB. There is no composed sentence
+/// and deliberately so: three fixed strings can each be read as English and
+/// checked against the code, while a builder that concatenates clauses is how
+/// a screen turns into a status board.
+///
+/// **The kind that is NOT looked up is named, and the CLI is why.** Its
+/// `_makeResolver` prints the film clause only on a run that can be surprised
+/// by it, and says in place that repeating it per catalogue with nothing
+/// configured would be noise. That is exactly the split below:
+/// [noCatalogueNote] enumerates nothing, and these three name the other kind
+/// in four words.
+/// What a keyless row then costs is not restated here -- Settings says it
+/// where the credential is typed, and the review screen says it per row.
+const igdbOnlyConsequence =
+    'Games are looked up on IGDB, which is what .xcoll carries: the ids a '
+    'catalog app turns into cover art and platform names. Films are not '
+    'looked up.';
 
-/// Asked for, and not registered for. Phrased as the two ways forward rather
-/// than as a fault: one of them is to scan now, which is the whole of T-0230.
-String get igdbUnconfiguredNote =>
+/// No platform names in this one: a `.xcoll` movie item carries no
+/// `platform_id` at all, which is [WorkKind.movie]'s doc comment and the
+/// exporter's `_PlatformId.absent`.
+const tmdbOnlyConsequence =
+    'Films are looked up on TMDB, which is what .xcoll carries: the ids a '
+    'catalog app turns into cover art. Games are not looked up.';
+
+const bothCataloguesConsequence =
+    'Games are looked up on IGDB and films on TMDB. Those ids are what .xcoll '
+    'carries: a catalog app turns them into cover art and metadata.';
+
+/// Asked for, and nothing registered to answer it. Phrased as the two ways
+/// forward rather than as a fault: one of them is to scan now, which is the
+/// whole of T-0230.
+///
+/// **It names Twitch and not TMDB, and that is the decision rather than an
+/// omission (T-0367).** This is the only sentence a person with no credential
+/// at all ever sees on this control, and it is the common path; listing both
+/// catalogues at somebody who has neither is the status board the scan screen
+/// must not become. The screen that does enumerate them is Settings, which is
+/// where this sentence sends them.
+String get noCatalogueNote =>
     'No Twitch application is registered yet, so this run would be keyless '
     'anyway. Add the IGDB client id and secret in Settings, or choose '
     '${TitleMatching.keyless.label} and scan now.';
+
+/// The four credential combinations, enumerated once so no screen has to
+/// (T-0367). The fourth arm is [noCatalogueNote] rather than a fourth string:
+/// asking to match with nothing stored is the degrade [MatchingCheck] reports
+/// as `unconfigured`, not a keyed run with an empty catalogue map.
+String matchedConsequence(ProviderSettings settings) =>
+    switch ((settings.hasIgdbCredentials, settings.hasTmdbToken)) {
+      (true, true) => bothCataloguesConsequence,
+      (true, false) => igdbOnlyConsequence,
+      (false, true) => tmdbOnlyConsequence,
+      (false, false) => noCatalogueNote,
+    };
 
 /// What a matching choice means for this run, answered from
 /// [ProviderSettings] alone -- no network, no provider, no I/O, so a screen
@@ -249,9 +320,11 @@ String get igdbUnconfiguredNote =>
 /// [BackendCheck]'s (T-0040).
 ///
 /// No `blocker` here, and that difference is the point: an unconfigured
-/// backend fails a scan, while unconfigured IGDB degrades it to a keyless
+/// backend fails a scan, while no catalogue at all degrades it to a keyless
 /// one. So [matching] is what a scan started now would really do, and
-/// [unconfigured] is why it can differ from what was asked for.
+/// [unconfigured] is why it can differ from what was asked for -- the two
+/// facts T-0367 pulled apart, held here in one object rather than fused into
+/// one field.
 class MatchingCheck {
   const MatchingCheck({
     required this.matching,
@@ -264,8 +337,8 @@ class MatchingCheck {
   /// What the rows of this run will be, in the words the choice is made with.
   final String consequence;
 
-  /// [TitleMatching.igdb] was asked for and there is nothing to authenticate
-  /// with, so this run is keyless without having been chosen as one.
+  /// [TitleMatching.matched] was asked for and there is no catalogue to ask,
+  /// so this run is keyless without having been chosen as one.
   final bool unconfigured;
 
   bool get keyless => matching == TitleMatching.keyless;
@@ -465,16 +538,20 @@ class ProviderPolicy {
         consequence: keylessConsequence,
       );
     }
-    if (!settings.hasIgdbCredentials) {
+    // The asked-for half is answered above and the reachable half below, and
+    // the order is the point: a chosen keyless run is obeyed before any
+    // credential is consulted, so storing a token can never overrule it.
+    final consequence = matchedConsequence(settings);
+    if (!settings.hasAnyCatalogue) {
       return MatchingCheck(
         matching: TitleMatching.keyless,
-        consequence: igdbUnconfiguredNote,
+        consequence: consequence,
         unconfigured: true,
       );
     }
-    return const MatchingCheck(
-      matching: TitleMatching.igdb,
-      consequence: igdbConsequence,
+    return MatchingCheck(
+      matching: TitleMatching.matched,
+      consequence: consequence,
     );
   }
 
@@ -610,16 +687,19 @@ class ProviderPolicy {
     }
   }
 
-  /// Resolver for a scan. Mirrors the CLI: no IGDB credentials means the
-  /// stage is skipped, not attempted with empty ones. [SkipResolver] is
-  /// the shared implementation of that behaviour (shelfscan_core).
+  /// Resolver for a scan. Mirrors the CLI, and since T-0367 in the one place
+  /// it did not: a credential -- either credential -- keys the stage, and it
+  /// is skipped only when there is no catalogue to ask. [SkipResolver] is the
+  /// shared implementation of that behaviour (shelfscan_core), and
+  /// `resolverFor` in `bin/shelfscan.dart` is the same rule written as
+  /// `catalogues.isEmpty`.
   ///
   /// [aliases] is the table loaded from the bundled asset (see
   /// `title_aliases.dart`); omitting it leaves the resolver on its built-in
   /// fallback.
   ///
   /// [matching] is the mode the user picked (T-0230), and it defaults to
-  /// [TitleMatching.igdb] so a caller that never asks keeps the credential
+  /// [TitleMatching.matched] so a caller that never asks keeps the credential
   /// rule it always had. The two ways of arriving at a keyless run are
   /// answered by [checkMatching] rather than tested again here: one rule,
   /// one author, and the screen showing the sentence is reading it from the
@@ -634,19 +714,15 @@ class ProviderPolicy {
   /// defaulted: one IGDB resolver for every row searched a film in the games
   /// catalogue.
   ///
-  /// **[WorkKind.movie] is registered only when the user has stored a TMDB
-  /// token (T-0363), and until then the paragraph above is the whole story.**
-  /// The token is [ProviderSettings.tmdbToken] rather than a parameter of this
-  /// method: T-0308 refused to add one while nothing could reach it, and what
-  /// changed is that Settings now holds the value, so it arrives the way every
-  /// other credential here does.
-  ///
-  /// **A stored token takes effect only in a run that is already keyed**, and
-  /// that is this shell's shape rather than a rule about films: the early
-  /// return is [checkMatching]'s answer, which asks about IGDB alone. So a
-  /// user holding a TMDB token and no Twitch application gets a keyless run,
-  /// where the CLI resolves their films. T-0367 carries that difference and
-  /// the vocabulary behind it.
+  /// **Each kind is registered only when its own credential is stored
+  /// (T-0363, T-0367), and either one on its own is enough to key the run.**
+  /// The credentials are [ProviderSettings] fields rather than parameters of
+  /// this method: T-0308 refused to add one while nothing could reach it, and
+  /// what changed is that Settings now holds both, so they arrive the way
+  /// every other credential here does. A token alone therefore resolves films
+  /// and leaves games keyless, which is the owner's case -- *someone might be
+  /// sorting only films, without games* -- and is what the CLI has always
+  /// done.
   ///
   /// **The catalogue has answered, and never to this shell.** The CLI's film
   /// path was run against the live service once, on three public films on one
@@ -659,18 +735,22 @@ class ProviderPolicy {
   static ResolverWorker buildResolver(
     ProviderSettings settings, {
     Map<String, String>? aliases,
-    TitleMatching matching = TitleMatching.igdb,
+    TitleMatching matching = TitleMatching.matched,
   }) {
+    // Both gates, in the order they are asked. [checkMatching] answers the
+    // chosen mode and the empty-catalogue case together, so what is left below
+    // is one conditional per credential and a map that cannot come out empty.
     if (checkMatching(settings, matching).keyless) return SkipResolver();
     return CatalogueRouter(
       catalogues: {
-        WorkKind.game: ResolverWorker(
-          IgdbClient(
-            clientId: settings.igdbClientId,
-            clientSecret: settings.igdbClientSecret,
+        if (settings.hasIgdbCredentials)
+          WorkKind.game: ResolverWorker(
+            IgdbClient(
+              clientId: settings.igdbClientId,
+              clientSecret: settings.igdbClientSecret,
+            ),
+            aliases: aliases,
           ),
-          aliases: aliases,
-        ),
         if (settings.hasTmdbToken)
           WorkKind.movie: TmdbResolverWorker(
             TmdbClient(token: settings.tmdbToken),
