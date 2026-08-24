@@ -16,8 +16,9 @@
 can import.** Photograph a shelf and a vision model reads the spines. Point it
 at a folder of installed PC games, or at the GOG Galaxy library on your
 machine, and it reads those with no model and no cost at all. A film in that
-folder is read as a film rather than as a game, and that half is
-[not finished](#films-are-read-as-films-and-how-far-that-goes).
+folder is read as a film rather than as a game, and looked up in a film
+catalogue rather than the games one
+([how far that goes](#films-are-read-as-films-and-how-far-that-goes)).
 Everything from one run lands in a single review file you confirm by
 hand, and out of that comes `.xcoll` for Tonkatsu Box — which fetches covers
 and metadata itself from the ids in it — or generic CSV for CLZ Games and most
@@ -78,13 +79,14 @@ links to has the numbers.
   to end" still belongs to the photographs alone. Nor has a CSV ever been
   imported into CLZ Games here: the format is generic and tested, the import is
   not.
-- **Films are read, and the film half stops at review.** A video file whose
-  name is release-shaped becomes a film row rather than a game row, and the
-  kind is shown and correctable at review. The lookup is the part that is not
-  wired up: nothing in either shell calls TMDB, so without IGDB credentials a
-  film matches nothing, and with them it is searched in the games catalogue
-  and can come back matched to a game. `.xcoll` refuses that row and names it;
-  CSV writes it out with nothing on it marking a film
+- **Films are looked up, and only the CLI can reach the catalogue that does
+  it.** A video file whose name is release-shaped becomes a film row rather
+  than a game row, and the kind is shown and correctable at review. A film row
+  goes to TMDB and never to the games catalogue, in any configuration. But the
+  token that buys the lookup is a CLI environment variable and **the app has
+  nowhere to put one**, so a film row there is keyless on every path — as is
+  one in a CLI run without the token. How well TMDB answers real release names
+  is unmeasured: the path has been run, not surveyed
   ([how far that goes](#films-are-read-as-films-and-how-far-that-goes)).
 - **A folder of installers is not a games folder.** Names alone cannot tell
   `NoteWellSetup.exe` from `setup_moor_1.9.exe` — measured on a real `Downloads`
@@ -110,33 +112,44 @@ rather than guessed at. The kind is shown on the review screen and you can
 change it there, which is the only thing that turns a wrong guess into a
 visible one.
 
-**What is not there yet, said plainly, because the paragraph above would
-otherwise read as a promise.** A film is meant to be looked up in TMDB rather
-than IGDB, and the client that would do it is written and covered by tests —
-against a fake server. **No run calls TMDB today:** neither shell wires that
-client up, and no TMDB credential has ever been used here, so whether TMDB
-answers real release names well is unmeasured rather than measured and poor.
+**The lookup goes to a film catalogue, and never to the games one.** Both
+shells route by the kind of the row: game rows to IGDB, film rows to TMDB, and
+a kind with no catalogue configured is left unresolved rather than handed to
+whichever catalogue happens to be there. So a film is never searched among
+games in any configuration — the arrangement that used to hand back an
+adaptation's *game*, with that game's platform and a confidence score, reading
+like a row that went right, is gone.
 
-**What the film row does then depends on the credentials you already have, and
-the second case is the one to watch.** Without IGDB credentials it reaches
-review carrying the title read off its filename, matches nothing, and exports
-to CSV but not to `.xcoll`, which is a file of catalogue ids and has nothing to
-put in one — the same way any row behaves when the catalogue it needs is out of
-reach. **With IGDB credentials it is searched in the games catalogue**, because
-each shell builds one resolver, it is the IGDB one, and nothing tells it what
-kind of row it was handed. A film whose title is also a game's — and an
-adaptation shares its title almost by definition — can come back holding that
-game's canonical title, its platform and a confidence score, reading like a row
-that went right.
+**That path has been run against the live service, and that is a smaller claim
+than it sounds.** Two public release names, on one machine, on one evening,
+with one token. They resolved; the release year in the filename narrowed the
+search to the right film rather than to its remakes; and a year the catalogue
+disagrees with empties the query, which is then retried without it — and where
+that retry cannot tell two films of the same title apart, the row is left for
+you rather than picked. What that establishes is that the path works end to
+end. It is not a measurement of how well TMDB answers real release names across
+a collection, and nothing here has run it over anime or at any scale.
 
-**The export is the last place that can catch that, and only one of the two
-does.** `.xcoll` requires the id to come from the catalogue the kind implies,
-so it refuses the row and names it among the ones the export dropped. CSV has
-no column for the kind at all — its `media_type` is the physical carrier,
-`cartridge`/`disc`/`unknown` — so the row goes out carrying the game's title,
-the game's platform and the game's id, with nothing on it saying film. That is
-what *review every row* is for, and the kind shown beside the title is what
-gives it away. The full account is in
+**The token is a CLI environment variable — `SHELFSCAN_TMDB_TOKEN`, listed in
+`.env.example`. The app cannot hold one at all**, because it keeps credentials
+in the OS keychain and Settings has two fields rather than three. A film row in
+the app is therefore keyless on every path through it.
+
+**Keyless is the case most readers are in, and nothing about it changed.**
+Without the token a film row reaches review carrying the title read off its
+filename, matches nothing, and exports to CSV but not to `.xcoll`, which is a
+file of catalogue ids and has nothing to put in one — exactly as a game row
+behaves without IGDB credentials. Games are unaffected either way, and a CLI
+run says which of the two cases you are in.
+
+**What a film that did resolve exports as.** `.xcoll` takes it as a `movie`
+item carrying the film catalogue's id and no platform key at all — a film has
+no platform, and the writer omits the key rather than inventing a `0`. CSV
+carries the id as `tmdb:1234`, the prefix naming which catalogue answered, and
+still has no column for the kind: its `media_type` is the physical carrier,
+`cartridge`/`disc`/`unknown`. **No `.xcoll` holding a film has been imported
+into a catalog app here**, so that half is written and tested rather than
+verified, like every other disk-source export. The full account is in
 [the guide](doc/guide.md#it-reads-films-too-now-and-that-widens-the-contract-rather-than-fixing-it).
 
 **Anime is not a working kind.** The review screen offers the value and a
@@ -826,8 +839,8 @@ title,platform,media_type,external_id,source_photo
 form `catalogue:id` — `igdb:1234`. The prefix names which catalogue
 answered, so a consumer splits at the first `:` rather than assuming one.
 It is empty when nothing resolved the row, which is every row on a keyless
-run. `igdb:` is the only prefix anything writes today — a film row is the case
-that would carry a second one, and no run calls that catalogue yet
+run. `igdb:` and `tmdb:` are the two anything writes today: a game row carries
+the first, and a film row carries the second when the run had a TMDB token
 ([Films](#films-are-read-as-films-and-how-far-that-goes)).
 
 There is no column for the kind of work a row is. `media_type` is the physical

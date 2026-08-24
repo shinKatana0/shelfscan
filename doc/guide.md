@@ -809,10 +809,11 @@ row rather than a game row; a game installer beside it stays a game row. The
 kind is decided per file, so one folder holding both is read once and produces
 both, and you do not choose a mode before the run.
 
-**Films are read, and the film half stops at review.** Deciding that a name is
-a film is the part that works. Identifying that film against a film catalogue
-is the part that is not connected to either shell, and what that costs you is
-below, because it is not what you would guess.
+**Films are read, and a film is looked up in a film catalogue.** Deciding that
+a name is a film is one half; sending it to TMDB rather than to the games
+catalogue is the other, and since T-0308 both shells route a row by its kind.
+What that needs from you, and what happens when you have not got it, is below
+— because it is not what you would guess.
 
 **The contract above gets weaker, not stronger.** It used to be *point this at
 a games folder only*. It is now:
@@ -839,40 +840,64 @@ Two things keep that honest, and neither is automatic:
   instruction to *review every row* now means the kind as well as the title.
   Correcting it throws away whatever match the row was holding — a match found
   under the wrong kind is not evidence for the right one — and marks the row as
-  owed a fresh one. **Nothing performs that fresh lookup**, and since T-0311 the
-  review screen says so rather than promising one. The app has nowhere to send
-  it: its only resolver call fires on an item you have just typed, and it writes
-  no review document, so there is no file to point `resolve` at. `resolve` over
-  a document the CLI itself produced does re-run every row — against IGDB, which
-  is the wrong catalogue for a film. So a corrected film row reaches your export
-  carrying the title read off its filename and nothing else.
+  owed a fresh one. **Nothing in the app performs that fresh lookup**, and since
+  T-0311 the review screen says so rather than promising one: its only resolver
+  call fires on an item you have just typed, and it writes no review document,
+  so there is no file to point `resolve` at. A corrected film row therefore
+  reaches an export from the app carrying the title read off its filename and
+  nothing else. **In the CLI there is a way, and it is one command:** `resolve`
+  over a document the CLI itself produced re-runs every row against the
+  catalogue that row's *current* kind implies, so a row you corrected to film
+  goes to TMDB — if the run has the token below. Without it the row comes back
+  keyless, which is the same place it started.
 
-**No run calls TMDB today.** Neither shell wires that client up, and no TMDB
-credential has ever been used here, so whether TMDB answers real release names
-well is unmeasured rather than measured and poor. The client is written and
-covered by tests — against a fake server. Connecting it is its own task
-(T-0308) and has not been done; if it ever is, it will want its own credential,
-a third after IGDB and the vision model, and what a run should do when that one
-is missing while the IGDB one is present has not been settled.
+**The film lookup wants a credential of its own — a third, after IGDB and the
+vision model.** It is `SHELFSCAN_TMDB_TOKEN`, the API Read Access Token from
+your own TMDB account, and `.env.example` says which of TMDB's two credentials
+that is and why it is not the other one. Set it the way you set the IGDB pair
+in Step 3.
 
-So what a film row does depends on the credentials you already have, and it is
-the second case that should worry you:
+**What a run does when it is not set is the owner's decision, and it is the
+plain one: a film row is keyless.** It behaves exactly as a game row does
+without IGDB credentials — it reaches review carrying the title read off its
+filename, matches nothing, and exports to CSV but not to `.xcoll`, which is a
+file of catalogue ids and has nothing to put in one. Games are unaffected, and
+a run holding IGDB credentials but no TMDB token says exactly that on stdout
+before it starts — you are told which case you are in rather than left to
+infer it from a row that came back empty. **The app is always in this case:** it keeps credentials in
+the OS keychain and its Settings screen has two fields rather than three, so
+there is nowhere to put a TMDB token and a film row there is keyless on every
+path.
 
-- **Without IGDB credentials**, a film row behaves exactly like a game row
-  without them: it reaches review carrying the title read off its filename,
-  matches nothing, and exports to CSV but not to `.xcoll`, which is a file of
-  catalogue ids and has nothing to put in one.
-- **With IGDB credentials, the film row is searched in the games catalogue.**
-  Each shell builds exactly one resolver, it is the IGDB one, and nothing tells
-  it what kind of row it was handed. A film whose title is also a game's — and
-  an adaptation shares its title almost by definition — can come back matched
-  to that game, carrying that game's canonical title, its platform and a
-  confidence score, and reading on the review screen exactly like a row that
-  went right. `.xcoll` catches it at the last moment and only there: a film row
-  holding a games-catalogue id is refused, and named among the rows the export
-  dropped. **CSV does not catch it** — the row goes out with the game's title,
-  the game's platform and the game's id. This is the case *review every row* is
-  for, and the kind shown beside the title is the thing that gives it away.
+**No film reaches the games catalogue, in any configuration.** Both shells now
+build one resolver per kind rather than one resolver: game rows to IGDB, film
+rows to TMDB, and a kind nobody registered a catalogue for is left unresolved
+rather than sent to whichever catalogue happens to be configured. Until T-0308
+a film row in a run with IGDB credentials was searched among games, and a film
+whose title is also a game's — an adaptation shares its title almost by
+definition — could come back holding that game's canonical title, platform and
+confidence score, reading on the review screen exactly like a row that went
+right. That cannot happen now.
+
+**What has actually been run against TMDB, so you can price the rest
+yourself.** Two public release names, on one machine, on one evening, with one
+token: they resolved, and the release year read out of the filename narrowed
+the search to the right film rather than to its remakes. A year the catalogue
+disagrees with is worse than no year — it empties the answer — so a query that
+comes back with nothing is retried without it; and where that retry cannot tell
+two films of the same title apart, the row is left for you rather than picked.
+That is the whole of what anyone here has seen. **It is not a measurement of
+how well TMDB answers real release names**, nothing has been run over anime or
+over a collection, and *review every row* still means what it says.
+
+**And what a film that resolved exports as.** `.xcoll` takes it as a `movie`
+item carrying the film catalogue's id and no `platform_id` key at all — a film
+has no platform, and the writer leaves the key out rather than inventing a `0`.
+CSV carries the id as `tmdb:1234`; the prefix is which catalogue answered, and
+CSV still has no column for the kind, because its `media_type` is the physical
+carrier (`cartridge`/`disc`/`unknown`). No `.xcoll` carrying a film has been
+imported into a catalog app here, so that last step is written and tested
+rather than verified — the same as every other disk-source export.
 
 So a short, closed list of well-known personal and system directories is
 refused outright:
