@@ -19,6 +19,10 @@
 //
 // Exit 2 matters as much as exit 1: a run that found no bundle has proved
 // nothing, and must not read as green (doc/conventions.md 4a).
+//
+// What it prints is a scratch reading, not an artefact: the bundle labels are
+// absolute paths of the machine that ran it, so do not paste the output into
+// anything committed. `tool/check-suites.sh` says the same of its logs.
 
 import 'dart:convert';
 import 'dart:io';
