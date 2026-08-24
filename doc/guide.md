@@ -864,10 +864,10 @@ filename, matches nothing, and exports to CSV but not to `.xcoll`, which is a
 file of catalogue ids and has nothing to put in one. Games are unaffected, and
 a run holding IGDB credentials but no TMDB token says exactly that on stdout
 before it starts — you are told which case you are in rather than left to
-infer it from a row that came back empty. **The app is always in this case:** it keeps credentials in
-the OS keychain and its Settings screen has two fields rather than three, so
-there is nowhere to put a TMDB token and a film row there is keyless on every
-path.
+infer it from a row that came back empty. **The app is always in this case:**
+it keeps credentials in the OS keychain and its Settings screen has two fields
+rather than three, so there is nowhere to put a TMDB token and a film row there
+is keyless on every path.
 
 **No film reaches the games catalogue, in any configuration.** Both shells now
 build one resolver per kind rather than one resolver: game rows to IGDB, film
