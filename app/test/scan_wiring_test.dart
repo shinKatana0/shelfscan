@@ -212,17 +212,34 @@ void main() {
       expect(gameCatalogueOf(resolver).igdb.clientId, 'id');
     });
 
-    // Two limitations, pinned rather than described, because both are what a
-    // reader would otherwise call a bug: the token rides on the IGDB-shaped
-    // mode this shell asks about, so it does nothing in a run that is keyless
-    // for either reason. The CLI resolves films on a TMDB token alone.
-    // T-0367 holds the difference.
-    test('a TMDB token alone does not key a run in this shell', () {
+    // The inversion of the limitation this test pinned until T-0367: the
+    // token rode on the IGDB-shaped mode, so a person registered with TMDB
+    // and not with Twitch got a keyless run with their token stored and idle,
+    // where the CLI resolved their films. Both halves are asserted, because
+    // the film half alone would pass on a router that had quietly kept a
+    // credential-less IGDB catalogue too.
+    test('a TMDB token alone keys a run, exactly as it does in the CLI', () {
+      final resolver = ProviderPolicy.buildResolver(
+          ProviderSettings(tmdbToken: 'tmdb-not-a-token'));
+
+      final router = resolver as CatalogueRouter;
+      expect(router.catalogues.keys, [WorkKind.movie]);
+      final films = router.catalogues[WorkKind.movie]! as TmdbResolverWorker;
+      expect(films.tmdb.token, 'tmdb-not-a-token');
       expect(
-        ProviderPolicy.buildResolver(
-            ProviderSettings(tmdbToken: 'tmdb-not-a-token')),
-        isA<SkipResolver>(),
+        router.catalogues.containsKey(WorkKind.game),
+        isFalse,
+        reason: 'No Twitch application is registered, so there is nothing to '
+            'authenticate a games catalogue with -- a game row is keyless per '
+            'kind, which is what the router fallback is for',
       );
+    });
+
+    // What did NOT change, and is the standing obligation rather than a
+    // detail: the mode is what the person asked for, and the credentials are
+    // only what the run can reach. Keyless costs no privacy and risks
+    // nothing, so it stays available to somebody holding every credential.
+    test('a chosen keyless run is obeyed with both credentials stored', () {
       expect(
         ProviderPolicy.buildResolver(
           ProviderSettings(
@@ -235,6 +252,15 @@ void main() {
         isA<SkipResolver>(),
         reason: 'Keyless is a mode the user chose and it says every row keeps '
             'the title it was read with -- a stored token may not overrule it',
+      );
+      expect(
+        ProviderPolicy.buildResolver(
+          ProviderSettings(tmdbToken: 'tmdb-not-a-token'),
+          matching: TitleMatching.keyless,
+        ),
+        isA<SkipResolver>(),
+        reason: 'The same, on the combination T-0367 made keyed: a token that '
+            'now keys a run by default must still lose to an explicit choice',
       );
     });
 
