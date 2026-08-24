@@ -89,11 +89,20 @@ release one is not a symptom of anything — expect it.
 **Test on a release build, not only a debug one.** Trap 4 below is invisible to
 `flutter run`.
 
-## The four traps, in the order they bite
+**And run that build alone in its worktree** — no `flutter analyze`, no
+`flutter test`, no `flutter pub get` beside it. Trap 5 below is what happens
+when one of them lands while the apk is building.
+
+## The five traps, in the order they bite
 
 Each one is written symptom first, because that is the half you arrive
-holding. The first three fail the build. **The fourth does not**, which is why
-it is last and why it is the worst of them.
+holding. Four of the five fail the build. **The fourth does not** — it is the
+one that ships — and that is why it is the worst of them.
+
+The order is when you meet them, not how bad they are. Traps 1 to 3 are the
+toolchain and stand between you and your first apk. Traps 4 and 5 are on the
+other side of it, once you are building routinely with the suites running
+beside the build.
 
 ### 1. The build dies with a negative exit value and names nothing
 
@@ -183,10 +192,61 @@ name, `shelfscan_app`. It is now `shelfscan`, matching what `Runner.rc` and the
 Windows window title already say. A regenerated folder undoes that too, and
 unlike the permission it is visible: it is the name under the launcher icon.
 
+### 5. `compileReleaseJavaWithJavac` fails on a package you never depended on
+
+**Symptom.** The release build dies compiling a file you have never edited:
+
+```
+GeneratedPluginRegistrant.java:34: error: package dev.flutter.plugins.integration_test does not exist
+      flutterEngine.getPlugins().add(new dev.flutter.plugins.integration_test.IntegrationTestPlugin());
+```
+
+under `Execution failed for task ':app:compileReleaseJavaWithJavac'`.
+`integration_test` is a **dev** dependency, so it is not on the release compile
+classpath and that line should not be in the file. The file is generated and
+gitignored, so the failure reads as a defect in the tree. It is not one, and
+nothing in `app/` is wrong. A debug build does not reproduce it, and running
+the release build a second time usually clears it — which is the other half of
+why this costs twenty minutes rather than two.
+
+**Cause. Two flutter commands write that file, and the last writer wins.**
+Every flutter command regenerates `GeneratedPluginRegistrant.java` a few seconds
+after it starts, and there are two versions of it:
+
+- `flutter pub get`, `flutter analyze` and `flutter test` write the version that
+  **includes dev-dependency plugins**, `integration_test` among them.
+- `flutter build apk` writes the version that **excludes** them.
+
+Each is right on its own, and the release build's write wins whenever it runs
+alone: it rewrites the file about six seconds in, and Gradle then compiles for
+one to two minutes. **Those minutes are the hole.** Any other flutter command
+started in the same worktree during them puts the dev-dependency version back,
+and `compileReleaseJavaWithJavac` runs late enough to compile what it finds.
+
+Measured 2026-08-24 on Flutter 3.47.0, five release builds. A build in a
+worktree whose registrant already named `integration_test` succeeded — twice,
+from two differently-prepared worktrees — because it rewrote the file before
+Gradle started. The same build with one `flutter analyze` fired into its Gradle
+phase failed with the error above. **What a worktree has run before the build
+does not matter. What runs during it does.**
+
+**Fix.** Build alone. Do not run the suites in one shell while the apk builds
+in another: they look independent, they touch no file of yours in common, and
+they share this one generated file. If you already have the error, you need
+neither `flutter clean` nor a change to `app/pubspec.yaml` — run
+`flutter build apk` again with nothing beside it, and it regenerates the
+registrant correctly.
+
+**This is not the Gradle-daemon collision**, which is a separate hazard: two
+*builds* at once contend for one daemon and one lock. Trap 5 needs no second
+build. One `flutter analyze`, which finishes in under ten seconds, is enough.
+
 Traps 2, 3 and 4 are recorded as comments at their sites as well. That reaches
 somebody already editing those files; it does not reach somebody who has just
 run `flutter build apk` for the first time, which is why they are also here.
-Trap 1 has no site to live at, because the thing at fault is not in the tree.
+Traps 1 and 5 have no site to live at: what is at fault in trap 1 is not in the
+tree, and trap 5's file is generated on every command and gitignored, so a
+comment in it would be overwritten within seconds of being written.
 
 ## The release build is signed with the debug key
 
