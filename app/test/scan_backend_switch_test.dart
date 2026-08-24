@@ -42,7 +42,7 @@ String _adviceText(WidgetTester tester) =>
     tester.widget<Text>(find.byKey(const Key('backend-advice'))).data!;
 
 void main() {
-  tearDown(() => ProviderPolicy.debugLocalAllowedOverride = null);
+  tearDown(() => ProviderPolicy.debugLocalServerIsThisMachineOverride = null);
 
   group('what a tap can know', () {
     test('local needs nothing and costs nothing', () {
@@ -85,13 +85,13 @@ void main() {
     });
 
     test('a stated risk always comes with an action (T-0070)', () {
-      for (final localAllowed in [true, false]) {
-        ProviderPolicy.debugLocalAllowedOverride = localAllowed;
+      for (final onThisMachine in [true, false]) {
+        ProviderPolicy.debugLocalServerIsThisMachineOverride = onThisMachine;
         for (final backend in VisionBackend.values) {
           final check =
               ProviderPolicy.check(ProviderSettings(backend: backend));
           expect(check.advice == null, check.warning == null,
-              reason: '${backend.label}, localAllowed=$localAllowed: '
+              reason: '${backend.label}, onThisMachine=$onThisMachine: '
                   'warning=${check.warning} advice=${check.advice}');
         }
       }
@@ -103,8 +103,8 @@ void main() {
       // platform this app exists for. Asked of the policy rather than of a
       // remembered platform name, so a backend that becomes unavailable
       // later is caught the same way.
-      for (final localAllowed in [true, false]) {
-        ProviderPolicy.debugLocalAllowedOverride = localAllowed;
+      for (final onThisMachine in [true, false]) {
+        ProviderPolicy.debugLocalServerIsThisMachineOverride = onThisMachine;
         final absent = VisionBackend.values
             .where((b) => !ProviderPolicy.available.contains(b));
         for (final backend in ProviderPolicy.available) {
@@ -124,20 +124,31 @@ void main() {
         VisionBackend.cloud,
         VisionBackend.openAiCompatible,
       ]) {
-        expect(privacyAdvice(backend, localAllowed: true),
-            isNot(privacyAdvice(backend, localAllowed: false)));
+        expect(privacyAdvice(backend, localServerIsThisMachine: true),
+            isNot(privacyAdvice(backend, localServerIsThisMachine: false)));
       }
-      for (final localAllowed in [true, false]) {
-        expect(privacyAdvice(VisionBackend.local, localAllowed: localAllowed),
-            isNull);
-      }
-      // Cloud-only: the endpoint branch still has somewhere to send the user,
-      // the Anthropic branch has nothing but the photo itself.
+      // Local has nothing to warn about only where nothing leaves. On a
+      // phone it is another machine, so it warns and therefore must act
+      // (T-0361).
       expect(
-          privacyAdvice(VisionBackend.openAiCompatible, localAllowed: false),
-          contains(VisionBackend.cloud.label));
-      expect(privacyAdvice(VisionBackend.cloud, localAllowed: false),
-          contains('leave out of the scan'));
+          privacyAdvice(VisionBackend.local, localServerIsThisMachine: true),
+          isNull);
+      expect(
+          privacyAdvice(VisionBackend.local, localServerIsThisMachine: false),
+          isNotNull);
+      // Where local is another machine, both uploading backends point at it:
+      // it is the only choice that keeps the photographs off the internet,
+      // and it is what this platform gained. Neither may claim they stay put.
+      for (final backend in [
+        VisionBackend.openAiCompatible,
+        VisionBackend.cloud,
+      ]) {
+        final advice =
+            privacyAdvice(backend, localServerIsThisMachine: false)!;
+        expect(advice, contains(VisionBackend.local.label), reason: '$backend');
+        expect(advice, contains('your own network'), reason: '$backend');
+        expect(advice, isNot(contains('this machine')), reason: '$backend');
+      }
     });
 
     test('each missing endpoint field is named at the tap', () {
@@ -186,17 +197,19 @@ void main() {
       expect(ProviderPolicy.build(settings), isA<OllamaVisionProvider>());
     });
 
-    test('a cloud-only platform is answered for the backend it will really '
-        'use', () {
-      ProviderPolicy.debugLocalAllowedOverride = false;
+    test('a phone is answered about local, not about a substitute for it',
+        () {
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = false;
       // Stored settings say local -- e.g. preferences restored from a
-      // desktop backup. The scan would run cloud, so the tap says cloud.
+      // desktop backup. Until T-0361 the scan would have run cloud and the
+      // tap said cloud; local is real here now, so the tap answers about it
+      // and about the one thing the backup actually got wrong.
       final check = ProviderPolicy.check(
           ProviderSettings(backend: VisionBackend.local));
 
-      expect(check.backend, VisionBackend.cloud);
-      expect(check.warning, cloudPrivacyWarning);
-      expect(check.blocker, contains('Anthropic API key'));
+      expect(check.backend, VisionBackend.local);
+      expect(check.warning, lanPrivacyWarning);
+      expect(check.blocker, contains('address'));
     });
   });
 
@@ -215,7 +228,7 @@ void main() {
       // No pumpAndSettle and no tap: this is the first frame or it is nothing.
       expect(find.text(cloudPrivacyWarning), findsOneWidget);
       expect(_adviceText(tester),
-          privacyAdvice(VisionBackend.cloud, localAllowed: true));
+          privacyAdvice(VisionBackend.cloud, localServerIsThisMachine: true));
     });
 
     testWidgets('a stored endpoint backend says the endpoint sentence',
@@ -244,7 +257,7 @@ void main() {
 
     testWidgets('the cloud-only platform launches on cloud and is warned',
         (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = false;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = false;
       // Nothing stored at all: the constructor takes the platform default,
       // which on Android is cloud. This is the launch the task is about.
       final settings = ProviderSettings(anthropicApiKey: 'sk-ant-x');
@@ -253,21 +266,25 @@ void main() {
       await _pump(tester, settings);
 
       expect(find.text(cloudPrivacyWarning), findsOneWidget);
-      expect(_adviceText(tester), contains('leave out of the scan'));
-      expect(_adviceText(tester), isNot(contains(VisionBackend.local.label)));
+      // The escape offered here is Local since T-0361, and what it escapes
+      // is the internet rather than the network.
+      expect(_adviceText(tester), contains(VisionBackend.local.label));
+      expect(_adviceText(tester), contains('your own network'));
     });
 
-    testWidgets('a stored local backend on a cloud-only platform is answered '
-        'for the backend it will really use', (tester) async {
-      // Preferences restored from a desktop backup onto a phone: the scan
-      // would run cloud, so the first frame says cloud.
-      ProviderPolicy.debugLocalAllowedOverride = false;
+    testWidgets('a stored local backend on a phone is answered as local',
+        (tester) async {
+      // Preferences restored from a desktop backup onto a phone. The scan
+      // would run local, so the first frame says local -- and warns in
+      // local's own words, which are not cloud's.
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = false;
       await _pump(
           tester,
           ProviderSettings(
               backend: VisionBackend.local, anthropicApiKey: 'sk-ant-x'));
 
-      expect(find.text(cloudPrivacyWarning), findsOneWidget);
+      expect(find.text(lanPrivacyWarning), findsOneWidget);
+      expect(find.text(cloudPrivacyWarning), findsNothing);
     });
 
     testWidgets('cloud without a key launches with the warning and not the '
@@ -335,7 +352,7 @@ void main() {
 
     testWidgets('the risk arrives with the action, on a platform that has '
         'one (T-0070)', (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       await _pump(
           tester,
           ProviderSettings(
@@ -343,7 +360,7 @@ void main() {
 
       await _select(tester, Icons.cloud);
       expect(_adviceText(tester),
-          privacyAdvice(VisionBackend.cloud, localAllowed: true));
+          privacyAdvice(VisionBackend.cloud, localServerIsThisMachine: true));
       expect(_adviceText(tester), contains(VisionBackend.local.label));
 
       await _select(tester, Icons.dns);
@@ -353,20 +370,23 @@ void main() {
       expect(find.byKey(const Key('backend-advice')), findsNothing);
     });
 
-    testWidgets('a cloud-only platform is offered no local escape (T-0070)',
-        (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = false;
+    testWidgets('a phone is offered Local as the escape, and it is honest '
+        'about where that puts the photos (T-0070, T-0361)', (tester) async {
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = false;
       await _pump(tester, ProviderSettings(anthropicApiKey: 'sk-ant-x'));
 
-      // The app-bar switch still exists here: cloud-only is not one backend
-      // but two, Anthropic and a named endpoint.
-      await _select(tester, Icons.dns);
-      expect(_adviceText(tester), isNot(contains(VisionBackend.local.label)));
-      expect(_adviceText(tester), contains(VisionBackend.cloud.label));
+      // Three segments here now, not two: this is the platform that gained
+      // one. Both uploading backends point at it, and neither may say the
+      // photos stay on the device -- they go to the next room, in the clear.
+      for (final icon in [Icons.dns, Icons.cloud]) {
+        await _select(tester, icon);
+        expect(_adviceText(tester), contains(VisionBackend.local.label));
+        expect(_adviceText(tester), contains('your own network'));
+        expect(_adviceText(tester), isNot(contains('this machine')));
+      }
 
-      await _select(tester, Icons.cloud);
-      expect(_adviceText(tester), isNot(contains(VisionBackend.local.label)));
-      expect(_adviceText(tester), contains('leave out of the scan'));
+      await _select(tester, Icons.computer);
+      expect(find.text(lanPrivacyWarning), findsOneWidget);
     });
 
     testWidgets('the local default is nagged at about nothing', (tester) async {
@@ -418,7 +438,7 @@ void main() {
 
       expect(find.text(cloudPrivacyWarning), findsOneWidget);
       expect(_adviceText(tester),
-          privacyAdvice(VisionBackend.cloud, localAllowed: true));
+          privacyAdvice(VisionBackend.cloud, localServerIsThisMachine: true));
     });
 
     testWidgets('coming back from Settings without fixing it says so again '

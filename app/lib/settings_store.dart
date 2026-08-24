@@ -119,8 +119,10 @@ class SettingsStore {
   Future<ProviderSettings> load() async {
     final backendName = await prefs.read(keyBackend);
     return ProviderSettings(
-      // A stored choice the current platform disallows (prefs copied from a
-      // desktop backup, policy changed since) falls back to the default.
+      // A stored name no offered backend answers to falls back to the
+      // default. It used to catch a platform refusing one of them as well;
+      // since T-0361 none does, so what is left is a preference written by a
+      // build that named them differently.
       backend: _backendFrom(backendName),
       // Passed through null and all: the defaults for these two are
       // [ProviderSettings]'s, which also decides what a stored `''` means, and

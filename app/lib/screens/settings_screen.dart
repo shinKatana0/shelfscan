@@ -219,9 +219,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Ollama server on your own network, usually the desktop, and '
                 'the reading happens there. That machine needs Ollama running '
                 'and listening on the network rather than on loopback only '
-                '(OLLAMA_HOST=0.0.0.0), and its address goes below. The '
-                'photos travel over plain HTTP, so anything on that network '
-                'can read them on the way.',
+                '(OLLAMA_HOST=0.0.0.0), and its address goes below.',
                 key: const Key('settings-ollama-lan-note'),
                 style: Theme.of(context).textTheme.bodySmall,
               ),

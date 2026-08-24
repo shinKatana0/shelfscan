@@ -126,7 +126,7 @@ ResolverWorker gameCatalogueOf(ResolverWorker resolver) =>
     (resolver as CatalogueRouter).catalogues[WorkKind.game]! as ResolverWorker;
 
 void main() {
-  tearDown(() => ProviderPolicy.debugLocalAllowedOverride = null);
+  tearDown(() => ProviderPolicy.debugLocalServerIsThisMachineOverride = null);
 
   group('resolver wiring', () {
     test('no IGDB credentials -> the shared SkipResolver', () {
@@ -230,18 +230,22 @@ void main() {
   });
 
   group('platform policy', () {
-    test('a cloud-only platform offers no local backend', () {
-      ProviderPolicy.debugLocalAllowedOverride = false;
+    test('a phone offers local too, and still defaults to cloud', () {
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = false;
 
-      expect(ProviderPolicy.available, isNot(contains(VisionBackend.local)));
+      // T-0361: the phone runs no model, it names one on the network. Which
+      // is why the second line did not move -- an option is not a preference,
+      // and a default needing an address nobody has typed is a broken first
+      // launch.
+      expect(ProviderPolicy.available, contains(VisionBackend.local));
       expect(ProviderPolicy.defaultBackend, VisionBackend.cloud);
     });
 
     test('an external endpoint is offered but never defaulted to', () {
       // Decision 0011: photos of a private home never leave the machine
       // because of a default -- only because the user picked an endpoint.
-      for (final localAllowed in [true, false]) {
-        ProviderPolicy.debugLocalAllowedOverride = localAllowed;
+      for (final onThisMachine in [true, false]) {
+        ProviderPolicy.debugLocalServerIsThisMachineOverride = onThisMachine;
 
         expect(ProviderPolicy.available,
             contains(VisionBackend.openAiCompatible));
@@ -252,18 +256,27 @@ void main() {
       }
     });
 
-    test('a local backend is not constructible on a cloud-only platform', () {
-      ProviderPolicy.debugLocalAllowedOverride = false;
-      // Stored settings still say "local" -- e.g. preferences restored from
-      // a desktop backup.
+    test('on a phone local is built from the address, and refused without one',
+        () {
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = false;
       final settings = ProviderSettings(backend: VisionBackend.local);
 
-      // It falls back to cloud, and cloud without a key is the friendly
-      // error -- never an Ollama provider.
+      // Nothing was typed and nothing was substituted for it (T-0361): the
+      // default is loopback and loopback here is the phone.
+      expect(settings.ollamaUrl, isEmpty);
       expect(() => ProviderPolicy.build(settings), throwsA(isA<StateError>()));
 
-      settings.anthropicApiKey = 'sk-ant-x';
-      expect(ProviderPolicy.build(settings), isA<AnthropicVisionProvider>());
+      // The one address that is wrong without asking the network -- which is
+      // what preferences restored from a desktop backup carry onto a phone.
+      settings.ollamaUrl = 'http://127.0.0.1:11434';
+      expect(ProviderPolicy.check(settings).blocker, contains('this device'));
+      expect(() => ProviderPolicy.build(settings), throwsA(isA<StateError>()));
+
+      settings.ollamaUrl = 'http://a-desktop.lan:11434';
+      expect(ProviderPolicy.check(settings).blocker, isNull);
+      final provider =
+          ProviderPolicy.build(settings) as OllamaVisionProvider;
+      expect(provider.baseUrl, 'http://a-desktop.lan:11434');
     });
 
     test('the endpoint backend is built from the three fields the user typed',
@@ -302,7 +315,7 @@ void main() {
       // an Anthropic key, two spines the model admits it could not read, and
       // the preference an older build wrote when the switch was on. None of
       // it can produce a second call now.
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       final prefs = RecordingStore();
       await prefs.write('cloud_fallback', 'true');
       final secrets = RecordingStore()
