@@ -34,6 +34,14 @@ abstract class UnreachableEndpoint implements Exception {
 
   /// The sentence the user reads. Each subclass composes its own; this only
   /// promises there is one.
+  ///
+  /// What every one of them owes beyond its own remedy, and it is the half
+  /// that was missing when a true message cost a day (T-0354): a remedy inside
+  /// this app is not the whole remedy. Nothing answered, so nothing here can
+  /// tell a blocked route from a dead host from an address typed wrong -- and
+  /// a reader offered only somewhere to look in here will look in here. Name
+  /// [endpoint], so it can be tried without this app at all, and point outward
+  /// without claiming which of the three it was.
   String get message;
 
   @override

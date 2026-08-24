@@ -948,12 +948,36 @@ class VisionUnreachableException extends UnreachableEndpoint {
 /// counterpart -- one thing to do -- exists for the configurable endpoint only.
 const _checkYourUrl =
     'Check that base URL first: it is yours to set, and a wrong host or port '
-    'fails exactly like this. If it is right, check whether this machine is '
-    'online and whether a proxy or firewall is refusing the connection.';
+    'fails exactly like this. $_checkOutsideThisApp';
 const _checkThisMachine =
     'That address is fixed in this app rather than typed by you, so there is '
-    'nothing to correct in your settings: check whether this machine is online '
-    'and whether a proxy or firewall is refusing the connection.';
+    'nothing to correct in your settings. $_checkOutsideThisApp';
+
+/// The half they share, and the one the owner's case bought (T-0354).
+///
+/// Settings copied from a working desktop onto a phone reported a reset. The
+/// reset was true -- the phone's own browser was refused by the same host --
+/// and a day went into looking for a fault here, because the sentence named
+/// somewhere to look inside this app and nowhere outside it. A message that is
+/// true and sends the reader to the wrong place costs what a false one costs.
+///
+/// It suggests and does not diagnose, which is the line this whole class of
+/// sentence is written against: a blocked route, a dead host and a mistyped
+/// address all arrive as one `ClientException`, so nothing here knows which
+/// happened. What it does claim is the conditional -- a browser refused by the
+/// same host is a fact about the route, not about the scan -- and `usually`
+/// carries the rest.
+///
+/// A browser rather than a control in this app: it is the check a person can
+/// run without the thing they are trying to test. `any answer at all` goes
+/// with it because these are POST endpoints, so a browser reaching one gets an
+/// error page rather than anything friendly, and an error page is the host
+/// answering.
+const _checkOutsideThisApp =
+    'Open that address in a browser on this device: any answer at all, even an '
+    'error page, means the host is reachable from here. A browser refused the '
+    'same way points outside this app rather than at the scan -- usually this '
+    'machine being offline, or a proxy or a firewall in the way.';
 
 /// The same two halves for the stall (T-0104), and one clause they share with
 /// the refusal above: a call that never got an answer never got a verdict on
