@@ -52,6 +52,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    # NEITHER OF THESE REACHES A BUILT APP (T-0386). A key beginning `../` is
+    # written relative to `build/flutter_assets/` and so lands OUTSIDE it;
+    # packaging copies that directory and leaves the escaped files behind.
+    # Tests pass because the test bundle sits beside the same escaped copies.
+    #
     # Repository-level data file, shared with the CLI: one alias table, not
     # an app copy that drifts from it.
     - ../data/title_aliases.json
