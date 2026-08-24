@@ -818,9 +818,13 @@ once, and produces both — you do not choose a mode before the run.
 **One level down it is one row per folder, and that is the limit worth
 knowing.** A film kept in its own folder — the ordinary way films are kept —
 comes back as a film row carrying the title and the release year read off the
-file inside, rather than as a game named after the folder and hinted `PC`; a
-folder of episodes comes back as one honest skip rather than as a game row
-named after the series. But a subdirectory hands over one entry whatever it
+file inside, rather than as a game named after the folder and hinted `PC`. A
+folder of episodes depends on how they are named: the fansub shape --
+`[Group] Title - 04 [1080p].mkv` -- comes back as one row for the series
+(T-0368), while `S01E04` and `1x04` still come back as one honest skip,
+because those say *series* without saying which kind of series and this tool
+would otherwise file every television release as anime. But a subdirectory
+hands over one entry whatever it
 holds, and one entry cannot be two works: a folder holding a game's installer
 *and* a film is read as the game, and the film in it is lost the same way a
 second game in one folder already is. **The app's folder picker walks the same
