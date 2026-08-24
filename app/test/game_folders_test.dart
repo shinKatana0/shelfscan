@@ -345,6 +345,23 @@ void main() {
       expect(entry.name, 'Films');
     });
 
+    test('a release extracted in place is the film, not the archive beside it',
+        () async {
+      // Which of the two questions is asked first is observable here, and this
+      // is the shape that makes it so: the `.rar` parts parse as a game
+      // through the installer grammar, and the folder's own name titles
+      // nothing, so asking the installer first hands the folder over under a
+      // carrier's name and loses the kind.
+      _file('New Folder/Tidewrack.1998.1080p.BluRay.x264-LANTERN.mkv');
+      _file('New Folder/Tidewrack.1998.1080p.BluRay.x264-LANTERN.rar');
+      _file('New Folder/Tidewrack.1998.1080p.BluRay.x264-LANTERN.r00');
+
+      final item = (await _readings()).single.items.single;
+
+      expect(item.workKind, WorkKind.movie);
+      expect(item.sourceYear, 1998);
+    });
+
     test('a folder of video naming neither a film nor an episode is unchanged',
         () async {
       // Deliberate: firing on the mere PRESENCE of video rather than on
