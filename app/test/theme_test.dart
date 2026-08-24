@@ -45,7 +45,7 @@ Future<void> _tapSegment(WidgetTester tester, String label) async {
 }
 
 void main() {
-  tearDown(() => ProviderPolicy.debugLocalAllowedOverride = null);
+  tearDown(() => ProviderPolicy.debugLocalServerIsThisMachineOverride = null);
 
   _contrastGroup();
 
@@ -86,7 +86,7 @@ void main() {
   group('choosing a theme', () {
     testWidgets('Dark repaints the app immediately, without a restart or '
         'leaving the screen', (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       final prefs = RecordingStore();
       await tester.pumpWidget(ShelfscanApp(
         settings: ProviderSettings(),
@@ -108,7 +108,7 @@ void main() {
 
     testWidgets('all three modes are offered and Light comes back',
         (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       final prefs = RecordingStore();
       await tester.pumpWidget(ShelfscanApp(
         settings: ProviderSettings(),
@@ -138,7 +138,7 @@ void main() {
 
     testWidgets('the choice is applied even when it cannot be stored',
         (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       await tester.pumpWidget(ShelfscanApp(
         settings: ProviderSettings(),
         store: const SettingsStore(

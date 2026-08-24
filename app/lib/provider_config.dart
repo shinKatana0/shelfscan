@@ -3,9 +3,27 @@
 /// Platform policy (product decision, not a technical constraint):
 ///   - Windows: user chooses local (Ollama) or a cloud endpoint.
 ///     Default: LOCAL -- a desktop next to the shelf can run its own model.
-///   - Android: CLOUD ONLY. On-device models are too weak for spine OCR,
-///     and pointing the phone at a home Ollama server is deferred
-///     (revisit later as a backlog item if requested).
+///   - Android: local is OFFERED and is never the default (T-0361). The
+///     phone runs no model of its own -- "on-device models are too weak for
+///     spine OCR" is a measurement taken ON the phone, it stands unchanged,
+///     and nothing here overturns it. What local means on this platform is
+///     the other thing the word can mean: an Ollama the user names on their
+///     own network -- the same model on the same desktop hardware that
+///     already serves the desktop app, one hop away. Two claims about two
+///     machines; neither settles the other, and no text in this file may
+///     read as though the second retired the first.
+///     Three consequences live here rather than on a screen. The address
+///     cannot default, because loopback on a phone IS the phone, so it is a
+///     [BackendCheck.blocker] until one is typed. A loopback address typed
+///     anyway is refused at the tap rather than left to time out -- it is
+///     the one wrong address that is knowably wrong. And local stops meaning
+///     "nothing leaves the machine": here it carries a privacy warning of
+///     its own, because the photographs cross the network in the clear
+///     (T-0069's rule, that local was never a synonym for offline, is
+///     visible on this platform rather than merely true). The platform half
+///     of the cleartext question -- what Android would and would not let
+///     this app express about it -- is argued in
+///     `android/app/src/main/AndroidManifest.xml`.
 ///   - "Cloud" is a choice of endpoint (T-0006): Anthropic's own API, or
 ///     any OpenAI-compatible one the user names. Neither is ever the
 ///     default where a local model can run, and both carry a privacy
@@ -116,15 +134,25 @@ class ProviderSettings {
   /// the scan screen goes on scanning with the same instance, so a store-side
   /// rule would only heal at the next launch. Here it holds for the session
   /// that cleared the field, for a `''` stored before this change, and for a
-  /// [ProviderSettings] nobody persisted -- and it is why [ProviderPolicy]
-  /// needs no blank check of its own.
+  /// [ProviderSettings] nobody persisted.
+  ///
+  /// **Only where the local server can be this machine (T-0361).** The
+  /// coercion needs somewhere to coerce to, and on a phone there is nowhere:
+  /// [defaultOllamaUrl] is loopback, loopback is the phone, and the phone is
+  /// the one machine on the network that is certainly not running Ollama.
+  /// Substituting it would be inventing an address the user never chose --
+  /// the same objection the secrets side makes below -- and would spend a
+  /// scan's worth of timeout proving it. So blank stays blank there and
+  /// [ProviderPolicy] answers for it with a blocker at the tap, which is why
+  /// that check exists on this backend at all.
   ///
   /// Nothing on the secrets side does this: an invented default for a
   /// credential is a credential nobody chose, so there a blank still means
   /// "forget it" (`SecretStore.write`).
   String get ollamaUrl => _ollamaUrl;
-  set ollamaUrl(String value) =>
-      _ollamaUrl = value.isEmpty ? defaultOllamaUrl : value;
+  set ollamaUrl(String value) => _ollamaUrl = value.isNotEmpty
+      ? value
+      : (ProviderPolicy.localServerIsThisMachine ? defaultOllamaUrl : '');
 
   String get ollamaModel => _ollamaModel;
   set ollamaModel(String value) =>
@@ -252,33 +280,61 @@ const endpointPrivacyWarning =
     'endpoint you name. Free tiers are commonly funded by training on what '
     'is submitted to them, and these are pictures of your home.';
 
+/// Local's own warning, on a platform where local is another machine
+/// (T-0361). It exists because the first sentence of the other two is true
+/// here as well, and a backend that says nothing would be read as saying
+/// nothing happens -- which is exactly the conflation T-0069 corrected in the
+/// README ("images never leave the machine") and PROJECT.md now forbids.
+///
+/// The second sentence is the one an auditor is owed and it is not softened:
+/// Ollama speaks plain HTTP and this app does not wrap it in anything, so the
+/// photographs cross the local network unencrypted and unauthenticated. What
+/// is bounded is the destination, not the exposure -- see the manifest for
+/// why no Android setting changes either half.
+const lanPrivacyWarning =
+    'Your photos leave this device: each one is uploaded in full to the '
+    'Ollama server you name, over plain HTTP, so anything on that network can '
+    'read them on the way. They do not reach the internet.';
+
 /// What to do about the warning above, on the platform actually running it.
 ///
 /// A separate string rather than a fourth sentence appended to the risk: the
 /// risk is the same everywhere and its wording is measured (T-0040, T-0058),
 /// while the way out is not. The sentence T-0058 dropped -- "Check that
 /// service's data policy before scanning, or use Local" -- is restored here
-/// where [localAllowed], and is FALSE where it is not: Android has no local
-/// backend in [ProviderPolicy.available] at all, so the only actions left
-/// there are the endpoint's own data policy, Anthropic's paid API, and not
-/// adding the photo (T-0070).
+/// where the local server can be this machine, and was FALSE where it could
+/// not be, because Android then had no local backend at all (T-0070).
 ///
-/// Null for [VisionBackend.local], which has nothing to warn about; that ties
-/// it to [BackendCheck.warning], which is null in exactly the same case.
-String? privacyAdvice(VisionBackend backend, {required bool localAllowed}) {
+/// **T-0361 changed which half is false, not the shape.** Local is now
+/// offered everywhere, so it is nameable on both branches; what a phone
+/// cannot claim is the *destination*. "Keep them on this machine" is the
+/// desktop's sentence and stays there. The phone's version says where they go
+/// instead, because on that platform local is another machine and the
+/// difference between "off this device" and "off the internet" is the whole
+/// of what the user is choosing (T-0069).
+///
+/// Null for [VisionBackend.local] only where nothing leaves; on a phone that
+/// backend has [lanPrivacyWarning] and gets an action like the other two.
+/// Non-null in exactly the cases [BackendCheck.warning] is -- one invariant,
+/// two branches, and `scan_backend_switch_test.dart` holds it.
+String? privacyAdvice(VisionBackend backend,
+    {required bool localServerIsThisMachine}) {
   final local = VisionBackend.local.label;
-  final cloud = VisionBackend.cloud.label;
   return switch (backend) {
-    VisionBackend.local => null,
-    VisionBackend.openAiCompatible => localAllowed
+    VisionBackend.local => localServerIsThisMachine
+        ? null
+        : 'Run the scan on the desktop hosting that server, and the photos '
+            'stay on one machine.',
+    VisionBackend.openAiCompatible => localServerIsThisMachine
         ? "Check that service's data policy before you scan, or switch to "
             '$local to keep them on this machine.'
-        : "Check that service's data policy before you scan, or use $cloud -- "
-            'a paid Anthropic API rather than a free tier.',
-    VisionBackend.cloud => localAllowed
+        : "Check that service's data policy before you scan, or switch to "
+            '$local, which sends them to a server on your own network '
+            'instead of to the internet.',
+    VisionBackend.cloud => localServerIsThisMachine
         ? 'Switch to $local to keep them on this machine.'
-        : 'This device cannot run a vision model itself, so the only photos '
-            'that stay off the network are the ones you leave out of the scan.',
+        : 'This device cannot read the photos itself, but $local sends them '
+            'to a server on your own network instead of to the internet.',
   };
 }
 
@@ -294,7 +350,9 @@ class BackendCheck {
     this.advice,
   });
 
-  /// The backend a scan would really use -- see [ProviderPolicy.effective].
+  /// The backend a scan would really use, which since T-0361 is simply the
+  /// one chosen: no platform refuses any of the three any more, so the
+  /// substitution this field used to be able to report cannot happen.
   final VisionBackend backend;
 
   /// Why a scan started now would fail, in the very words that failure
@@ -321,45 +379,66 @@ class ProviderPolicy {
   /// assigns this -- it only ever changes what platform we pretend to be,
   /// never the policy itself.
   @visibleForTesting
-  static bool? debugLocalAllowedOverride;
+  static bool? debugLocalServerIsThisMachineOverride;
 
-  static bool get localAllowed =>
-      debugLocalAllowedOverride ?? !Platform.isAndroid;
+  /// Whether the machine running this app is one that could be hosting the
+  /// Ollama server itself.
+  ///
+  /// It was `localAllowed` until T-0361, and the rename is the change: local
+  /// is allowed everywhere now, so a getter answering "is local offered?"
+  /// would answer `true` and decide nothing. What still divides the two
+  /// platforms is whether "local" and "this device" are the same address --
+  /// and that governs the default backend, whether a blank URL has anything
+  /// to mean, whether loopback is a usable answer, and which privacy claim
+  /// is honest. All four are questions about the machine, not about the list
+  /// of backends, which is why they now ask one.
+  static bool get localServerIsThisMachine =>
+      debugLocalServerIsThisMachineOverride ?? !Platform.isAndroid;
 
   /// Never [VisionBackend.openAiCompatible]: an external endpoint is only
-  /// ever reached because the user named one (decision 0011).
+  /// ever reached because the user named one (decision 0011). And never
+  /// [VisionBackend.local] on a phone, though it is selectable there
+  /// (T-0361): a default that cannot work until an address is typed is a
+  /// broken first launch, and the owner's provider order is not this task's
+  /// to move -- offering an option is not preferring it.
   static VisionBackend get defaultBackend =>
-      localAllowed ? VisionBackend.local : VisionBackend.cloud;
+      localServerIsThisMachine ? VisionBackend.local : VisionBackend.cloud;
 
   /// Both screens render this list in order, so it carries [VisionBackend]'s
   /// declaration order and a test fails if the two drift apart.
-  static List<VisionBackend> get available => [
-        if (localAllowed) VisionBackend.local,
+  ///
+  /// Unconditional since T-0361. Nothing is filtered by platform any more,
+  /// and the reason it is still a list rather than `VisionBackend.values` is
+  /// that the two are separately readable: the enum declares an order for a
+  /// stated reason (T-0343) and this states that the screens get all of it.
+  static List<VisionBackend> get available => const [
+        VisionBackend.local,
         VisionBackend.openAiCompatible,
         VisionBackend.cloud,
       ];
 
-  /// Defense in depth: never run a backend this platform disallows even if
-  /// the stored settings ask for one -- e.g. preferences restored from a
-  /// desktop backup onto a phone.
-  static VisionBackend effective(ProviderSettings settings) =>
-      (settings.backend == VisionBackend.local && !localAllowed)
-          ? VisionBackend.cloud
-          : settings.backend;
-
   /// Everything the UI can know about the current choice without spending
   /// anything (T-0040). Reads only [settings]; see [BackendCheck].
+  /// The stored preference is used as it stands. There used to be a downgrade
+  /// here for a `local` preference restored from a desktop backup onto a
+  /// phone; T-0361 removed it, because that preference is now honourable and
+  /// silently answering a different question than the one asked is the defect
+  /// class this project names loudest. What the restored settings really
+  /// carry onto a phone is the desktop's loopback URL, and that is refused by
+  /// name in [_missing] instead -- a blocker the user can read, in place of a
+  /// substitution they could not.
   static BackendCheck check(ProviderSettings settings) {
-    final backend = effective(settings);
+    final backend = settings.backend;
+    final onThisMachine = localServerIsThisMachine;
     return BackendCheck(
       backend: backend,
       blocker: _missing(backend, settings),
       warning: switch (backend) {
-        VisionBackend.local => null,
+        VisionBackend.local => onThisMachine ? null : lanPrivacyWarning,
         VisionBackend.openAiCompatible => endpointPrivacyWarning,
         VisionBackend.cloud => cloudPrivacyWarning,
       },
-      advice: privacyAdvice(backend, localAllowed: localAllowed),
+      advice: privacyAdvice(backend, localServerIsThisMachine: onThisMachine),
     );
   }
 
@@ -392,12 +471,29 @@ class ProviderPolicy {
   static String? _missing(VisionBackend backend, ProviderSettings settings) {
     switch (backend) {
       case VisionBackend.local:
-        // The one backend that can always run, and since T-0082 that is a
-        // property rather than an assumption: local needs a URL and a model
-        // and no key, and neither of those two can be blank -- see
-        // [ProviderSettings.ollamaUrl]. A blank check here would be dead code
-        // stating the opposite rule to the one the field enforces, and
-        // reachability is a network question this function is forbidden to ask.
+        // On a desktop this still returns null for the T-0082 reason: local
+        // needs a URL and a model and no key, and neither can be blank
+        // because the field coerces a cleared one to the built-in default.
+        //
+        // On a phone there is no default to coerce to, so both branches below
+        // are reachable and neither is a network question -- which this
+        // function is still forbidden to ask. Both are properties of the
+        // string itself, and both replace the same failure: a wrong address
+        // is not refused by anything, it is a 120-second timeout per photo
+        // that reads as a hang. These are the two cases where the answer is
+        // knowable at the tap, so they are given at the tap.
+        if (!localServerIsThisMachine) {
+          if (settings.ollamaUrl.isEmpty) {
+            return 'Local needs the address of an Ollama server on your '
+                'network -- add it in Settings, as http://ADDRESS:PORT. This '
+                'device is not it: nothing here runs a vision model.';
+          }
+          if (_addressesThisDevice(settings.ollamaUrl)) {
+            return 'Local needs the address of an Ollama server on your '
+                'network. ${settings.ollamaUrl} is this device, which runs no '
+                'vision model -- give the address of the machine that does.';
+          }
+        }
         return null;
       case VisionBackend.openAiCompatible:
         // Each half named separately: "check your settings" for three
@@ -423,6 +519,29 @@ class ProviderPolicy {
     }
   }
 
+  /// Whether [url] names the device this app is running on, whatever may be
+  /// listening there (T-0361).
+  ///
+  /// Deliberately not a validity check on anything else. Whether some other
+  /// address answers is a network question and [_missing] may not ask one;
+  /// these are the forms whose answer needs no asking, and they are the forms
+  /// a person actually types -- including the one a settings backup restored
+  /// from the desktop brings with it, which is the case that made this worth
+  /// having. A name beginning `127.` is an address rather than a host in
+  /// every practical case, so the prefix is taken as one.
+  ///
+  /// `Uri.parse` strips the brackets from an IPv6 authority, so
+  /// `http://[::1]:11434` reaches here as `::1`. A string that does not parse
+  /// has no host, is claimed to be nothing, and fails later as the parse
+  /// failure it is.
+  static bool _addressesThisDevice(String url) {
+    final host = Uri.tryParse(url)?.host.toLowerCase() ?? '';
+    return host == 'localhost' ||
+        host == '::1' ||
+        host == '0.0.0.0' ||
+        host.startsWith('127.');
+  }
+
   /// Build the provider for the chosen backend, or throw a friendly
   /// message the UI can show as-is.
   ///
@@ -437,7 +556,7 @@ class ProviderPolicy {
     ProviderSettings settings, {
     void Function(String note)? onRequestAdjusted,
   }) {
-    final backend = effective(settings);
+    final backend = settings.backend;
     final missing = _missing(backend, settings);
     if (missing != null) throw StateError(missing);
 

@@ -62,38 +62,39 @@ String _inForceText(WidgetTester tester) =>
     _textOf(tester, 'settings-backend-in-force');
 
 void main() {
-  tearDown(() => ProviderPolicy.debugLocalAllowedOverride = null);
+  tearDown(() => ProviderPolicy.debugLocalServerIsThisMachineOverride = null);
 
   testWidgets('configures every backend and chooses none (T-0115)',
       (tester) async {
     // The choice is the scan screen's switch, which writes the same
     // preference this screen's Save does. A second copy of it here staged the
     // choice until Save, so the same stored value had two meanings of a tap.
-    for (final localAllowed in [true, false]) {
-      ProviderPolicy.debugLocalAllowedOverride = localAllowed;
+    for (final onThisMachine in [true, false]) {
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = onThisMachine;
       await _pump(tester, ProviderSettings(), _Backends());
 
       expect(find.byKey(const Key('settings-backend')), findsNothing,
-          reason: 'localAllowed=$localAllowed');
+          reason: 'onThisMachine=$onThisMachine');
       expect(find.byType(SegmentedButton<VisionBackend>), findsNothing);
       // The fields for every backend are here whichever one is in force --
       // which is why this screen never had a mode to select.
       expect(find.text('Cloud (Anthropic)'), findsOneWidget);
       expect(find.text('Endpoint (any OpenAI-compatible service)'),
           findsOneWidget);
-      // ... except Ollama's, which are a desktop capability, not a choice.
-      expect(find.byKey(const Key('settings-ollama-url')),
-          localAllowed ? findsOneWidget : findsNothing);
-      expect(find.byKey(const Key('settings-ollama-model')),
-          localAllowed ? findsOneWidget : findsNothing);
-      expect(find.text('Local (Ollama)'),
-          localAllowed ? findsOneWidget : findsNothing);
+      // Ollama's too, on both platforms since T-0361: where the server is
+      // another machine the fields are the only way to name it, and the
+      // paragraph that says so is rendered with them.
+      expect(find.byKey(const Key('settings-ollama-url')), findsOneWidget);
+      expect(find.byKey(const Key('settings-ollama-model')), findsOneWidget);
+      expect(find.text('Local (Ollama)'), findsOneWidget);
+      expect(find.byKey(const Key('settings-ollama-lan-note')),
+          onThisMachine ? findsNothing : findsOneWidget);
     }
   });
 
   testWidgets('names the backend in force and where its switch is',
       (tester) async {
-    ProviderPolicy.debugLocalAllowedOverride = true;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
     await _pump(tester, ProviderSettings(backend: VisionBackend.cloud),
         _Backends());
 
@@ -103,26 +104,28 @@ void main() {
     expect(_inForceText(tester), contains('scan screen'));
   });
 
-  testWidgets('describes the backend a scan would really use, not a stored '
-      'one this platform disallows', (tester) async {
-    ProviderPolicy.debugLocalAllowedOverride = false;
-    // Preferences restored from a desktop backup onto a phone. The store
-    // heals this on load, so the screen is shown the raw object the policy
-    // still has to correct.
+  testWidgets('a local backend stored on a phone is described as itself',
+      (tester) async {
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = false;
+    // Preferences restored from a desktop backup onto a phone. Until T-0361
+    // the policy corrected this to cloud; local is now real here, so the
+    // screen names what is actually in force and warns in its own words --
+    // which are not the cloud ones, because the photos stop at the network.
     await _pump(tester, ProviderSettings(backend: VisionBackend.local),
         _Backends());
 
-    expect(_inForceText(tester), contains(VisionBackend.cloud.label));
-    expect(_warningText(tester), cloudPrivacyWarning);
+    expect(_inForceText(tester), contains(VisionBackend.local.label));
+    expect(_warningText(tester), lanPrivacyWarning);
+    expect(_warningText(tester), isNot(cloudPrivacyWarning));
   });
 
   testWidgets('every backend the policy offers is described, on both '
       'platforms', (tester) async {
-    for (final localAllowed in [true, false]) {
-      ProviderPolicy.debugLocalAllowedOverride = localAllowed;
+    for (final onThisMachine in [true, false]) {
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = onThisMachine;
       for (final backend in ProviderPolicy.available) {
         await _pump(tester, ProviderSettings(backend: backend), _Backends());
-        final reason = '$backend, localAllowed=$localAllowed';
+        final reason = '$backend, onThisMachine=$onThisMachine';
 
         expect(_inForceText(tester), contains(backend.label), reason: reason);
         final check = ProviderPolicy.check(ProviderSettings(backend: backend));
@@ -164,7 +167,7 @@ void main() {
   });
 
   testWidgets('saving routes each field to the right backend', (tester) async {
-    ProviderPolicy.debugLocalAllowedOverride = true;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
     final backends = _Backends();
     // Cloud because the scan screen's switch put it there; Save has to carry
     // it through untouched now that this screen cannot set it (T-0115).
@@ -209,7 +212,7 @@ void main() {
       _Backends backends, {
       required String typed,
     }) async {
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       final settings =
           ProviderSettings(ollamaUrl: 'http://localhost:11434', ollamaModel: 'llava:13b');
       await _pump(tester, settings, backends);
@@ -223,7 +226,7 @@ void main() {
 
     testWidgets('the hint the field shows is the value clearing it produces',
         (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       await _pump(tester, ProviderSettings(), _Backends());
 
       // If these two ever stop being the defaults, the affordance is a lie
@@ -283,7 +286,7 @@ void main() {
 
     testWidgets('a blank stored before this change shows the default it now '
         'means', (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       final backends = _Backends();
       backends.prefs.values[SettingsStore.keyOllamaUrl] = '';
       backends.prefs.values[SettingsStore.keyOllamaModel] = '';
@@ -301,7 +304,7 @@ void main() {
 
     testWidgets('a cleared key is still cleared -- no default is invented for '
         'a credential', (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       final backends = _Backends();
       final settings = ProviderSettings(
           backend: VisionBackend.cloud, anthropicApiKey: 'sk-ant-typed');
@@ -321,7 +324,7 @@ void main() {
 
   testWidgets('every backend that uploads warns, in its own words; Local does '
       'not (T-0058)', (tester) async {
-    ProviderPolicy.debugLocalAllowedOverride = true;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
     await _pump(tester, ProviderSettings(), _Backends());
 
     expect(_warning, findsNothing,
@@ -353,7 +356,7 @@ void main() {
       (tester) async {
     // Android arrives on this screen already set to cloud, so the warning
     // has to be on the first frame rather than on a tap that never comes.
-    ProviderPolicy.debugLocalAllowedOverride = false;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = false;
     await _pump(tester, ProviderSettings(), _Backends());
 
     expect(_warningText(tester), cloudPrivacyWarning);
@@ -361,7 +364,7 @@ void main() {
 
   testWidgets('the warning also says what to do about it, and where a local '
       'backend exists that is Local (T-0070)', (tester) async {
-    ProviderPolicy.debugLocalAllowedOverride = true;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
     await _pump(
         tester, ProviderSettings(backend: VisionBackend.cloud), _Backends());
     expect(_adviceText(tester), contains(VisionBackend.local.label));
@@ -380,26 +383,29 @@ void main() {
     expect(find.byKey(const Key('settings-privacy-advice')), findsNothing);
   });
 
-  testWidgets('a cloud-only platform is never told to use a backend it does '
-      'not have (T-0070)', (tester) async {
-    ProviderPolicy.debugLocalAllowedOverride = false;
+  testWidgets('a phone is offered Local as the escape, without being told the '
+      'photos stay put (T-0070, T-0361)', (tester) async {
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = false;
     await _pump(tester, ProviderSettings(), _Backends());
 
-    // Cloud is where Android arrives, and there is no local escape from it:
-    // the only action left is not putting the photo in.
-    expect(_adviceText(tester), isNot(contains(VisionBackend.local.label)));
-    expect(_adviceText(tester), contains('leave out of the scan'));
+    // Cloud is still where a phone arrives. What changed is that there is
+    // now somewhere to go: Local, which keeps the photos off the internet
+    // and NOT on this device. The second half is the one that would be a
+    // false promise here, so it is asserted against rather than assumed.
+    expect(_adviceText(tester), contains(VisionBackend.local.label));
+    expect(_adviceText(tester), contains('your own network'));
+    expect(_adviceText(tester), isNot(contains('this machine')));
 
     await _pump(tester,
         ProviderSettings(backend: VisionBackend.openAiCompatible), _Backends());
-    expect(_adviceText(tester), isNot(contains(VisionBackend.local.label)));
     expect(_adviceText(tester), contains('data policy'));
-    expect(_adviceText(tester), contains(VisionBackend.cloud.label));
+    expect(_adviceText(tester), contains(VisionBackend.local.label));
+    expect(_adviceText(tester), isNot(contains('this machine')));
   });
 
   testWidgets('a backend stored before this change still resolves, and Save '
       'writes it back unchanged (T-0115)', (tester) async {
-    ProviderPolicy.debugLocalAllowedOverride = true;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
     final backends = _Backends();
     // Written by an older build's Save, or by the scan screen's switch --
     // the same key either way.
@@ -430,10 +436,13 @@ void main() {
     // when the text does.
     const clauses = [
       'uploaded in full to', // both risk statements
-      'keep them on this machine', // advice where a local backend exists
+      'keep them on this machine', // advice where the server is this machine
       "data policy before you scan", // advice on either endpoint platform
-      'leave out of the scan', // advice on a cloud-only platform
-      'paid Anthropic API rather than a free tier',
+      // T-0361's three: local's own risk where it is another machine, the
+      // way out both uploading backends offer there, and local's own way out.
+      'over plain HTTP', // the LAN risk statement
+      'server on your own network instead of to the internet',
+      'stay on one machine', // advice for local where local is elsewhere
     ];
     final dartFiles = [
       for (final entry in Directory('lib').listSync(recursive: true))
@@ -453,7 +462,7 @@ void main() {
 
   testWidgets('the endpoint key is a secret; its URL and model are not',
       (tester) async {
-    ProviderPolicy.debugLocalAllowedOverride = true;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
     final backends = _Backends();
     final settings =
         ProviderSettings(backend: VisionBackend.openAiCompatible);
@@ -493,7 +502,7 @@ void main() {
   group('the Claude model (T-0067)', () {
     testWidgets('is optional: nothing typed still builds a working provider',
         (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       final backends = _Backends();
       final settings = ProviderSettings(
           backend: VisionBackend.cloud, anthropicApiKey: 'sk-ant-x');
@@ -513,7 +522,7 @@ void main() {
 
     testWidgets('is a preference, and naming one drops the temperature',
         (tester) async {
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       final backends = _Backends();
       final settings = ProviderSettings(
           backend: VisionBackend.cloud, anthropicApiKey: 'sk-ant-x');
@@ -563,13 +572,13 @@ void main() {
     // its one measurement added 15 rows of which 15 were wrong (T-0032).
     // The CLI keeps --fallback for measuring a cloud second reader; the
     // product ships no switch for it.
-    for (final localAllowed in [true, false]) {
-      ProviderPolicy.debugLocalAllowedOverride = localAllowed;
+    for (final onThisMachine in [true, false]) {
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = onThisMachine;
       await _pump(tester, ProviderSettings(anthropicApiKey: 'sk-ant-x'),
           _Backends());
 
       expect(find.byType(SwitchListTile), findsNothing,
-          reason: 'localAllowed=$localAllowed');
+          reason: 'onThisMachine=$onThisMachine');
       expect(find.textContaining('second time'), findsNothing);
       expect(find.textContaining('EVERY photo'), findsNothing);
     }
@@ -577,7 +586,7 @@ void main() {
 
   testWidgets('a stored cloud_fallback=true from before T-0061 turns nothing '
       'on', (tester) async {
-    ProviderPolicy.debugLocalAllowedOverride = true;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
     final backends = _Backends();
     await backends.prefs.write('cloud_fallback', 'true');
     // The settings the app would really start with, not a hand-built object.

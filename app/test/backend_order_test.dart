@@ -36,25 +36,26 @@ SettingsStore _store() =>
     SettingsStore(secrets: RecordingStore(), prefs: RecordingStore());
 
 void main() {
-  tearDown(() => ProviderPolicy.debugLocalAllowedOverride = null);
+  tearDown(() => ProviderPolicy.debugLocalServerIsThisMachineOverride = null);
 
   test('the enum declares the order the user meets them in', () {
     expect(VisionBackend.values, _order);
   });
 
-  test('the policy offers them in that order, on both platforms', () {
-    for (final localAllowed in [true, false]) {
-      ProviderPolicy.debugLocalAllowedOverride = localAllowed;
-      expect(
-        ProviderPolicy.available,
-        _order.where((b) => localAllowed || b != VisionBackend.local),
-        reason: 'localAllowed=$localAllowed',
-      );
+  test('the policy offers all three in that order, on both platforms', () {
+    // Unconditional since T-0361: the phone offers local too, pointed at a
+    // server on the network rather than at itself. Still asked of both
+    // platforms, because the list stating the same thing twice is what this
+    // test is for, and a platform filter returning here would be caught.
+    for (final onThisMachine in [true, false]) {
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = onThisMachine;
+      expect(ProviderPolicy.available, _order,
+          reason: 'onThisMachine=$onThisMachine');
     }
   });
 
   testWidgets('the settings sections are in that order', (tester) async {
-    ProviderPolicy.debugLocalAllowedOverride = true;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
     await tester.pumpWidget(MaterialApp(
       home: SettingsScreen(settings: ProviderSettings(), store: _store()),
     ));
@@ -92,7 +93,7 @@ void main() {
 
   test('a preference stored before the reorder still names the same provider',
       () async {
-    ProviderPolicy.debugLocalAllowedOverride = true;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
     // The three strings a build shipped before this order existed wrote.
     const stored = {
       'local': VisionBackend.local,

@@ -105,7 +105,7 @@ Future<String> _configuredBy(Map<String, String> stored) async {
 }
 
 void main() {
-  tearDown(() => ProviderPolicy.debugLocalAllowedOverride = null);
+  tearDown(() => ProviderPolicy.debugLocalServerIsThisMachineOverride = null);
 
   test('secrets go to the keychain and never to preferences', () async {
     final secrets = RecordingStore();
@@ -200,8 +200,8 @@ void main() {
 
   test('a stored endpoint backend survives a restart on either platform',
       () async {
-    for (final localAllowed in [true, false]) {
-      ProviderPolicy.debugLocalAllowedOverride = localAllowed;
+    for (final onThisMachine in [true, false]) {
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = onThisMachine;
       final secrets = RecordingStore();
       final prefs = RecordingStore();
       await SettingsStore(secrets: secrets, prefs: prefs).save(
@@ -211,14 +211,14 @@ void main() {
           await SettingsStore(secrets: secrets, prefs: prefs).load();
 
       expect(loaded.backend, VisionBackend.openAiCompatible,
-          reason: 'localAllowed=$localAllowed');
+          reason: 'onThisMachine=$onThisMachine');
     }
   });
 
   test('a cloud_fallback preference stored before T-0061 is inert', () async {
     // The app that wrote it offered a second reader; this one has no field
     // to load it into and never asks for the key again.
-    ProviderPolicy.debugLocalAllowedOverride = true;
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
     final prefs = RecordingStore();
     await prefs.write('cloud_fallback', 'true');
     final secrets = RecordingStore()..values['anthropic_api_key'] = 'sk-ant-x';
@@ -246,19 +246,23 @@ void main() {
     expect((await store.load()).anthropicApiKey, isEmpty);
   });
 
-  test('a stored backend the platform disallows falls back to the default',
-      () async {
+  test('a stored local backend survives being read on a phone', () async {
     final secrets = RecordingStore();
     final prefs = RecordingStore();
     await SettingsStore(secrets: secrets, prefs: prefs)
         .save(ProviderSettings(backend: VisionBackend.local));
     expect(prefs.values[SettingsStore.keyBackend], 'local');
 
-    // Same preferences file, now read on a cloud-only platform.
-    ProviderPolicy.debugLocalAllowedOverride = false;
+    // Same preferences file, now read on a phone. Until T-0361 this was
+    // downgraded to cloud, because local did not exist here; it does now, so
+    // the stored choice is honoured and what the backup really got wrong --
+    // the desktop's loopback URL travelling with it -- is refused by name at
+    // the tap instead of being silently swapped for another backend.
+    ProviderPolicy.debugLocalServerIsThisMachineOverride = false;
     final loaded = await SettingsStore(secrets: secrets, prefs: prefs).load();
 
-    expect(loaded.backend, VisionBackend.cloud);
+    expect(loaded.backend, VisionBackend.local);
+    expect(ProviderPolicy.check(loaded).blocker, contains('this device'));
   });
 
   group('a blank non-secret setting is an unset one (T-0082)', () {
@@ -354,7 +358,7 @@ void main() {
     test('local can always run, whatever is or is not stored', () async {
       // ProviderPolicy._missing answers null for local unconditionally; this
       // is what makes that an answer rather than an oversight.
-      ProviderPolicy.debugLocalAllowedOverride = true;
+      ProviderPolicy.debugLocalServerIsThisMachineOverride = true;
       for (final stored in [
         <String, String>{},
         {SettingsStore.keyOllamaUrl: '', SettingsStore.keyOllamaModel: ''},
