@@ -56,8 +56,8 @@ String folderName(String path) {
   return name.isEmpty ? path : name;
 }
 
-/// Folders that hold whatever was put in them, so the games in one are a
-/// minority of what a scan would read. Folded, matched against the last
+/// Folders that hold whatever was put in them, so most of what a scan reads
+/// there is neither a game nor a film. Folded, matched against the last
 /// segment only.
 const _mixedFolders = {
   'downloads',
