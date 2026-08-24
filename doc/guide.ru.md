@@ -166,10 +166,10 @@ Windows**: каждый файл конвертируется в JPEG во вр�
 Доступны три, и выбор идёт между деньгами и тем, что будет прочитано верно.
 
     --provider ollama      local, needs a running Ollama server (DEFAULT)
-    --provider anthropic   cloud, needs ANTHROPIC_API_KEY
     --provider openai      any endpoint speaking the OpenAI /chat/completions
                            API (Groq, OpenRouter, Mistral, GitHub Models,
                            Cerebras, Gemini's compatibility endpoint)
+    --provider anthropic   cloud, needs ANTHROPIC_API_KEY
 
 **Локальный вариант стоит по умолчанию на десктопе, и любая облачная точка
 доступа — явное согласие**, потому что ваши фотографии выгружаются целиком в ту

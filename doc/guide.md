@@ -172,10 +172,10 @@ Three are available, and the choice is between money and what gets read
 correctly.
 
     --provider ollama      local, needs a running Ollama server (DEFAULT)
-    --provider anthropic   cloud, needs ANTHROPIC_API_KEY
     --provider openai      any endpoint speaking the OpenAI /chat/completions
                            API (Groq, OpenRouter, Mistral, GitHub Models,
                            Cerebras, Gemini's compatibility endpoint)
+    --provider anthropic   cloud, needs ANTHROPIC_API_KEY
 
 **Local is the default on desktop and every cloud endpoint is an explicit
 opt-in**, because your photographs are uploaded in full to whichever endpoint

@@ -165,10 +165,10 @@ HEIC 三枚を置いた実行が、本物の実行と見分けのつかない結
 三つあり、選択は費用と、何が正しく読まれるかの間の選択です。
 
     --provider ollama      local, needs a running Ollama server (DEFAULT)
-    --provider anthropic   cloud, needs ANTHROPIC_API_KEY
     --provider openai      any endpoint speaking the OpenAI /chat/completions
                            API (Groq, OpenRouter, Mistral, GitHub Models,
                            Cerebras, Gemini's compatibility endpoint)
+    --provider anthropic   cloud, needs ANTHROPIC_API_KEY
 
 **デスクトップの既定はローカルで、クラウドのエンドポイントはどれも明示的に選ぶ
 ものです。** あなたの写真は、あなたが指定したエンドポイントへ丸ごと送信されます

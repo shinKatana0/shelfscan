@@ -696,9 +696,9 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
 
 - **`scan`** — photos in, review file out. `--provider ollama` is the
   default, so the flag matters only to opt in to the cloud:
-  `--provider anthropic` (needs `ANTHROPIC_API_KEY`) or
   `--provider openai` (any OpenAI-compatible endpoint; needs the three
-  `SHELFSCAN_OPENAI_*` variables). `--fallback` adds a second model that
+  `SHELFSCAN_OPENAI_*` variables) or `--provider anthropic` (needs
+  `ANTHROPIC_API_KEY`). `--fallback` adds a second model that
   re-reads **every** photo and merges the two reads: double the vision
   calls, and with a cloud second reader every photo uploaded — see
   [Where your photos go](#where-your-photos-go) for what that measured.
@@ -913,8 +913,6 @@ directory, never next to your original.
   at something else — so "never leaves the machine" holds exactly as long
   as that address is your machine. Aimed at a box on your LAN, it ships
   the photos there over plain HTTP.
-- **Anthropic (`--provider anthropic`, the app's Cloud backend):** every
-  photo is uploaded in full to Anthropic.
 - **An OpenAI-compatible endpoint (`--provider openai`, the app's
   Endpoint backend):** every photo is uploaded in full to whatever
   endpoint you named in `SHELFSCAN_OPENAI_BASE_URL` or in Settings. This
@@ -922,13 +920,15 @@ directory, never next to your original.
   by training on what is submitted to them. It is why no endpoint is ever
   a default here — a base URL this project picked for you would be a
   service you never chose.
+- **Anthropic (`--provider anthropic`, the app's Cloud backend):** every
+  photo is uploaded in full to Anthropic.
 - **`--fallback` — a second model, on top of any of the above:** it
   re-reads **every** photo, not the ones the first model struggled with,
   and the two reads are merged. So the run makes twice the vision calls,
   and with a cloud second reader **every photo is uploaded** — including
   on a run whose primary was local and which therefore looks local. That
-  is why a cloud second reader takes `--fallback anthropic` or
-  `--fallback openai` typed on the command line: no environment variable
+  is why a cloud second reader takes `--fallback openai` or
+  `--fallback anthropic` typed on the command line: no environment variable
   can turn a local run into a cloud one, and
   `SHELFSCAN_OLLAMA_FALLBACK_MODEL` selects a second *local* model and
   nothing else. The run says which one
@@ -959,7 +959,7 @@ A wrong row can be rejected at review and a missing one cannot, so this
 is a trade rather than a disaster. But it is a **local** second reader
 that was measured. A cloud one has never been measured here — no cloud key
 was available (T-0057) — so nothing above is evidence about
-what `--fallback anthropic` or `--fallback openai` would buy, and turning
+what `--fallback openai` or `--fallback anthropic` would buy, and turning
 one on to find out uploads every photo.
 
 Since T-0061 this is a **CLI flag only**. The app has one reader per
