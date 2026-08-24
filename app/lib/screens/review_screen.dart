@@ -147,6 +147,31 @@ const _reresolveClause = 'kind corrected -- nothing looks it up';
 /// detection off a photograph carries a source id.
 const _exactIdClause = 'matched by store id';
 
+/// What a row says when the year had to be dropped to find the match at all
+/// (T-0336).
+///
+/// Beside `score N%` rather than instead of it, which is the reverse of
+/// [_exactIdClause] and for the reverse reason. Both queries sent the same
+/// title, so the percentage measures what it measures on every other row and
+/// is not the field making the false claim; what is missing sits under it.
+/// TMDB answered that no film of this title carries the year the filename
+/// gave, so one thing stands here where a corroborated row has two and the
+/// number is identical either way -- the case [MatchMethod]'s own comment
+/// says the score cannot carry and must not be asked to.
+///
+/// A statement and not an instruction, for the reason [_noXcollKindClause]
+/// gives: nothing tapped brings the year back. The sheet needs no sentence of
+/// its own either, because every candidate of a retry carries the mark rather
+/// than only the pick (T-0336), so each line there says it for itself.
+///
+/// No guard goes with it, and that is a decision rather than an omission.
+/// `TmdbResolverWorker._bestFilm` withdraws the year tie-break for such a
+/// row, so it auto-matches only as a single top scorer and a tie is refused
+/// even where one of the tied films carries the detection's year. The
+/// dangerous row is already refused upstream, and a second warning on top of
+/// that would spend the screen's alarm on the rows that do not need it.
+const _yearlessRetryClause = 'year did not match';
+
 /// Names a dialog lists before it stops and counts the rest.
 /// Ten still reads as a list and leaves the counted tail empty on an ordinary
 /// run; a hundred is a wall of text, and by then the per-row clause is what
@@ -190,14 +215,21 @@ BoxDecoration _unmatchedFrame(ColorScheme scheme) => BoxDecoration(
       borderRadius: BorderRadius.circular(12),
     );
 
-/// The two clauses that say which of two otherwise identical rows this is.
+/// The clauses that say which of two otherwise identical rows this is.
 ///
 /// The year is four characters and IGDB has none for a small fraction of the
-/// games one control run touches, so an absent one prints nothing at all rather
-/// than a
-/// placeholder -- the same treatment every other optional clause here gets,
-/// and the only one that does not read as a claim. Worst case it takes the
-/// 88-character subtitle measured for [_wideLayout] to 95.
+/// games one control run touches, so an absent one prints nothing at all
+/// rather than a placeholder -- the same treatment every other optional clause
+/// here gets, and the only one that does not read as a claim. Worst case it
+/// takes the 88-character subtitle measured for [_wideLayout] to 95.
+///
+/// [_yearlessRetryClause] is the one clause here that is ADDED rather than
+/// substituted, so unlike T-0311's and T-0313's it cannot be free: 21
+/// characters of row with its separator. It is also the only one no row in
+/// that measurement could have carried. A film is the only kind TMDB's retry
+/// reaches, and a film candidate has no platform at all (decision 0016), so
+/// the rows that pay it open on `?` where the rows the 88 came from open on a
+/// catalogue platform name.
 List<String> _identity(Candidate candidate) => [
       if (candidate.releaseYear case final year?) '$year',
       if (candidate.matchedAlternativeName case final name?)
@@ -207,6 +239,10 @@ List<String> _identity(Candidate candidate) => [
       candidate.matchMethod == MatchMethod.externalId
           ? _exactIdClause
           : 'score ${(candidate.score * 100).round()}%',
+      // After the number it qualifies, not before it: the defect is an
+      // identical percentage with different evidence under it.
+      if (candidate.matchMethod == MatchMethod.yearlessRetry)
+        _yearlessRetryClause,
     ];
 
 class ReviewScreen extends StatefulWidget {
