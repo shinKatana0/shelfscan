@@ -201,17 +201,18 @@ void main() {
       ))}';
 
       expect(message, contains('Check that base URL first'));
-      expect(message, contains('online'));
+      expect(message, contains('yours to set'));
     });
 
     test('Anthropic sends nobody to a setting it does not have', () async {
       final message = '${await _failure(_anthropic(await _refusal))}';
 
       // `ollama serve` has no cloud counterpart and this address is not a
-      // field, so the only actionable half is the machine's own connection.
+      // field, so nothing here may read as one the user could correct.
       expect(message, isNot(contains('base URL')));
+      expect(message, isNot(contains('yours to set')));
       expect(message, contains('fixed in this app'));
-      expect(message, contains('online'));
+      expect(message, contains('nothing to correct in your settings'));
     });
 
     test('the two do not read the same', () async {
@@ -219,6 +220,70 @@ void main() {
 
       expect('${await _failure(_anthropic(refusal))}',
           isNot('${await _failure(_openAi('https://x.test/v1', throwing: refusal))}'));
+    });
+  });
+
+  group('it says where else to look (T-0354)', () {
+    // A host that is nobody's: the vendor sweep below reads the whole
+    // sentence, and a real vendor's base URL would answer it by itself.
+    const neutralUrl = 'https://vision.example.test/v1';
+
+    Future<String> userSet() async =>
+        '${await _failure(_openAi(neutralUrl, throwing: await _refusal))}';
+    Future<String> buildFixed() async =>
+        '${await _failure(_anthropic(await _refusal))}';
+
+    test('the host is named, so it can be tried without this app', () async {
+      final message = await userSet();
+
+      expect(message, contains(neutralUrl));
+      expect(message, contains('in a browser on this device'));
+    });
+
+    test('both halves point outside this app, not only the user\'s one',
+        () async {
+      for (final message in [await userSet(), await buildFixed()]) {
+        expect(message, contains('points outside this app'), reason: message);
+        expect(message, contains('in a browser on this device'),
+            reason: message);
+      }
+    });
+
+    test('it suggests where to look and asserts no cause', () async {
+      final message = await userSet();
+
+      // The three failures are one `ClientException` here, so a sentence that
+      // picks one of them is claiming what this code did not measure.
+      expect(message, contains('usually'));
+      for (final verdict in [
+        'is refusing',
+        'is blocked',
+        'is offline',
+        'is down',
+        'is unreachable',
+      ]) {
+        expect(message, isNot(contains(verdict)), reason: verdict);
+      }
+    });
+
+    test('no other provider is recommended', () async {
+      final message = (await userSet()).toLowerCase();
+
+      // .env.example lists them and Settings is where one is changed; an
+      // error message that names a competitor ages badly.
+      for (final vendor in [
+        'openai',
+        'anthropic',
+        'groq',
+        'openrouter',
+        'mistral',
+        'gemini',
+        'cerebras',
+        'github',
+        'ollama',
+      ]) {
+        expect(message, isNot(contains(vendor)), reason: vendor);
+      }
     });
   });
 
