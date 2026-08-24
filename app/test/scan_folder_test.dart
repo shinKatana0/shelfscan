@@ -10,7 +10,7 @@
 ///
 /// The walk itself is not here -- it is real I/O, which never completes inside
 /// `testWidgets`'s fake async, so the screen takes a reader seam and
-/// `game_folders_test.dart` drives the real one against real directories.
+/// `media_folders_test.dart` drives the real one against real directories.
 library;
 
 import 'dart:async';
@@ -19,7 +19,7 @@ import 'dart:typed_data';
 import 'package:shelfscan_app/input_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shelfscan_app/game_folders.dart';
+import 'package:shelfscan_app/media_folders.dart';
 import 'package:shelfscan_app/photo_files.dart';
 import 'package:shelfscan_app/provider_config.dart';
 import 'package:shelfscan_app/screens/scan_screen.dart';

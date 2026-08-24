@@ -99,7 +99,7 @@ void main() {
       // `Marlow.pak` parses to the title `Marlow pak`: the extension gate, not
       // the parser, is what keeps an installed game's data out of the review
       // list (measured 2026-08-16).
-      expect(parseGameFileName('Marlow.pak').title, isNotNull);
+      expect(parseMediaFileName('Marlow.pak').title, isNotNull);
       expect(
           installerNamingFolder('New Folder',
               const ['Marlow.pak', 'English.pak', 'Screenshot 1.png']),
@@ -265,11 +265,12 @@ void main() {
       // and is a correct row; what separates it is its own name, which carries
       // no mark saying the OS made it.
       expect(installerNamingFolder('Harbour Lantern', const ['setup.exe']), isNull);
-      expect(parseGameFileName('Harbour Lantern').title, 'Harbour Lantern');
-      expect(parseGameFileName('setup.exe', container: 'Harbour Lantern').title,
+      expect(parseMediaFileName('Harbour Lantern').title, 'Harbour Lantern');
+      expect(
+          parseMediaFileName('setup.exe', container: 'Harbour Lantern').title,
           'Harbour Lantern');
       expect(installerNamingFolder('Harbour Lantern', const []), isNull);
-      expect(parseGameFileName('Ashfall 2').title, 'Ashfall 2');
+      expect(parseMediaFileName('Ashfall 2').title, 'Ashfall 2');
     });
 
     test('what it costs, pinned rather than left implicit', () {
@@ -281,21 +282,21 @@ void main() {
       // named decline rather than a silent guess, which is the trade decision
       // 0012 already made ("a silent failure is worse than a loud one").
       expect(installerNamingFolder('Moor (2)', const ['setup.exe']), isNull);
-      expect(parseGameFileName('Moor (2)').title, isNull);
-      expect(parseGameFileName('Moor').title, 'Moor');
+      expect(parseMediaFileName('Moor (2)').title, isNull);
+      expect(parseMediaFileName('Moor').title, 'Moor');
     });
   });
 
   group('the mark that separates an installer from a launcher', () {
     test('is a dropped setup prefix or a stripped version, and nothing else',
         () {
-      expect(parseGameFileName('setup_iron_march_2_ultimate_2.1.0.4.exe')
+      expect(parseMediaFileName('setup_iron_march_2_ultimate_2.1.0.4.exe')
           .setupPrefix, isTrue);
-      expect(parseGameFileName('setup_iron_march_2_ultimate_2.1.0.4.exe')
+      expect(parseMediaFileName('setup_iron_march_2_ultimate_2.1.0.4.exe')
           .version, '2.1.0.4');
       // GoG's own convention prints the build outside a dotted version, so the
       // prefix is the only mark this one carries (measured 2026-08-16).
-      final gog = parseGameFileName(
+      final gog = parseMediaFileName(
           'setup_tulip_hospital_build_1100000045change_1100000046_0_(64bit)_(1100000018).exe');
       expect(gog.setupPrefix, isTrue);
       expect(gog.version, isNull);
@@ -305,14 +306,14 @@ void main() {
         'Harbour Lantern.exe',
         'ASHFALL2.EXE',
       ]) {
-        final parse = parseGameFileName(launcher);
+        final parse = parseMediaFileName(launcher);
         expect(parse.setupPrefix, isFalse, reason: launcher);
         expect(parse.version, isNull, reason: launcher);
       }
     });
 
     test('a declined name carries neither', () {
-      final parse = parseGameFileName('setup.exe');
+      final parse = parseMediaFileName('setup.exe');
       expect(parse.title, isNull);
       expect(parse.setupPrefix, isFalse);
     });

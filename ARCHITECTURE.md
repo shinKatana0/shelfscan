@@ -139,7 +139,7 @@ app/                           # Flutter shell: Windows + Android
     ├── export_saver.dart     # save dialog (desktop) / share sheet (Android)
     ├── photo_files.dart      # which picked files are photos, by signature
     ├── heic_wic.dart         # HEIC -> JPEG in-process, WIC over dart:ffi
-    ├── game_folders.dart     # walks a games folder into SourceEntry list
+    ├── media_folders.dart    # walks a media folder into SourceEntry list
     ├── galaxy_db.dart        # the CLI reader's twin; dart:ffi cannot live in core
     └── screens/
         ├── scan_screen.dart   # pick photos, run pipeline, progress
@@ -274,5 +274,7 @@ entry cannot end a run.
 Four implementations sit on this seam today: `GogMetadataSource`
 (`goggame-*.info`), `FilenameSource` (file and folder names),
 `GogLibrarySource` (GOG Galaxy rows), and `InstalledGameSource` — not a reader
-at all but a router, handing each entry to the first two by name. Being shell
-code, that last one exists once in `bin/` and once in `app/lib/`.
+at all but a router, handing each entry to the first two by name. Its rows are
+not all games: `FilenameSource` has answered `WorkKind.movie` since T-0162, so
+a film sitting in that folder leaves the seam as a film. Being shell code, that
+last one exists once in `bin/` and once in `app/lib/`.

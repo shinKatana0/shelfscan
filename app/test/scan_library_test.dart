@@ -26,7 +26,7 @@ import 'package:shelfscan_app/input_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/galaxy_db.dart';
-import 'package:shelfscan_app/game_folders.dart';
+import 'package:shelfscan_app/media_folders.dart';
 import 'package:shelfscan_app/photo_files.dart';
 import 'package:shelfscan_app/provider_config.dart';
 import 'package:shelfscan_app/screens/scan_screen.dart';

@@ -9,7 +9,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shelfscan_app/game_folders.dart';
+import 'package:shelfscan_app/media_folders.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
 late Directory _root;

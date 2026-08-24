@@ -44,7 +44,7 @@ class FilenameSource implements DetectionSource {
 
   @override
   SourceReading read(SourceEntry entry) {
-    final parse = parseGameFileName(entry.name, container: entry.container);
+    final parse = parseMediaFileName(entry.name, container: entry.container);
     final title = parse.title;
     if (title == null) {
       return SourceReading(
@@ -111,7 +111,7 @@ abstract final class DeclineReason {
   /// nothing else ([_numberedCopy], T-0189).
   ///
   /// Deliberately not [noTitle], and the second of its two reasons is the one
-  /// still load-bearing. [parseGameFileName] falls back to the container on
+  /// still load-bearing. [parseMediaFileName] falls back to the container on
   /// [noTitle] alone, so `Новая папка (2)` under that reason took the SCAN
   /// ROOT's name -- `Downloaded games`, a worse row than the one being
   /// removed; T-0193 stopped both shells passing a scan root at all, so what
@@ -153,7 +153,7 @@ abstract final class DeclineReason {
   static const noWorkKind = 'a video file that names no film';
 }
 
-/// What [parseGameFileName] made of one name.
+/// What [parseMediaFileName] made of one name.
 ///
 /// [year] and [version] are on the result rather than folded into [title]
 /// because each is an answer in its own right: the version is what T-0156
@@ -245,7 +245,7 @@ class FileNameParse {
 /// Pure and free, which is the whole difference from a spine read -- no call,
 /// no cost, and no first-ask-versus-repeat variance to control for, so a
 /// corpus replays as often as anyone wants.
-FileNameParse parseGameFileName(String name, {String? container}) {
+FileNameParse parseMediaFileName(String name, {String? container}) {
   final own = _parseOne(name);
   if (own.title != null) return own;
 
@@ -295,7 +295,7 @@ FileNameParse parseGameFileName(String name, {String? container}) {
 ///
 /// **The folder's own name is asked first and wins by default**, because both
 /// strings arrive as [DetectionOrigin.filename] so authority cannot separate
-/// them and order must -- exactly as in [parseGameFileName], where the
+/// them and order must -- exactly as in [parseMediaFileName], where the
 /// container is consulted only when the name yielded nothing -- and because the
 /// folder name is the better string of the two when both name the same game,
 /// keeping the apostrophe and the capitals
@@ -379,7 +379,7 @@ FileNameParse parseGameFileName(String name, {String? container}) {
 /// subdirectory, before and after -- which is the budget the two-level walk
 /// exists to protect.
 String? installerNamingFolder(String folderName, Iterable<String> fileNames) {
-  final folderTitle = parseGameFileName(folderName).title;
+  final folderTitle = parseMediaFileName(folderName).title;
 
   final runnable = <String>[], carried = <String>[];
   final runnableTitles = <String>{}, carriedTitles = <String>{};
@@ -388,7 +388,7 @@ String? installerNamingFolder(String folderName, Iterable<String> fileNames) {
     final extension = dot <= 0 ? '' : _fold(name.substring(dot + 1));
     final runs = _runnableExtensions.contains(extension);
     if (!runs && !_carrierExtensions.contains(extension)) continue;
-    final title = parseGameFileName(name).title;
+    final title = parseMediaFileName(name).title;
     if (title == null) continue;
     (runs ? runnable : carried).add(name);
     (runs ? runnableTitles : carriedTitles).add(titleKey(title));
@@ -406,7 +406,7 @@ String? installerNamingFolder(String folderName, Iterable<String> fileNames) {
 /// Not "differs from": see [installerNamingFolder] for the two gates and the
 /// folders each was measured on.
 bool _contradicts(String folderTitle, String fileName) {
-  final file = parseGameFileName(fileName);
+  final file = parseMediaFileName(fileName);
   final title = file.title;
   if (title == null) return false;
   if (!file.setupPrefix && file.version == null) return false;
@@ -465,11 +465,11 @@ String? videoNamingFolder(Iterable<String> fileNames) {
     final dot = name.lastIndexOf('.');
     final extension = dot <= 0 ? '' : _fold(name.substring(dot + 1));
     if (_runnableExtensions.contains(extension) &&
-        parseGameFileName(name).title != null) {
+        parseMediaFileName(name).title != null) {
       return null;
     }
     if (!_videoExtensions.contains(extension)) continue;
-    final parse = parseGameFileName(name);
+    final parse = parseMediaFileName(name);
     final title = parse.title;
     if (title != null && parse.workKind == WorkKind.movie) {
       films.add(name);
@@ -512,7 +512,7 @@ FileNameParse _parseOne(String raw) {
     return const FileNameParse.declined(
         DeclineReason.supportFile, Severity.exclusion);
   }
-  if (_namesNoGame(folded)) {
+  if (_namesNoWork(folded)) {
     return const FileNameParse.declined(
         DeclineReason.noTitle, Severity.exclusion);
   }
@@ -577,7 +577,7 @@ FileNameParse _parseOne(String raw) {
 
   // Asked again on what would be emitted, not only on the raw stem: Windows
   // names the second one `New folder (2)`, and the brackets come off above.
-  if (title == null || _namesNoGame(_fold(title))) {
+  if (title == null || _namesNoWork(_fold(title))) {
     return const FileNameParse.declined(
         DeclineReason.noTitle, Severity.exclusion);
   }
@@ -625,7 +625,7 @@ class _ConsoleMark {
 /// console rows do exactly that (T-0168).
 final _switchTitleId = RegExp(r'^01[0-9a-f]{14}$');
 
-/// One list of names that title no game, consulted for whichever field the
+/// One list of names that title no work, consulted for whichever field the
 /// name arrived in (T-0174).
 ///
 /// The defect this closes: [_genericNames] was read for [SourceEntry.container]
@@ -635,8 +635,8 @@ final _switchTitleId = RegExp(r'^01[0-9a-f]{14}$');
 ///
 /// Nothing here asks whether the name is a file or a directory. The two are
 /// told apart by no character in a name, and the question does not arise: a
-/// name that titles no game titles none either way.
-bool _namesNoGame(String folded) =>
+/// name that titles no work titles none either way.
+bool _namesNoWork(String folded) =>
     _genericStems.contains(folded) || _genericNames.contains(folded);
 
 /// The index the title stops at: the first token that is release metadata.
@@ -781,14 +781,14 @@ _Stem? _stripExtensions(String raw) {
     final dot = text.lastIndexOf('.');
     if (dot <= 0 || dot == text.length - 1) break;
     final ext = _fold(text.substring(dot + 1));
-    // Before [_neverAGame] and before the carrier list, and it stops the loop
+    // Before [_neverAWork] and before the carrier list, and it stops the loop
     // rather than going round again: what precedes a video extension is the
     // release name, whose last dot-separated word is a release group and not
     // an inner extension to strip.
     if (_videoExtensions.contains(ext)) {
       return _Stem(text.substring(0, dot), console, consoleHint, video: true);
     }
-    if (_neverAGame.contains(ext)) return null;
+    if (_neverAWork.contains(ext)) return null;
     if (consolePlatformHints.containsKey(ext)) {
       console = true;
       consoleHint ??= consolePlatformHints[ext];
@@ -1265,7 +1265,7 @@ const _carrierExtensions = {
 /// (decision 0015): the extension separates most of it, the grammar of the
 /// name separates the rest, and a name neither settles declines.
 ///
-/// `mkv`, `mp4` and `avi` were in [_neverAGame] until T-0162 and are the whole
+/// `mkv`, `mp4` and `avi` were in [_neverAWork] until T-0162 and are the whole
 /// of what moved: under that set a film declined as `not a game file`, which
 /// was the right answer while a game was the only kind there was.
 ///
@@ -1276,8 +1276,8 @@ const _videoExtensions = {
   'ogm', 'rmvb', 'vob', 'webm',
 };
 
-/// Extensions that are never a game, declining the entry before a title is
-/// parsed out of a name that may read exactly like one.
+/// Extensions that are never a copy of any work, declining the entry before a
+/// title is parsed out of a name that may read exactly like one.
 ///
 /// `.torrent` is here on real evidence -- a real download folder, measured
 /// during development; not published: a download descriptor named after a game
@@ -1288,7 +1288,7 @@ const _videoExtensions = {
 /// reading it is T-0157's source, not this one. Both run over the same folder
 /// (T-0160), so this one has to hand it over rather than parse a product id
 /// out of `goggame-1100000001`.
-const _neverAGame = {
+const _neverAWork = {
   'torrent', 'nfo', 'sfv', 'md5', 'sha1', 'par2', 'url', 'lnk', 'ini', 'info',
   'log', 'txt', 'sav', 'save', 'bak', 'tmp', 'part', 'crdownload',
   'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'bmp', 'ico', 'svg',

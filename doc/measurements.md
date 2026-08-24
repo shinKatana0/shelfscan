@@ -898,7 +898,7 @@ rule produce identical rows in every one of these conditions.
 not implementable today, and it is not merely unimplemented.** Off a
 photograph there is no year to carry: **no read of either control set**
 contains a four-digit year, because no spine prints one. Off a
-filename there is one — T-0158's `parseGameFileName` answers
+filename there is one — T-0158's `parseMediaFileName` answers
 `FileNameParse.year` — and it stops at the seam: nothing builds a `Detection`
 from a parse, and `Detection` has no field to carry a year in (filed as
 T-0171). Folding it into the title instead is refused two gates earlier:

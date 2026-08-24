@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
 import '../export_saver.dart';
-import '../game_folders.dart' show folderName;
+import '../media_folders.dart' show folderName;
 
 /// Statuses an exporter will actually emit -- mirrors `_exportable` in
 /// `shelfscan_core/lib/src/exporters/exporters.dart`. What each target does

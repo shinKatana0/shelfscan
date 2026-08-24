@@ -10,9 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 
 import '../galaxy_db.dart';
-import '../game_folders.dart';
 import '../heic_wic.dart';
 import '../input_picker.dart';
+import '../media_folders.dart';
 import '../photo_files.dart';
 import '../provider_config.dart';
 import '../settings_store.dart';
@@ -78,7 +78,7 @@ class ScanScreen extends StatefulWidget {
   /// Not a convenience -- `testWidgets` runs its body in a fake async zone, so
   /// a real `Directory.list()` future never completes there and the pick hangs
   /// with nothing added and nothing named. The walk itself is covered against
-  /// real directories in `game_folders_test.dart`, which is a plain test.
+  /// real directories in `media_folders_test.dart`, which is a plain test.
   @visibleForTesting
   final Future<MediaFolder> Function(String path)? debugFolderReader;
 

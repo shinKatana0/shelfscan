@@ -151,7 +151,7 @@ void main() {
     });
 
     test('names the cell and the column it is in', () {
-      // The measured ordinary case (T-0185): `parseGameFileName` drops a
+      // The measured ordinary case (T-0185): `parseMediaFileName` drops a
       // leading `-`, so a folder named `-Tactics` reaches `source_entry` and
       // nothing else.
       final doc = _doc([_game('Tactics', sourceEntry: '-Tactics')]);
