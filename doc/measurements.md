@@ -44,8 +44,8 @@ first is a photograph:
   (T-0281) are measured on nothing else, and each says so at its head;
 - **no imagery at all** — probes replayed off the shared control capture or off
   recorded provider answers (T-0113, T-0147, T-0165), IGDB's own public
-  catalogue listing (T-0159), and TMDB's live answers on two public films (the
-  last section);
+  catalogue listing (T-0159), and TMDB's live answers on three public films
+  (the last section);
 - **private folders on a disk** (the disk sources), which photograph nothing
   and are held to the same publication rule as the photographs.
 
@@ -1364,19 +1364,20 @@ anything real. Filed as its own task rather than folded in here.
 
 ## TMDB's `year` filters, and the first live film searches (orchestrator, 2026-08-23)
 
-The first requests this project has ever made to TMDB. Five searches settled
-one question — what the `year` parameter does — and a scan of three constructed
-filenames the same evening verified that the film path runs at all. Both halves
-are below; the limits under them are as much of the measurement as the figures,
-because two titles on one machine on one evening are what this rests on.
+The first requests this project has ever made to TMDB. Eight searches settled
+two questions — what the `year` parameter does, and what a year left inside
+the query *text* does instead — and a scan of three constructed filenames the
+same evening verified that the film path runs at all. All three parts are
+below; the limits under them are as much of the measurement as the figures,
+because three titles on one machine on one evening are what this rests on.
 
-**On what.** No imagery, and nothing off anybody's disk: two films chosen as
-public examples for the test, *Metropolis* (1927) and *Alien* (1979), asked of
-the live service through the shipped `TmdbClient` with an API Read Access Token
-supplied for the run. They are **neither a private collection nor part of this
-tree's invented fixture family** — nothing quotes them as a fixture and nothing
-should start; they are public-catalogue rows used as evidence, the way T-0159's
-GOG products are.
+**On what.** No imagery, and nothing off anybody's disk: three films chosen as
+public examples for the test — *Metropolis* (1927), *Alien* (1979) and
+*Nosferatu* (1922) — asked of the live service through the shipped
+`TmdbClient` with an API Read Access Token supplied for the run. They are
+**neither a private collection nor part of this tree's invented fixture
+family** — nothing quotes them as a fixture and nothing should start; they
+are public-catalogue rows used as evidence, the way T-0159's GOG products are.
 
 ### The five searches
 
@@ -1416,6 +1417,53 @@ Three things were already resting on this before it was written down here:
   false. It had been written against a fake, which answered as it was told to —
   which is the reason this section exists rather than a second fake test.
 
+### The year inside the query *text*, and the film a bare title returns
+
+Three further searches, the same evening and the same token, asked the other
+question: what happens to a year that is inside the query string rather than in
+the `year` parameter. They are the searches that produced T-0335, and until now
+they were written down nowhere but that task's entry on the board.
+
+| query | results | first row |
+|---|---|---|
+| `Metropolis 1927` | **0** | — |
+| `Metropolis` | 81 | *Metropolis*, 1927 |
+| `Nosferatu 1922` | **0** | — |
+| `Nosferatu` | 55 | *Nosferatu*, **2024** |
+
+The bare `Metropolis` row is the first row of the table above and not a second
+search; it is repeated here because the pair is what carries the finding, and
+the total of eight counts it once.
+
+Two findings, and they are separate claims.
+
+**1. A year inside the query text returns nothing.** Both titles, both
+directions: with the year in the string, zero rows; with it removed, rows.
+What the zero does not say is why — an unmatchable query looks the same
+whatever made it unmatchable, which is the same blindness the off-by-one
+`year` rows have above. On this tree's side the cause is T-0335's and its
+report carries it: the film grammar shared an installer's year floor of 1970,
+so a film made before that kept its year in the title and the title was what
+went to the service.
+
+**2. A bare title returns the wrong film.** `Nosferatu` alone returns 55 rows
+and the **2024** film is first, not the 1922 one that was asked for. Nothing
+in the run says where in the 55 the 1922 film sits, only that it is not the
+answer. So dropping the year is not a repair on its own: it buys back the rows
+and spends the one thing that says which row was wanted.
+
+**What follows from finding 2 is an argument, and this run is not it.** What
+was measured is the four rows above and what came back. The inference — that
+the year has to reach whatever *chooses* among the answers and not only
+whatever fetches them — is the reasoning behind T-0335's separate `sourceYear`
+field and behind T-0171's `_separatedBySourceYear`, which breaks a tie on a
+candidate's release year. That machinery is where the design was argued and
+settled; this evening neither established it nor exercised it. **No tie has
+been broken by a year on a live TMDB answer.** The one row here that reached a
+tie is the third of the end-to-end rows below, and its year had already been
+spent on the search — it ended in the refusal, which is the other half of the
+same rule.
+
 ### The path, end to end, the same evening
 
 Three release-style filenames (`<Title>.<year>.1080p…mkv`, constructed for the
@@ -1437,14 +1485,18 @@ not measured on.
 
 ### What this does not establish, and it is most of it
 
-- **Nothing about match quality.** Two titles is not a rate. No proportion of
+- **Nothing about match quality.** Three titles is not a rate. No proportion of
   anything auto-matches, resolves or misses on the strength of this; a figure
   of that kind would need a corpus, and none was run.
-- **Nothing about a release name that differs from the catalogue's.** Both
-  examples are catalogued under the name they were asked by, so
-  `TmdbHit.originalTitle` — the field that exists for exactly the opposite case,
-  and where anime and other non-English releases live — was never exercised
-  against the live service.
+- **Nothing about a release name that differs from the catalogue's.** Nothing
+  in the run turned on one: every title was asked by a name the catalogue
+  answers to directly, so `TmdbHit.originalTitle` — the field that exists for
+  exactly the opposite case, and where anime and other non-English releases
+  live — was never exercised against the live service.
+- **Nothing about choosing among the answers.** The wrong-film row says a year
+  is needed to pick; it does not show anything picking. No live answer here was
+  separated by a release year, so `_separatedBySourceYear` remains exercised
+  offline only, against a fake.
 - **Nothing about the app.** The film path measured here is the CLI's. `app/`
   cannot take a TMDB token at all: the CLI reads it from the environment, the
   shell keeps credentials in the OS keychain and Settings has no field for a
