@@ -406,6 +406,65 @@ bool _contradicts(String folderTitle, String fileName) {
 Set<String> _titleWords(String title) =>
     titleKey(title).split(' ').where((word) => word.isNotEmpty).toSet();
 
+/// The one video file inside a subdirectory that says what the folder holds,
+/// or null, meaning the folder goes over under its own name.
+///
+/// [installerNamingFolder] asked about the KIND rather than about the title,
+/// and that difference is why this one never consults the folder's name. A
+/// directory name carries no extension, so it never reaches the kind fork in
+/// [_parseOne]: a folder named for a film and holding one came back a game row
+/// carrying the `PC` hint, and the file that would have said otherwise was
+/// never an entry at all (T-0349, on a synthetic tree). There is no
+/// arbitration to do between the two strings, because only one of them can
+/// express a kind.
+///
+/// [fileNames] are the direct child FILE names both shells already hold for
+/// the `goggame-*.info` filter (T-0160, T-0161), so nothing here reads
+/// anything and no walk goes deeper. What changes is which entry is kept from
+/// a listing that was made either way -- one per subdirectory, before and
+/// after, which is the budget the two-level walk exists to protect.
+///
+/// **A runnable file that names a game stops it**, [_runnableExtensions] and
+/// deliberately not [_carrierExtensions]: a program is some game's and a
+/// payload is nobody's. A release extracted in place keeps its `.rar` parts
+/// beside the `.mkv`, and blocking on a carrier would leave exactly that
+/// folder a game row. A folder holding `setup_moor_1.9.exe` beside a film is
+/// the mixed case, and the budget above decides it -- one entry cannot be two
+/// works, so the folder keeps the reading it already had.
+///
+/// **Two answers, and each is the video files agreeing.** A single film title,
+/// folded through [titleKey], hands the folder to that film's name; two are as
+/// ambiguous as the two installers [installerNamingFolder] refuses, and a
+/// `sample.mkv` beside them is neither, declining [DeclineReason.noWorkKind]
+/// before it can be counted. Failing a film, a folder whose video names are
+/// all episodes hands over one of them, so a series folder reaches the owner
+/// as the decline T-0162 wrote for it rather than as a game row named after
+/// the series. Neither answer invents a string: what goes over is a real file
+/// name, read by the same grammar that reads a loose one.
+String? videoNamingFolder(Iterable<String> fileNames) {
+  final films = <String>[], episodes = <String>[];
+  final titles = <String>{};
+  for (final name in fileNames) {
+    final dot = name.lastIndexOf('.');
+    final extension = dot <= 0 ? '' : _fold(name.substring(dot + 1));
+    if (_runnableExtensions.contains(extension) &&
+        parseGameFileName(name).title != null) {
+      return null;
+    }
+    if (!_videoExtensions.contains(extension)) continue;
+    final parse = parseGameFileName(name);
+    final title = parse.title;
+    if (title != null && parse.workKind == WorkKind.movie) {
+      films.add(name);
+      titles.add(titleKey(title));
+    } else if (parse.declined == DeclineReason.seriesEpisode) {
+      episodes.add(name);
+    }
+  }
+  if (films.isNotEmpty) return titles.length == 1 ? films.first : null;
+  return episodes.isEmpty ? null : episodes.first;
+}
+
 FileNameParse _parseOne(String raw) {
   final stem = _stripExtensions(raw.trim());
   if (stem == null) {

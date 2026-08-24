@@ -786,6 +786,7 @@ class InstallDirectory {
     required this.metadataFiles,
     required this.looseFiles,
     this.installerNamed = 0,
+    this.videoNamed = 0,
   });
 
   /// What the source stage is handed, in listing order.
@@ -803,6 +804,12 @@ class InstallDirectory {
   /// than their own (T-0178). A subset, not a fourth kind of entry, so the
   /// three counts above still sum to [entries].
   final int installerNamed;
+
+  /// The same subset for a film or a series inside (T-0349), counted apart
+  /// because it is a different fact about the folder: an installer name is a
+  /// better title for what the folder already was, a video name is the only
+  /// thing that says what KIND it is.
+  final int videoNamed;
 }
 
 /// Reads a games folder two levels deep, and the second level only for
@@ -830,6 +837,12 @@ class InstallDirectory {
 ///   reaches a locale-generated name no list here holds. It replaces the
 ///   folder's entry rather than joining it, so the budget the filter above
 ///   protects is untouched: one entry per subdirectory, before and after.
+/// - inside a subdirectory whose video files agree on what they hold, the one
+///   video file that says so ([videoNamingFolder], T-0349). The third narrow
+///   filter beside the two above and the same trade: a directory name has no
+///   extension, so a folder holding one film went over as a game row named
+///   after itself. It replaces the folder's entry exactly as the installer
+///   does, so the budget is again untouched.
 ///
 /// Nothing below that is enumerated at all, so a game's `data/`, `Saves/` and
 /// `Redist/` subtrees never reach core.
@@ -860,6 +873,7 @@ InstallDirectory readInstallDirectory(Directory dir) {
   var metadataFiles = 0;
   var looseFiles = 0;
   var installerNamed = 0;
+  var videoNamed = 0;
 
   for (final entity in dir.listSync()
     ..sort((a, b) => a.path.compareTo(b.path))) {
@@ -894,14 +908,23 @@ InstallDirectory readInstallDirectory(Directory dir) {
     // The listing above is taken for the metadata either way, so consulting it
     // for a name costs no read (T-0178). A directory holding metadata keeps
     // its own entry whatever its name: the GoG path short-circuits here.
-    final inside = fileNames.any(GogMetadataSource.fileName.hasMatch)
+    final metadata = fileNames.any(GogMetadataSource.fileName.hasMatch);
+    final video = metadata ? null : videoNamingFolder(fileNames);
+    final installer = metadata || video != null
         ? null
         : installerNamingFolder(name, fileNames);
-    if (inside == null) {
-      entries.add(SourceEntry(name: name));
-    } else {
+    if (video != null) {
+      videoNamed++;
+      // No container, unlike the installer below. The container is read as a
+      // title when the entry's own name carries none, and this folder's name
+      // is the string that reads as a game -- handing it over would put the
+      // defect back one fallback away (T-0349).
+      entries.add(SourceEntry(name: video));
+    } else if (installer != null) {
       installerNamed++;
-      entries.add(SourceEntry(name: inside, container: name));
+      entries.add(SourceEntry(name: installer, container: name));
+    } else {
+      entries.add(SourceEntry(name: name));
     }
 
     for (final child in contents) {
@@ -938,6 +961,7 @@ InstallDirectory readInstallDirectory(Directory dir) {
     metadataFiles: metadataFiles,
     looseFiles: looseFiles,
     installerNamed: installerNamed,
+    videoNamed: videoNamed,
   );
 }
 
@@ -1049,7 +1073,9 @@ String installScope(InstallDirectory listing) =>
     '(${listing.gameDirectories} folder(s), ${listing.looseFiles} loose '
     'file(s), ${listing.metadataFiles} goggame-*.info)'
     '${listing.installerNamed == 0 ? '' : ', ${listing.installerNamed} '
-        'folder(s) read under an installer name inside them'}';
+        'folder(s) read under an installer name inside them'}'
+    '${listing.videoNamed == 0 ? '' : ', ${listing.videoNamed} '
+        'folder(s) read under a video name inside them'}';
 
 /// The flag that adds a games folder to a run whose own input is photographs.
 const installsFlag = '--installs';
