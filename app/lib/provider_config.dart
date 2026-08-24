@@ -648,10 +648,14 @@ class ProviderPolicy {
   /// where the CLI resolves their films. T-0367 carries that difference and
   /// the vocabulary behind it.
   ///
-  /// **Nothing here has been run against TMDB.** No token existed on the
-  /// machine that wrote the client, this shell or these lines, so what a
-  /// registered film catalogue does is read off TMDB's published API
-  /// (`doc/reports/T-0308.md` §1). What a user gets is a route to it.
+  /// **The catalogue has answered, and never to this shell.** The CLI's film
+  /// path was run against the live service once, on three public films on one
+  /// evening (`doc/measurements.md`, "TMDB's `year` filters"). Read the limits
+  /// under that section before quoting it: three titles are not a match rate,
+  /// no live answer there was separated by a release year, and the run says
+  /// nothing whatever about this shell, which had no token to register until
+  /// now. What this field buys a user is that same route, travelled by them
+  /// first.
   static ResolverWorker buildResolver(
     ProviderSettings settings, {
     Map<String, String>? aliases,
