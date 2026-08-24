@@ -405,9 +405,13 @@ IGDB sees that they disagree.
 
 **No network.** The message says plainly that neither the client id nor the
 secret is what failed, that the address is fixed in the build rather than
-typed by you, and that there is nothing to correct in your settings — check
-whether the machine is online and whether a proxy or firewall is refusing the
-connection.
+typed by you, and that there is nothing to correct in your settings. It then
+names a check you can run without this program at all: open the address it
+quotes in a browser on the same device. Any answer at all, even an error page,
+means the host is reachable from here — these are POST endpoints, so an error
+page is what a browser reaching one gets. A browser refused the same way
+points outside shelfscan rather than at the lookup, usually the machine being
+offline or a proxy or a firewall in the way.
 
 **In every one of those cases nothing is lost.** This stage only adds
 canonical ids: the row is in the review unmatched and can be matched by hand
