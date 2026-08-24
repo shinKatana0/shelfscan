@@ -184,13 +184,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text(
               localAllowed
                   ? 'Local runs entirely on this machine and needs no keys. '
-                      'Cloud needs your own Anthropic API key. Endpoint '
-                      'sends the photos to any OpenAI-compatible service you '
-                      'name, with your own key.'
-                  : 'This device is cloud-only: on-device models are too weak '
-                      'for shelf spines. Cloud needs your own Anthropic key; '
                       'Endpoint sends the photos to any OpenAI-compatible '
-                      'service you name, with your own key.',
+                      'service you name, with your own key. Cloud needs your '
+                      'own Anthropic API key.'
+                  : 'This device is cloud-only: on-device models are too weak '
+                      'for shelf spines. Endpoint sends the photos to any '
+                      'OpenAI-compatible service you name, with your own key; '
+                      'Cloud needs your own Anthropic key.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
 
@@ -228,6 +228,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
 
+            const _SectionTitle('Endpoint (any OpenAI-compatible service)'),
+            Text(
+              'Groq, OpenRouter, Mistral, GitHub Models, Cerebras and '
+              "Gemini's OpenAI-compatible endpoint all speak the same API. "
+              'Paste the base URL up to and including the version segment.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            TextField(
+              key: const Key('settings-openai-url'),
+              controller: _openAiUrl,
+              autocorrect: false,
+              decoration: const InputDecoration(
+                labelText: 'API endpoint (base URL)',
+                helperText: openAiEndpointExamples,
+                helperMaxLines: 3,
+              ),
+            ),
+            TextField(
+              key: const Key('settings-openai-model'),
+              controller: _openAiModel,
+              autocorrect: false,
+              decoration: const InputDecoration(
+                labelText: 'Vision model',
+                helperText: 'Exactly as the service names it, e.g. '
+                    'gemini-2.5-flash or meta-llama/llama-4-scout-17b',
+                helperMaxLines: 3,
+              ),
+            ),
+            _SecretField(
+              fieldKey: const Key('settings-openai-key'),
+              controller: _openAiKey,
+              label: 'API key for this endpoint',
+              help: 'Your own key from that service. Stored in the OS '
+                  'keychain, never in a file in this app.',
+            ),
+
             const _SectionTitle('Cloud (Anthropic)'),
             _SecretField(
               fieldKey: const Key('settings-anthropic-key'),
@@ -264,42 +300,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'record.',
                 helperMaxLines: 6,
               ),
-            ),
-
-            const _SectionTitle('Endpoint (any OpenAI-compatible service)'),
-            Text(
-              'Groq, OpenRouter, Mistral, GitHub Models, Cerebras and '
-              "Gemini's OpenAI-compatible endpoint all speak the same API. "
-              'Paste the base URL up to and including the version segment.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            TextField(
-              key: const Key('settings-openai-url'),
-              controller: _openAiUrl,
-              autocorrect: false,
-              decoration: const InputDecoration(
-                labelText: 'API endpoint (base URL)',
-                helperText: openAiEndpointExamples,
-                helperMaxLines: 3,
-              ),
-            ),
-            TextField(
-              key: const Key('settings-openai-model'),
-              controller: _openAiModel,
-              autocorrect: false,
-              decoration: const InputDecoration(
-                labelText: 'Vision model',
-                helperText: 'Exactly as the service names it, e.g. '
-                    'gemini-2.5-flash or meta-llama/llama-4-scout-17b',
-                helperMaxLines: 3,
-              ),
-            ),
-            _SecretField(
-              fieldKey: const Key('settings-openai-key'),
-              controller: _openAiKey,
-              label: 'API key for this endpoint',
-              help: 'Your own key from that service. Stored in the OS '
-                  'keychain, never in a file in this app.',
             ),
 
             const _SectionTitle('IGDB (optional)'),
@@ -381,8 +381,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 IconData backendIcon(VisionBackend backend) => switch (backend) {
       VisionBackend.local => Icons.computer,
-      VisionBackend.cloud => Icons.cloud,
       VisionBackend.openAiCompatible => Icons.dns,
+      VisionBackend.cloud => Icons.cloud,
     };
 
 IconData themeModeIcon(ThemeMode mode) => switch (mode) {

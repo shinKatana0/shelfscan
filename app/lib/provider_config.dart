@@ -53,7 +53,15 @@ import 'package:shelfscan_core/shelfscan_core.dart';
 export 'package:shelfscan_core/shelfscan_core.dart'
     show defaultOllamaModel, defaultOllamaUrl;
 
-enum VisionBackend { local, cloud, openAiCompatible }
+/// Declaration order is the order the user meets them in: local, then the
+/// endpoint they name, then Anthropic. The owner's call about who uses this,
+/// and not a technical one (T-0343). [ProviderPolicy.available] repeats it for
+/// the screens and `backend_order_test.dart` holds the two together.
+///
+/// Reordering is safe only because `SettingsStore` persists `backend.name` and
+/// reads it back through a switch on those strings. By index the same edit
+/// would move every stored preference to a different provider.
+enum VisionBackend { local, openAiCompatible, cloud }
 
 /// Deliberately no default endpoint and no default model: a base URL the
 /// app picked for the user would be an external service the user never
@@ -228,8 +236,8 @@ class MatchingCheck {
 extension VisionBackendLabel on VisionBackend {
   String get label => switch (this) {
         VisionBackend.local => 'Local',
-        VisionBackend.cloud => 'Cloud',
         VisionBackend.openAiCompatible => 'Endpoint',
+        VisionBackend.cloud => 'Cloud',
       };
 }
 
@@ -262,15 +270,15 @@ String? privacyAdvice(VisionBackend backend, {required bool localAllowed}) {
   final cloud = VisionBackend.cloud.label;
   return switch (backend) {
     VisionBackend.local => null,
-    VisionBackend.cloud => localAllowed
-        ? 'Switch to $local to keep them on this machine.'
-        : 'This device cannot run a vision model itself, so the only photos '
-            'that stay off the network are the ones you leave out of the scan.',
     VisionBackend.openAiCompatible => localAllowed
         ? "Check that service's data policy before you scan, or switch to "
             '$local to keep them on this machine.'
         : "Check that service's data policy before you scan, or use $cloud -- "
             'a paid Anthropic API rather than a free tier.',
+    VisionBackend.cloud => localAllowed
+        ? 'Switch to $local to keep them on this machine.'
+        : 'This device cannot run a vision model itself, so the only photos '
+            'that stay off the network are the ones you leave out of the scan.',
   };
 }
 
@@ -323,10 +331,12 @@ class ProviderPolicy {
   static VisionBackend get defaultBackend =>
       localAllowed ? VisionBackend.local : VisionBackend.cloud;
 
+  /// Both screens render this list in order, so it carries [VisionBackend]'s
+  /// declaration order and a test fails if the two drift apart.
   static List<VisionBackend> get available => [
         if (localAllowed) VisionBackend.local,
-        VisionBackend.cloud,
         VisionBackend.openAiCompatible,
+        VisionBackend.cloud,
       ];
 
   /// Defense in depth: never run a backend this platform disallows even if
@@ -346,8 +356,8 @@ class ProviderPolicy {
       blocker: _missing(backend, settings),
       warning: switch (backend) {
         VisionBackend.local => null,
-        VisionBackend.cloud => cloudPrivacyWarning,
         VisionBackend.openAiCompatible => endpointPrivacyWarning,
+        VisionBackend.cloud => cloudPrivacyWarning,
       },
       advice: privacyAdvice(backend, localAllowed: localAllowed),
     );
@@ -389,12 +399,6 @@ class ProviderPolicy {
         // stating the opposite rule to the one the field enforces, and
         // reachability is a network question this function is forbidden to ask.
         return null;
-      case VisionBackend.cloud:
-        if (settings.anthropicApiKey.isEmpty) {
-          return 'Cloud recognition needs an Anthropic API key -- add it in '
-              'Settings.';
-        }
-        return null;
       case VisionBackend.openAiCompatible:
         // Each half named separately: "check your settings" for three
         // fields is a worse error than saying which one is blank.
@@ -408,6 +412,12 @@ class ProviderPolicy {
         if (settings.openAiApiKey.isEmpty) {
           return 'This backend needs your own API key for '
               '${settings.openAiBaseUrl} -- add it in Settings.';
+        }
+        return null;
+      case VisionBackend.cloud:
+        if (settings.anthropicApiKey.isEmpty) {
+          return 'Cloud recognition needs an Anthropic API key -- add it in '
+              'Settings.';
         }
         return null;
     }
@@ -437,6 +447,13 @@ class ProviderPolicy {
           baseUrl: settings.ollamaUrl,
           model: settings.ollamaModel,
         );
+      case VisionBackend.openAiCompatible:
+        return OpenAiCompatibleVisionProvider(
+          baseUrl: settings.openAiBaseUrl,
+          model: settings.openAiModel,
+          apiKey: settings.openAiApiKey,
+          onRequestAdjusted: onRequestAdjusted,
+        );
       case VisionBackend.cloud:
         // A model the USER named is sent without a temperature; the default is
         // sent with the 0 it was argued for (T-0057). `temperature` is
@@ -459,13 +476,6 @@ class ProviderPolicy {
                 model: settings.anthropicModel,
                 temperature: null,
               );
-      case VisionBackend.openAiCompatible:
-        return OpenAiCompatibleVisionProvider(
-          baseUrl: settings.openAiBaseUrl,
-          model: settings.openAiModel,
-          apiKey: settings.openAiApiKey,
-          onRequestAdjusted: onRequestAdjusted,
-        );
     }
   }
 
