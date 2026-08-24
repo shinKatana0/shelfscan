@@ -29,6 +29,12 @@ void _file(String name, [String content = '']) {
 String _gogInfo(String name, String id) =>
     '{"gameId": "$id", "rootGameId": "$id", "name": "$name"}';
 
+/// Every entry of the chosen folder, read by the source the app hands it to.
+Future<List<SourceReading>> _readings() async => [
+      for (final entry in (await readGameFolder(_root.path)).entries)
+        const InstalledGameSource().read(entry)
+    ];
+
 void main() {
   setUp(() => _root = Directory.systemTemp.createTempSync('shelfscan_folder'));
   tearDown(() => _root.deleteSync(recursive: true));
@@ -242,6 +248,183 @@ void main() {
       expect([for (final entry in folder.entries) entry.name],
           ['setup_harbour_lantern_1.6.15.exe', 'Screenshots']);
       expect(folder.entries.first.container, 'New Folder');
+    });
+  });
+
+  /// The app's half of T-0349, whose Scope was `packages/` (T-0352).
+  ///
+  /// Driven in core by `film_in_a_folder_test`, which owns the rule itself;
+  /// these pin that the app's walk asks the same question in the same order,
+  /// because the CLI being right and the product wrong is the shell a person
+  /// never uses being the correct one.
+  group('a film in its own folder (T-0352)', () {
+    test('reaches review as a film, not as a game named after the folder',
+        () async {
+      _file('Harbour Lantern (2007) [1080p BluRay]/'
+          'Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
+
+      final item = (await _readings()).single.items.single;
+
+      expect(item.rawTitle, 'Harbour Lantern');
+      expect(item.workKind, WorkKind.movie);
+      expect(item.sourceYear, 2007);
+      // The invented half of the defect: a film is not on `PC`, and the walk
+      // was the thing inventing the hint by handing over a directory name.
+      expect(item.platformHint, isNull);
+    });
+
+    test('and the folder own name goes over as neither name nor container',
+        () async {
+      _file('Harbour Lantern (2007) [1080p BluRay]/'
+          'Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
+
+      final entry = (await readGameFolder(_root.path)).entries.single;
+
+      expect(entry.name, 'Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
+      expect(entry.container, isNull);
+    });
+
+    test('a folder whose own name says nothing about a film still yields one',
+        () async {
+      _file('Tidewrack/Tidewrack.1998.1080p.BluRay.x264-LANTERN.mkv');
+
+      final item = (await _readings()).single.items.single;
+
+      expect(item.rawTitle, 'Tidewrack');
+      expect(item.workKind, WorkKind.movie);
+      // The year is the part the folder name could not have given.
+      expect(item.sourceYear, 1998);
+    });
+
+    test('the entry is the one a loose film file already produced', () async {
+      // Why nothing downstream is a new path: the same file name with the same
+      // empty container, whether the film sits loose in the chosen folder or
+      // one level down in its own.
+      const film = 'Tidewrack.1998.1080p.BluRay.x264-LANTERN.mkv';
+      _file(film);
+      final flat = (await readGameFolder(_root.path)).entries.single;
+      File('${_root.path}${Platform.pathSeparator}$film').deleteSync();
+      _file('Tidewrack (1998)/$film');
+      final nested = (await readGameFolder(_root.path)).entries.single;
+
+      expect(nested.name, flat.name);
+      expect(nested.container, flat.container);
+    });
+
+    test('a series folder is one honest decline, not a game row', () async {
+      for (var i = 1; i <= 3; i++) {
+        _file('Dusk Rail/Dusk Rail.S01E0$i.1080p.WEB-DL-MOOR.mkv');
+      }
+
+      final reading = (await _readings()).single;
+
+      expect(reading.items, isEmpty);
+      expect(reading.declined.single.reason, DeclineReason.seriesEpisode);
+    });
+
+    test('a folder holding an installer AND a film stays a game folder',
+        () async {
+      // The one entry per subdirectory cannot be two works, so the folder
+      // keeps the reading it had and the film in it is lost -- the cost
+      // T-0349 stated rather than paid for by breaking the budget.
+      _file('Moor/setup_moor_1.9.exe');
+      _file('Moor/Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
+
+      final item = (await _readings()).single.items.single;
+
+      expect(item.rawTitle, 'Moor');
+      expect(item.workKind, WorkKind.game);
+    });
+
+    test('two films are as ambiguous as two installers', () async {
+      _file('Films/Tidewrack.1998.1080p.BluRay.x264-LANTERN.mkv');
+      _file('Films/Pale.Anchor.1994.720p.WEB-DL.h264-MOOR.mp4');
+
+      final entry = (await readGameFolder(_root.path)).entries.single;
+
+      expect(entry.name, 'Films');
+    });
+
+    test('a release extracted in place is the film, not the archive beside it',
+        () async {
+      // Which of the two questions is asked first is observable here, and this
+      // is the shape that makes it so: the `.rar` parts parse as a game
+      // through the installer grammar, and the folder's own name titles
+      // nothing, so asking the installer first hands the folder over under a
+      // carrier's name and loses the kind.
+      _file('New Folder/Tidewrack.1998.1080p.BluRay.x264-LANTERN.mkv');
+      _file('New Folder/Tidewrack.1998.1080p.BluRay.x264-LANTERN.rar');
+      _file('New Folder/Tidewrack.1998.1080p.BluRay.x264-LANTERN.r00');
+
+      final item = (await _readings()).single.items.single;
+
+      expect(item.workKind, WorkKind.movie);
+      expect(item.sourceYear, 1998);
+    });
+
+    test('a folder of video naming neither a film nor an episode is unchanged',
+        () async {
+      // Deliberate: firing on the mere PRESENCE of video rather than on
+      // evidence a name carries would turn a game folder whose only
+      // recognisable file is an `intro.mkv` into a decline.
+      _file('Clips/clip.mkv');
+      _file('Clips/holiday.mp4');
+
+      final entry = (await readGameFolder(_root.path)).entries.single;
+
+      expect(entry.name, 'Clips');
+    });
+
+    test('a GoG install is untouched by a film file beside it', () async {
+      _file('Moor/goggame-1100000002.info', _gogInfo('MOOR', '1100000002'));
+      _file('Moor/Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
+
+      final folder = await readGameFolder(_root.path);
+
+      expect([for (final entry in folder.entries) entry.name],
+          ['goggame-1100000002.info']);
+    });
+  });
+
+  group('the guarantee the goggame-*.info filter exists for', () {
+    test('an installed game is still exactly one reviewable row', () async {
+      for (final name in const [
+        'MarlowsGate3.exe',
+        'unins000.exe',
+        'crack.exe',
+        'moorengine64.dll',
+        'lanternaudio.dll',
+        'physcore.dll',
+        'Marlow.pak',
+        'Content.pak',
+        'intro.mkv',
+        'logo.mkv',
+        'readme.txt',
+      ]) {
+        _file('Marlows Gate 3/$name');
+      }
+      _dir('Marlows Gate 3/Data/Localization');
+
+      final folder = await readGameFolder(_root.path);
+
+      expect(folder.entries.length, 1);
+      expect(folder.entries.single.name, 'Marlows Gate 3');
+      expect((await _readings()).single.items.single.workKind, WorkKind.game);
+    });
+
+    test('one entry per subdirectory, whichever name the entry took', () async {
+      _file('Tidewrack/Tidewrack.1998.1080p.BluRay.x264-LANTERN.mkv');
+      _file('Dusk Rail/Dusk Rail.S01E01.1080p.WEB-DL-MOOR.mkv');
+      _file('New Folder/setup_harbour_lantern_1.6.15.exe');
+      _file('Marlows Gate 3/MarlowsGate3.exe');
+      _file('Clips/clip.mkv');
+
+      final folder = await readGameFolder(_root.path);
+
+      // The budget alone, so that widening the rule fails HERE and changing
+      // which name an entry took does not: five subdirectories, five entries,
+      // whether each went over under its own name, an installer's or a film's.
+      expect(folder.entries.length, 5);
     });
   });
 
