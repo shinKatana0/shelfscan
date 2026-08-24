@@ -146,6 +146,7 @@ void main() {
       'settings-anthropic-key',
       'settings-igdb-id',
       'settings-igdb-secret',
+      'settings-tmdb-token',
     ]) {
       expect(tester.widget<TextField>(find.byKey(Key(key))).obscureText, isTrue,
           reason: '$key must not render a credential in plain text');
@@ -181,6 +182,8 @@ void main() {
     await tester.enterText(
         find.byKey(const Key('settings-igdb-secret')), 'typed-secret');
     await tester.enterText(
+        find.byKey(const Key('settings-tmdb-token')), 'typed-tmdb-token');
+    await tester.enterText(
         find.byKey(const Key('settings-ollama-url')), 'http://localhost:11434');
     await _tap(tester, find.byKey(const Key('settings-save')));
 
@@ -188,19 +191,24 @@ void main() {
     expect(backends.secrets.values, containsPair('igdb_client_id', 'typed-id'));
     expect(
         backends.secrets.values, containsPair('igdb_client_secret', 'typed-secret'));
+    expect(backends.secrets.values,
+        containsPair('tmdb_token', 'typed-tmdb-token'));
     expect(backends.prefs.values, {
       SettingsStore.keyBackend: 'cloud',
       SettingsStore.keyOllamaUrl: 'http://localhost:11434',
       SettingsStore.keyOllamaModel: defaultOllamaModel,
     });
     for (final write in backends.prefs.writes) {
-      expect(write.value,
-          isNot(anyOf('sk-ant-typed', 'typed-id', 'typed-secret')));
+      expect(
+          write.value,
+          isNot(anyOf('sk-ant-typed', 'typed-id', 'typed-secret',
+              'typed-tmdb-token')));
     }
     // The caller's settings object carries the new values immediately.
     expect(settings.anthropicApiKey, 'sk-ant-typed');
     expect(settings.backend, VisionBackend.cloud);
     expect(settings.hasIgdbCredentials, isTrue);
+    expect(settings.tmdbToken, 'typed-tmdb-token');
   });
 
   group('clearing a field asks for the default (T-0082)', () {
@@ -650,6 +658,62 @@ void main() {
     expect(note, contains(TitleMatching.keyless.label));
     expect(note, contains('scan screen'));
     expect(note, isNot(contains('fix them during review')));
+  });
+
+  // TMDB issues two credentials on one page and they look nothing alike: the
+  // read token is long and starts eyJ, the v3 key is short. Someone who pastes
+  // the wrong one gets a 401 with nothing in it to act on, so the screen says
+  // which it wants before the paste rather than after it (T-0363).
+  testWidgets('the TMDB field names which of the two credentials it wants',
+      (tester) async {
+    await _pump(tester, ProviderSettings(), _Backends());
+
+    final label = tester
+        .widget<TextField>(find.byKey(const Key('settings-tmdb-token')))
+        .decoration!;
+
+    expect(label.labelText, contains('Read Access Token'));
+    // Naming the one it wants is not enough on its own: the other one has to
+    // be excluded by name, or a reader matches "Token" against either.
+    expect(label.helperText, contains('API Key'));
+    expect(label.helperText, contains('not the'));
+    expect(label.helperText, contains('eyJ'));
+  });
+
+  testWidgets('the TMDB section is optional, says what a blank one costs, and '
+      'hands over the address', (tester) async {
+    await _pump(tester, ProviderSettings(), _Backends());
+
+    expect(find.text('TMDB (optional)'), findsOneWidget);
+
+    final note = _textOf(tester, 'settings-tmdb-optional');
+    // The keyless film row, in the words T-0308 settled it in. It may not
+    // read as a warning that the app now needs a third credential, so the
+    // export that still works is named beside the one that does not.
+    expect(note, contains('.xcoll no'));
+    expect(note, contains('CSV yes'));
+    expect(note, contains('Games are unaffected'));
+
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copied = (call.arguments as Map)['text'] as String?;
+      }
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+
+    final link = find.byKey(const Key('settings-tmdb-console-link'));
+    expect(
+        find.descendant(
+            of: link, matching: find.textContaining(tmdbApiSettingsUrl)),
+        findsOneWidget,
+        reason: 'the address must be readable without tapping anything');
+
+    await _tap(tester, link);
+    expect(copied, tmdbApiSettingsUrl);
   });
 
   testWidgets('a storage failure is reported instead of silently losing keys',

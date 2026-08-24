@@ -103,6 +103,7 @@ class ProviderSettings {
     this.openAiApiKey = '',
     this.igdbClientId = '',
     this.igdbClientSecret = '',
+    this.tmdbToken = '',
   }) : backend = backend ?? ProviderPolicy.defaultBackend {
     this.ollamaUrl = ollamaUrl ?? '';
     this.ollamaModel = ollamaModel ?? '';
@@ -178,6 +179,17 @@ class ProviderSettings {
   bool get hasIgdbCredentials =>
       igdbClientId.isNotEmpty && igdbClientSecret.isNotEmpty;
 
+  /// The TMDB **API Read Access Token**, and not the v3 `api_key` issued on
+  /// the same page -- `tmdbTokenVariable` in `shelfscan_core` argues why, and
+  /// the settings field says it where the paste happens, because the two look
+  /// nothing alike and the wrong one answers 401.
+  ///
+  /// A secret like the four above it, and optional like the IGDB pair: what a
+  /// blank one costs is a keyless film row, which is what every film row is
+  /// today.
+  String tmdbToken;
+
+  bool get hasTmdbToken => tmdbToken.isNotEmpty;
 }
 
 /// The two named things a run can do with the titles it reads (T-0230).
@@ -614,19 +626,36 @@ class ProviderPolicy {
   /// same call.
   ///
   /// **A keyed run returns a [CatalogueRouter] and not a bare
-  /// [ResolverWorker] (T-0308), and only [WorkKind.game] is registered on
-  /// it.** Everything else falls to [SkipResolver], which is the owner's
-  /// decision: a row of a kind this app cannot look up is keyless -- the
-  /// title as detected, CSV yes, `.xcoll` no -- exactly as every row is in a
-  /// run with no credentials at all. What it replaces is the reason the
-  /// router's fallback is required rather than defaulted: one IGDB resolver
-  /// for every row searched a film in the games catalogue.
+  /// [ResolverWorker] (T-0308), and a kind with no catalogue on it falls to
+  /// [SkipResolver].** That is the owner's decision: a row of a kind this app
+  /// cannot look up is keyless -- the title as detected, CSV yes, `.xcoll`
+  /// no -- exactly as every row is in a run with no credentials at all. What
+  /// it replaces is the reason the router's fallback is required rather than
+  /// defaulted: one IGDB resolver for every row searched a film in the games
+  /// catalogue.
   ///
-  /// **There is no TMDB entry here and there cannot be one yet.** The CLI
-  /// takes that token from the environment; this shell keeps credentials in
-  /// the OS keychain (decision 0011) and Settings has no field for a third
-  /// one. Adding it is user-facing and is its own task, so the film kind
-  /// reaches [SkipResolver] on every path through this app.
+  /// **[WorkKind.movie] is registered only when the user has stored a TMDB
+  /// token (T-0363), and until then the paragraph above is the whole story.**
+  /// The token is [ProviderSettings.tmdbToken] rather than a parameter of this
+  /// method: T-0308 refused to add one while nothing could reach it, and what
+  /// changed is that Settings now holds the value, so it arrives the way every
+  /// other credential here does.
+  ///
+  /// **A stored token takes effect only in a run that is already keyed**, and
+  /// that is this shell's shape rather than a rule about films: the early
+  /// return is [checkMatching]'s answer, which asks about IGDB alone. So a
+  /// user holding a TMDB token and no Twitch application gets a keyless run,
+  /// where the CLI resolves their films. T-0367 carries that difference and
+  /// the vocabulary behind it.
+  ///
+  /// **The catalogue has answered, and never to this shell.** The CLI's film
+  /// path was run against the live service once, on three public films on one
+  /// evening (`doc/measurements.md`, "TMDB's `year` filters"). Read the limits
+  /// under that section before quoting it: three titles are not a match rate,
+  /// no live answer there was separated by a release year, and the run says
+  /// nothing whatever about this shell, which had no token to register until
+  /// now. What this field buys a user is that same route, travelled by them
+  /// first.
   static ResolverWorker buildResolver(
     ProviderSettings settings, {
     Map<String, String>? aliases,
@@ -642,6 +671,10 @@ class ProviderPolicy {
           ),
           aliases: aliases,
         ),
+        if (settings.hasTmdbToken)
+          WorkKind.movie: TmdbResolverWorker(
+            TmdbClient(token: settings.tmdbToken),
+          ),
       },
       fallback: SkipResolver(),
     );

@@ -174,6 +174,70 @@ void main() {
       }
     });
 
+    // The path most people will be on, and the one a new field could quietly
+    // move (T-0363). It is the same assertion the test above makes about the
+    // registration, carried through to what a film row actually comes back
+    // as -- the half a user would notice.
+    test('with no TMDB token a film row is keyless, exactly as before',
+        () async {
+      final resolver = ProviderPolicy.buildResolver(
+          ProviderSettings(igdbClientId: 'id', igdbClientSecret: 'secret'));
+
+      final router = resolver as CatalogueRouter;
+      expect(router.catalogues.containsKey(WorkKind.movie), isFalse);
+
+      // Reaches SkipResolver, so nothing is asked of any catalogue and no
+      // client is built that could ask.
+      final film =
+          await resolver.process(_row('The Harbour Lantern', WorkKind.movie));
+      expect(film.best, isNull);
+      expect(film.candidates, isEmpty);
+      expect(film.detection.rawTitle, 'The Harbour Lantern');
+    });
+
+    test('a stored TMDB token registers the film catalogue with that token',
+        () {
+      final resolver = ProviderPolicy.buildResolver(ProviderSettings(
+        igdbClientId: 'id',
+        igdbClientSecret: 'secret',
+        tmdbToken: 'tmdb-not-a-token',
+      ));
+
+      final router = resolver as CatalogueRouter;
+      expect(router.catalogues.keys, [WorkKind.game, WorkKind.movie]);
+      final films = router.catalogues[WorkKind.movie]! as TmdbResolverWorker;
+      expect(films.tmdb.token, 'tmdb-not-a-token');
+      // Games still go to IGDB, which is the failure T-0308's router exists
+      // to prevent, asserted from the other side.
+      expect(gameCatalogueOf(resolver).igdb.clientId, 'id');
+    });
+
+    // Two limitations, pinned rather than described, because both are what a
+    // reader would otherwise call a bug: the token rides on the IGDB-shaped
+    // mode this shell asks about, so it does nothing in a run that is keyless
+    // for either reason. The CLI resolves films on a TMDB token alone.
+    // T-0367 holds the difference.
+    test('a TMDB token alone does not key a run in this shell', () {
+      expect(
+        ProviderPolicy.buildResolver(
+            ProviderSettings(tmdbToken: 'tmdb-not-a-token')),
+        isA<SkipResolver>(),
+      );
+      expect(
+        ProviderPolicy.buildResolver(
+          ProviderSettings(
+            igdbClientId: 'id',
+            igdbClientSecret: 'secret',
+            tmdbToken: 'tmdb-not-a-token',
+          ),
+          matching: TitleMatching.keyless,
+        ),
+        isA<SkipResolver>(),
+        reason: 'Keyless is a mode the user chose and it says every row keeps '
+            'the title it was read with -- a stored token may not overrule it',
+      );
+    });
+
     test('a film row in a keyed run asks IGDB nothing and comes back '
         'unresolved', () async {
       // The owner's decision, and the one path anyone can run: no TMDB token

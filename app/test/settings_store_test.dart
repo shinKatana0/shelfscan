@@ -47,6 +47,7 @@ const _anthropicKey = 'sk-ant-SECRET-anthropic';
 const _openAiKey = 'sk-SECRET-endpoint';
 const _igdbId = 'igdbid-SECRET-0123';
 const _igdbSecret = 'igdbsecret-SECRET-4567';
+const _tmdbToken = 'tmdbtoken-SECRET-89ab';
 
 ProviderSettings _filledSettings() => ProviderSettings(
       backend: VisionBackend.cloud,
@@ -59,6 +60,7 @@ ProviderSettings _filledSettings() => ProviderSettings(
       anthropicModel: 'claude-opus-5',
       igdbClientId: _igdbId,
       igdbClientSecret: _igdbSecret,
+      tmdbToken: _tmdbToken,
     );
 
 /// Every non-secret setting, stated once. Checked below against the keys a
@@ -120,6 +122,7 @@ void main() {
         _openAiKey,
         _igdbId,
         _igdbSecret,
+        _tmdbToken,
       ]) {
         expect(write.value, isNot(contains(secret)),
             reason: 'secret leaked into shared_preferences under '
@@ -132,6 +135,7 @@ void main() {
           SettingsStore.keyOpenAiApiKey,
           SettingsStore.keyIgdbClientId,
           SettingsStore.keyIgdbClientSecret,
+          SettingsStore.keyTmdbToken,
         )),
       );
     }
@@ -141,6 +145,7 @@ void main() {
       SettingsStore.keyOpenAiApiKey: _openAiKey,
       SettingsStore.keyIgdbClientId: _igdbId,
       SettingsStore.keyIgdbClientSecret: _igdbSecret,
+      SettingsStore.keyTmdbToken: _tmdbToken,
     });
     // Every model name is configuration, not a credential -- the Claude one
     // included (T-0067).
@@ -176,6 +181,8 @@ void main() {
     expect(loaded.igdbClientId, _igdbId);
     expect(loaded.igdbClientSecret, _igdbSecret);
     expect(loaded.hasIgdbCredentials, isTrue);
+    expect(loaded.tmdbToken, _tmdbToken);
+    expect(loaded.hasTmdbToken, isTrue);
   });
 
   test('empty storage yields the platform defaults', () async {
@@ -187,6 +194,10 @@ void main() {
     expect(loaded.ollamaUrl, defaultOllamaUrl);
     expect(loaded.ollamaModel, defaultOllamaModel);
     expect(loaded.anthropicApiKey, isEmpty);
+    // The third credential is as absent as the other four, and a run that
+    // finds it so is the one most users will be on (T-0363).
+    expect(loaded.tmdbToken, isEmpty);
+    expect(loaded.hasTmdbToken, isFalse);
     // Nothing stored must mean the provider's own default, not an id this
     // side has copied down.
     expect(loaded.anthropicModel, isEmpty);
@@ -344,12 +355,14 @@ void main() {
       await store.save(_filledSettings()
         ..anthropicApiKey = ''
         ..igdbClientId = ''
-        ..igdbClientSecret = '');
+        ..igdbClientSecret = ''
+        ..tmdbToken = '');
 
       expect(secrets.values.keys, [SettingsStore.keyOpenAiApiKey]);
       final loaded = await store.load();
       expect(loaded.anthropicApiKey, isEmpty);
       expect(loaded.hasIgdbCredentials, isFalse);
+      expect(loaded.hasTmdbToken, isFalse);
       // The asymmetry, in one line: blank means the default on one side of the
       // split and means nothing at all on the other.
       expect(loaded.ollamaUrl, isNotEmpty);
