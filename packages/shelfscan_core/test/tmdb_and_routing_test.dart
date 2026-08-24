@@ -61,6 +61,28 @@ Map<String, Object?> _film(int id, String title,
   );
 }
 
+/// One result of TMDB's TELEVISION search, which names three fields
+/// differently from the film search's. That difference is the fixture: the
+/// same envelope, three other keys.
+Map<String, Object?> _series(int id, String name,
+        {String? original, String? aired}) =>
+    {
+      'id': id,
+      'name': name,
+      if (original != null) 'original_name': original,
+      'first_air_date': aired ?? '',
+      'overview': 'synthetic fixture',
+    };
+
+/// The row a fansub-shaped file name produces (T-0368): a series, and no year
+/// -- the number such a name prints is an episode.
+Detection _seriesRow(String title) => Detection.fromSource(
+      rawTitle: title,
+      origin: DetectionOrigin.filename,
+      sourceEntry: '[SubGroup] $title - 04 [1080p].mkv',
+      workKind: WorkKind.animationSeries,
+    );
+
 Detection _filmRow(String title, {int? year}) => Detection.fromSource(
       rawTitle: title,
       origin: DetectionOrigin.filename,
@@ -487,6 +509,232 @@ void main() {
           direct.candidates.single.score,
           reason: 'the score measures two strings and the strings are equal; '
               'what differs is the evidence, and MatchMethod carries that');
+    });
+  });
+
+  group('the series endpoint, and why it cannot share the film parse', () {
+    test('a series search goes to the tv path, never the movie one', () async {
+      final t = _client((_) async => http.Response(_body([]), 200));
+      await t.client.search(TmdbSearch.series, 'Tidewrack Lament');
+
+      expect(t.sent.single.url.path, '/3/search/tv');
+      expect(t.sent.single.url.queryParameters['query'], 'Tidewrack Lament');
+    });
+
+    test('the year travels under the name THIS endpoint gives it', () async {
+      // `first_air_date_year`, not `year`. One idea, two spellings, and
+      // TMDB's choice rather than one this client may normalise away.
+      final t = _client((_) async => http.Response(_body([]), 200));
+      await t.client.search(TmdbSearch.series, 'Dusk Rail', year: 2011);
+
+      expect(t.sent.single.url.queryParameters,
+          containsPair('first_air_date_year', '2011'));
+      expect(t.sent.single.url.queryParameters.containsKey('year'), isFalse);
+    });
+
+    test('the credential travels in a header here too', () async {
+      final t = _client((_) async => http.Response(_body([]), 200));
+      await t.client.search(TmdbSearch.series, 'Dusk Rail');
+
+      expect(t.sent.single.headers['Authorization'], 'Bearer $_token');
+      expect(t.sent.single.url.toString(), isNot(contains(_token)));
+    });
+
+    test('a result is read through name, original_name and first_air_date',
+        () async {
+      final t = _client((_) async => http.Response(
+          _body([
+            _series(21, 'Tidewrack Lament',
+                original: 'Shiokaze no Requiem', aired: '2011-04-06'),
+          ]),
+          200));
+
+      final hit = (await t.client.search(TmdbSearch.series, 'x')).single;
+      expect(hit.tmdbId, 21);
+      expect(hit.title, 'Tidewrack Lament');
+      expect(hit.originalTitle, 'Shiokaze no Requiem');
+      expect(hit.releaseYear, 2011);
+    });
+
+    test('THE TRAP: the same body read as a film yields nothing at all',
+        () async {
+      // Not a thrown error and not a wrong match -- an empty list. Every
+      // result reads a null title under the movie keys and is dropped as
+      // malformed one at a time, so a series TMDB knows perfectly well comes
+      // back unmatched with nothing saying why. This is the whole reason the
+      // keys sit on `TmdbSearch` rather than in one copy of the parse.
+      final t = _client((_) async => http.Response(
+          _body([_series(21, 'Tidewrack Lament', aired: '2011-04-06')]), 200));
+
+      expect(await t.client.search(TmdbSearch.movie, 'Tidewrack Lament'),
+          isEmpty);
+      expect(
+          (await t.client.search(TmdbSearch.series, 'Tidewrack Lament'))
+              .single
+              .title,
+          'Tidewrack Lament');
+    });
+
+    test('and it runs the other way too: a film body read as a series',
+        () async {
+      final t = _client((_) async => http.Response(
+          _body([_film(11, 'Pale Anchor', released: '1987-04-02')]), 200));
+
+      expect(await t.client.search(TmdbSearch.series, 'Pale Anchor'), isEmpty);
+      expect(
+          (await t.client.search(TmdbSearch.movie, 'Pale Anchor'))
+              .single
+              .tmdbId,
+          11);
+    });
+
+    test('the series resolver asks the tv endpoint and matches on it',
+        () async {
+      final sent = <http.Request>[];
+      final worker = TmdbResolverWorker.series(TmdbClient(
+        token: _token,
+        client: MockClient((request) async {
+          sent.add(request);
+          return http.Response(
+              _body([_series(21, 'Tidewrack Lament', aired: '2011-04-06')]),
+              200);
+        }),
+      ));
+
+      final resolved = await worker.process(_seriesRow('Tidewrack Lament'));
+
+      expect(sent.single.url.path, '/3/search/tv');
+      expect(resolved.best!.externalId, 'tmdb:21');
+      expect(resolved.best!.score, 1.0);
+    });
+
+    test('a fansub row carries no year, so the tv year is never sent today',
+        () async {
+      // Stated as a test rather than as a claim in a comment: the one source
+      // that produces this kind reads an episode number, not a year, so the
+      // parameter above is reachable only from a row a person corrected at
+      // review.
+      final t = _client((_) async => http.Response(_body([]), 200));
+      final worker = TmdbResolverWorker.series(t.client);
+
+      await worker.process(_seriesRow('Tidewrack Lament'));
+
+      expect(_seriesRow('Tidewrack Lament').sourceYear, isNull);
+      expect(
+          t.sent.single.url.queryParameters
+              .containsKey('first_air_date_year'),
+          isFalse);
+      // One request, so nothing was retried: there was no year to drop.
+      expect(t.sent, hasLength(1));
+    });
+
+    test('an anime series row reaches the .xcoll file, which is the task',
+        () async {
+      final worker = TmdbResolverWorker.series(TmdbClient(
+        token: _token,
+        client: MockClient((_) async => http.Response(
+            _body([_series(21, 'Tidewrack Lament', aired: '2011-04-06')]),
+            200)),
+      ));
+
+      final resolved = await worker.process(_seriesRow('Tidewrack Lament'));
+      resolved.status = ReviewStatus.approved;
+
+      final exporter = TonkatsuExporter();
+      expect(exporter.canExport(resolved), isTrue,
+          reason: 'before T-0369 every anime row was unmatched, so this '
+              'clause refused it however well the person answered');
+
+      final item = ((jsonDecode(exporter.export(_doc([resolved]))) as Map)
+          ['items'] as List).single as Map<String, Object?>;
+      expect(item['media_type'], 'animation');
+      expect(item['external_id'], 21);
+      expect(item['platform_id'], 1);
+    });
+  });
+
+  group('which kinds a catalogue says it answers', () {
+    final igdb = ResolverWorker(IgdbClient(clientId: '', clientSecret: ''));
+    final films = TmdbResolverWorker.movies(TmdbClient(token: _token));
+    final series = TmdbResolverWorker.series(TmdbClient(token: _token));
+
+    test('the film search answers the film kind and the anime FILM kind', () {
+      // An anime film IS a film in TMDB: that catalogue keeps no separate
+      // animation database, and what makes the row an anime is the number
+      // Tonkatsu writes in `platform_id`.
+      expect(films.answers, {WorkKind.movie, WorkKind.animationFilm});
+    });
+
+    test('the series search answers the anime series kind and nothing else',
+        () {
+      expect(series.answers, {WorkKind.animationSeries});
+    });
+
+    test('IGDB answers games and nothing else', () {
+      expect(igdb.answers, {WorkKind.game});
+    });
+
+    test('the ONE kind nothing claims is the unanswered anime kind', () {
+      // Not an omission: there is no endpoint for "one of the two", so a
+      // search would have to pick and would answer half of these rows with an
+      // id for the other sort of thing. `TonkatsuExporter` refuses the row
+      // for a reason a match would not change.
+      final claimed = {...igdb.answers, ...films.answers, ...series.answers};
+      expect(
+          WorkKind.values.toSet().difference(claimed), {WorkKind.animation});
+    });
+
+    test('registrationsOf reads the map off the catalogue, kind by kind', () {
+      expect(registrationsOf(series), {WorkKind.animationSeries: series});
+      expect(registrationsOf(films),
+          {WorkKind.movie: films, WorkKind.animationFilm: films});
+      expect(registrationsOf(igdb), {WorkKind.game: igdb});
+    });
+  });
+
+  group('the router refuses a registration the catalogue does not claim', () {
+    final films = TmdbResolverWorker.movies(TmdbClient(token: _token));
+
+    test('the series kind under the FILM search throws at construction', () {
+      expect(
+          () => CatalogueRouter(
+              catalogues: {WorkKind.animationSeries: films},
+              fallback: SkipResolver()),
+          throwsArgumentError);
+    });
+
+    test('the film kind under the film search builds', () {
+      expect(
+          () => CatalogueRouter(
+              catalogues: {WorkKind.movie: films}, fallback: SkipResolver()),
+          returnsNormally);
+    });
+
+    test('AND THE EXPORTER COULD NOT HAVE CAUGHT IT', () {
+      // Decision 0016's namespace check compares `tmdb` with `tmdb`, so a
+      // film id sitting under a series kind passes it and exports -- a wrong
+      // id in a well-formed file. That is why the guard is on the
+      // registration and not on the export, and this test is the evidence
+      // rather than an assurance that somebody was careful.
+      final row = ResolvedGame(
+        detection: _seriesRow('Tidewrack Lament'),
+        best:
+            Candidate(externalId: 'tmdb:11', title: 'Pale Anchor', score: 1.0),
+      );
+      row.status = ReviewStatus.approved;
+
+      expect(TonkatsuExporter().canExport(row), isTrue);
+    });
+
+    test('a plain Worker claims nothing, so nothing is judged', () {
+      // `_Recording` is a label, not a catalogue. A test double that makes no
+      // statement is not lying about one, which is what lets the routing
+      // group below register one under any kind at all.
+      expect(
+          () => CatalogueRouter(
+              catalogues: {WorkKind.animation: _Recording('anywhere')},
+              fallback: SkipResolver()),
+          returnsNormally);
     });
   });
 

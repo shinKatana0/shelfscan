@@ -116,11 +116,98 @@ void main() {
       expect(router.fallback, isA<SkipResolver>());
     });
 
-    test('a token with no IGDB credentials registers only the film one', () {
+    test('a token with no IGDB credentials registers only TMDB kinds', () {
       final router = _routerFor(_token);
 
-      expect(router.catalogues.keys, [WorkKind.movie]);
+      expect(router.catalogues.keys,
+          [WorkKind.movie, WorkKind.animationFilm, WorkKind.animationSeries]);
+      expect(router.catalogues.containsKey(WorkKind.game), isFalse);
       expect(router.fallback, isA<SkipResolver>());
+    });
+
+    test('the token registers the two ANSWERED anime kinds as well (T-0369)',
+        () {
+      // The gap this task closed: T-0368 made an anime row answerable and
+      // exportable, and no shell routed one anywhere, so every one of them
+      // came back unmatched and `.xcoll` refused it by the base clause.
+      final router = _routerFor({..._igdb, ..._token});
+
+      expect(router.catalogues.keys, [
+        WorkKind.game,
+        WorkKind.movie,
+        WorkKind.animationFilm,
+        WorkKind.animationSeries,
+      ]);
+    });
+
+    test('and each anime kind on the TMDB endpoint that answers IT', () {
+      // The trap, as an assertion. Registering the film worker for a series
+      // would answer a series with a MOVIE id -- same catalogue, same `tmdb:`
+      // namespace, so decision 0016's check in `TonkatsuExporter` cannot see
+      // it. What separates them is the endpoint.
+      final router = _routerFor(_token);
+      final film =
+          router.catalogues[WorkKind.animationFilm]! as TmdbResolverWorker;
+      final series =
+          router.catalogues[WorkKind.animationSeries]! as TmdbResolverWorker;
+
+      expect(film.search, TmdbSearch.movie);
+      expect(series.search, TmdbSearch.series);
+      // The film kind and the anime film kind are one worker, because an
+      // anime film is a film in TMDB.
+      expect(identical(router.catalogues[WorkKind.movie], film), isTrue);
+    });
+
+    test('the unanswered anime kind is registered in NO configuration', () {
+      // `WorkKind.animation` is the film-or-series question still open. There
+      // is no endpoint for "one of the two", and `TonkatsuExporter` refuses
+      // the row for a reason a match would not change.
+      const configurations = [
+        <String, String>{},
+        _igdb,
+        _token,
+        {..._igdb, ..._token},
+      ];
+      for (final env in configurations) {
+        final resolver = resolverFor(env);
+        if (resolver is! CatalogueRouter) continue;
+        expect(resolver.catalogues.containsKey(WorkKind.animation), isFalse,
+            reason: 'registered by $env');
+      }
+    });
+
+    test('every registration is one the catalogue itself says it answers', () {
+      // How this is established, rather than a statement that care was taken:
+      // each catalogue declares `answers`, the shell never types a kind at
+      // all -- `registrationsOf` derives the map -- and this walks what was
+      // built and compares the two.
+      final router = _routerFor({..._igdb, ..._token});
+
+      for (final entry in router.catalogues.entries) {
+        final catalogue = entry.value;
+        expect(catalogue, isA<CatalogueWorker>(),
+            reason: '${entry.key.key} is registered to something that states '
+                'nothing about what it answers');
+        expect((catalogue as CatalogueWorker).answers, contains(entry.key));
+      }
+    });
+
+    test('one token, one client: the anime kinds add no credential', () {
+      final router = _routerFor(_token);
+      final workers = [
+        for (final kind in [
+          WorkKind.movie,
+          WorkKind.animationFilm,
+          WorkKind.animationSeries
+        ])
+          router.catalogues[kind]! as TmdbResolverWorker,
+      ];
+
+      expect(workers.map((w) => w.tmdb.token).toSet(),
+          {'tmdb-not-a-token'});
+      // One `TmdbClient` across all three, not three built from one string.
+      expect(workers.map((w) => identityHashCode(w.tmdb)).toSet(),
+          hasLength(1));
     });
 
     test('a set-but-empty token is an unset token', () {
