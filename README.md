@@ -1156,4 +1156,7 @@ stale when the change was cosmetic, never current when the change was real.
 This project is not affiliated with, endorsed by, or connected to
 Tonkatsu Box, CLZ, or GAMEYE. All product names and trademarks are the
 property of their respective owners. Game metadata is provided by IGDB.
+
+shelfscan uses the TMDB API but is not endorsed or certified by TMDB. It
+reaches that API only with a TMDB token you supply yourself.
 </content>
