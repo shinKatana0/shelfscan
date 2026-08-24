@@ -205,6 +205,7 @@ void main() {
           // variable as unset (T-0080), and a developer host may have real ones.
           'IGDB_CLIENT_ID': '',
           'IGDB_CLIENT_SECRET': '',
+          'SHELFSCAN_TMDB_TOKEN': '',
           'SHELFSCAN_OLLAMA_FALLBACK_MODEL': '',
         },
         stdoutEncoding: utf8,

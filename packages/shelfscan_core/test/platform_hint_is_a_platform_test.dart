@@ -275,6 +275,7 @@ void main() {
         environment: {
           'IGDB_CLIENT_ID': '',
           'IGDB_CLIENT_SECRET': '',
+          'SHELFSCAN_TMDB_TOKEN': '',
           'SHELFSCAN_OLLAMA_FALLBACK_MODEL': '',
           'SHELFSCAN_OLLAMA_URL': stub.url,
         },

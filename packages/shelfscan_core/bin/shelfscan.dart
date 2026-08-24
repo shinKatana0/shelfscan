@@ -1393,6 +1393,15 @@ Never _usage() {
       '$maxVisionTimeoutSeconds; anything else is refused, never silently\n'
       'replaced by the default.\n'
       '\n'
+      // The mandated notice, interpolated rather than retyped: a second copy
+      // wrapped to this banner's width would be a second text to keep in
+      // step with the requirement, which is the drift T-0383 repaired. It
+      // prints as one long line and the terminal wraps it.
+      '$tmdbAttribution\n'
+      'Film and anime rows are looked up on TMDB when $tmdbTokenVariable is\n'
+      'set, and are keyless without it. Games go to IGDB, which is a\n'
+      'different service and a different pair of credentials.\n'
+      '\n'
       'Missed an item? Append it to "games" in review.json and re-run resolve:\n'
       '  {"detection": {"raw_title": "Nocturne 5 Gold", "platform_hint": "PS4",\n'
       '                 "media_type": "disc", "origin": "manual"}}\n'
@@ -1757,6 +1766,32 @@ Map<String, String> loadTitleAliases(
 String? tmdbTokenFrom(Map<String, String> env) =>
     envValue(env, tmdbTokenVariable);
 
+/// Quoted, not composed. TMDB's terms mandate this sentence word for word,
+/// with only the bracketed word of "This [website, program, service,
+/// application, product]" substituted; T-0383 chose `application` and this
+/// shell says the same word rather than a second one, because two wordings
+/// of one requirement are two texts to keep in step.
+///
+/// Do not reword it to fit a line, do not splice it onto a neighbouring
+/// sentence, and do not print a fragment of it. T-0383's first attempt ate
+/// the full stop joining it to the next sentence while every greppable
+/// fragment survived, which is why `tmdb_attribution_test.dart` holds its own
+/// independent copy and compares the whole string.
+const tmdbAttribution =
+    'This application uses TMDB and the TMDB APIs but is not endorsed, '
+    'certified, or otherwise approved by TMDB.';
+
+/// Says [tmdbAttribution] on a run that has a TMDB token, and on no other.
+///
+/// The gate is the token rather than the command: a run without one builds no
+/// [TmdbClient] and registers no TMDB catalogue, so the sentence would be
+/// stating something that run did not do. It deliberately does NOT hang off
+/// the keyless notice above -- that one fires when TMDB is *not* reachable,
+/// which is the opposite claim.
+void _sayTmdbAttribution(Map<String, String> env) {
+  if (tmdbTokenFrom(env) != null) stdout.writeln(tmdbAttribution);
+}
+
 /// Stage 3 as a map from the kind of a row to the catalogue that answers it.
 ///
 /// **What a kind with no catalogue gets, and it is the owner's decision rather
@@ -1838,6 +1873,7 @@ ResolverWorker _makeResolver(List<String> args, {bool required = false}) {
     }
     stdout.writeln('IGDB credentials not set -- resolve stage will be '
         'skipped, games stay unresolved (fine for vision validation).');
+    _sayTmdbAttribution(env);
     return resolverFor(env);
   }
   // Said only on the run that can be surprised by it. With no IGDB
@@ -1854,6 +1890,9 @@ ResolverWorker _makeResolver(List<String> args, {bool required = false}) {
         'the title read off the filename, CSV yes, .xcoll no. Games are '
         'unaffected.');
   }
+  // Last, so that the credential narration keeps the line positions the
+  // guides pin it at even on a machine that has a TMDB token set.
+  _sayTmdbAttribution(env);
   return resolverFor(
     env,
     aliases: loadTitleAliases(

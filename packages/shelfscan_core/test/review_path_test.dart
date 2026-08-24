@@ -88,7 +88,11 @@ ProcessResult _runCli(List<String> args) => Process.runSync(
       [cliSnapshot(), ...args],
       // Blanked rather than inherited: a machine that has IGDB credentials
       // set would otherwise turn the valid-file case into a live API call.
-      environment: const {'IGDB_CLIENT_ID': '', 'IGDB_CLIENT_SECRET': ''},
+      environment: const {
+        'IGDB_CLIENT_ID': '',
+        'IGDB_CLIENT_SECRET': '',
+        'SHELFSCAN_TMDB_TOKEN': '',
+      },
       stdoutEncoding: utf8,
       stderrEncoding: utf8,
     );
