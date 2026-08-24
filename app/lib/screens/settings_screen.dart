@@ -17,6 +17,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../main.dart' show ThemeModeScope, ThemeModeLabel;
 import '../provider_config.dart';
@@ -29,6 +30,24 @@ const twitchConsoleUrl = 'https://dev.twitch.tv/console/apps';
 /// The page that issues both TMDB credentials -- which is the reason the
 /// field below has to name the one it wants.
 const tmdbApiSettingsUrl = 'https://www.themoviedb.org/settings/api';
+
+/// TMDB's mark, as published and unaltered. The attribution page offers five
+/// SVG variants and no raster format at all, so rasterising would mean
+/// producing a derivative in a format the mark's owner does not publish,
+/// against a page that states no alteration rule to lean on (T-0385). That is
+/// what buys `flutter_svg`; the same file is what the READMEs embed.
+const tmdbLogoAsset = '../assets/tmdb/blue_long_1.svg';
+
+/// Rendered height in logical pixels -- a compliance argument, not layout
+/// taste. The terms permit a TMDB mark in an application only on a condition:
+/// "Any use of any TMDB logos in Your Application must be less prominent than
+/// the logos or marks that primarily describe or identify Your Application."
+/// This application's such mark is the wordmark in the scan screen's app bar,
+/// which Material 3 renders at `textTheme.titleLarge`. This value is below
+/// that type size, and `settings_screen_test.dart` compares the two against
+/// the app's own ThemeData rather than a copied number, so raising either
+/// fails there.
+const tmdbLogoHeight = 14.0;
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -447,6 +466,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'endorsed, certified, or otherwise approved by TMDB.',
               key: const Key('settings-tmdb-attribution'),
               style: Theme.of(context).textTheme.bodySmall,
+            ),
+            // The mark, below the sentence, in the order the READMEs use.
+            //
+            // Why in the application at all: the terms bind the use -- "You
+            // must use the TMDB logo to identify Your use of TMDB, the TMDB
+            // APIs, or TMDB Content" -- and name no surface. They contain no
+            // sentence requiring it inside the application. Placing it here is
+            // the conservative reading of that one, on the screen a person
+            // passes through to make the API reachable at all, which is the
+            // same argument that put the sentence here.
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SvgPicture.asset(
+                tmdbLogoAsset,
+                key: const Key('settings-tmdb-logo'),
+                height: tmdbLogoHeight,
+                semanticsLabel: 'TMDB',
+              ),
             ),
 
             const _SectionTitle('Appearance'),
