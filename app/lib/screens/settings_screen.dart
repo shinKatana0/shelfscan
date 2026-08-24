@@ -26,6 +26,10 @@ import '../settings_store.dart';
 /// Also documented in README.md; keep the two in step.
 const twitchConsoleUrl = 'https://dev.twitch.tv/console/apps';
 
+/// The page that issues both TMDB credentials -- which is the reason the
+/// field below has to name the one it wants.
+const tmdbApiSettingsUrl = 'https://www.themoviedb.org/settings/api';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
@@ -61,6 +65,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       TextEditingController(text: widget.settings.igdbClientId);
   late final _igdbSecret =
       TextEditingController(text: widget.settings.igdbClientSecret);
+  late final _tmdbToken =
+      TextEditingController(text: widget.settings.tmdbToken);
 
   bool _saving = false;
 
@@ -76,17 +82,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _openAiKey,
       _igdbId,
       _igdbSecret,
+      _tmdbToken,
     ]) {
       c.dispose();
     }
     super.dispose();
   }
 
-  Future<void> _copyConsoleUrl() async {
-    await Clipboard.setData(const ClipboardData(text: twitchConsoleUrl));
+  Future<void> _copyLink(String url) async {
+    await Clipboard.setData(ClipboardData(text: url));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Link copied: $twitchConsoleUrl')),
+      SnackBar(content: Text('Link copied: $url')),
     );
   }
 
@@ -118,7 +125,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ..openAiModel = _openAiModel.text.trim()
       ..openAiApiKey = _openAiKey.text.trim()
       ..igdbClientId = _igdbId.text.trim()
-      ..igdbClientSecret = _igdbSecret.text.trim();
+      ..igdbClientSecret = _igdbSecret.text.trim()
+      ..tmdbToken = _tmdbToken.text.trim();
 
     setState(() => _saving = true);
     String? error;
@@ -355,7 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 key: const Key('settings-igdb-console-link'),
-                onPressed: () => _copyConsoleUrl(),
+                onPressed: () => _copyLink(twitchConsoleUrl),
                 icon: const Icon(Icons.content_copy, size: 16),
                 label: const Text('Get them at $twitchConsoleUrl'),
               ),
@@ -369,6 +377,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
               fieldKey: const Key('settings-igdb-secret'),
               controller: _igdbSecret,
               label: 'IGDB client secret',
+            ),
+
+            // Films, and the third credential (T-0363). The CLI has read one
+            // out of the environment since T-0308 and this screen had no
+            // field, which is the split the owner called a strange dualism --
+            // nobody had decided it.
+            //
+            // Optional in the same sense the pair above is, and said in the
+            // same words: what a blank one costs is named here rather than in
+            // a README, and it is what every film row costs today.
+            const _SectionTitle('TMDB (optional)'),
+            Text(
+              'Optional, and only about films: without it a film row keeps '
+              'the title it was read with -- CSV yes, Tonkatsu .xcoll no -- '
+              'exactly as every row is without the IGDB pair above. Games are '
+              'unaffected either way.',
+              key: const Key('settings-tmdb-optional'),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const Key('settings-tmdb-console-link'),
+                onPressed: () => _copyLink(tmdbApiSettingsUrl),
+                icon: const Icon(Icons.content_copy, size: 16),
+                label: const Text('Get it at $tmdbApiSettingsUrl'),
+              ),
+            ),
+            // The label and the helper both name WHICH credential, because
+            // that page issues two and the wrong one answers 401 with nothing
+            // to read. Why this app wants the read token is in
+            // `tmdbTokenVariable` (shelfscan_core) and is a privacy argument:
+            // the v3 key is accepted only as a query parameter, so it would
+            // sit in every URL an error might quote.
+            _SecretField(
+              fieldKey: const Key('settings-tmdb-token'),
+              controller: _tmdbToken,
+              label: 'TMDB API Read Access Token',
+              help: 'The long one that starts eyJ, not the short "API Key" on '
+                  'the same page -- that one travels in the URL, so this app '
+                  'does not use it. Stored in the OS keychain, never in a '
+                  'file in this app.',
             ),
 
             const _SectionTitle('Appearance'),
@@ -527,7 +577,7 @@ class _SecretFieldState extends State<_SecretField> {
         decoration: InputDecoration(
           labelText: widget.label,
           helperText: widget.help,
-          helperMaxLines: 3,
+          helperMaxLines: 4,
           suffixIcon: IconButton(
             tooltip: _obscured ? 'Show' : 'Hide',
             icon: Icon(_obscured ? Icons.visibility : Icons.visibility_off),
