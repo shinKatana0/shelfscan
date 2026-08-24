@@ -272,11 +272,11 @@ void main() {
       expect(ProviderPolicy.check(settings).blocker, contains('this device'));
       expect(() => ProviderPolicy.build(settings), throwsA(isA<StateError>()));
 
-      settings.ollamaUrl = 'http://a-desktop.lan:11434';
+      settings.ollamaUrl = 'http://a-desktop.invalid:11434';
       expect(ProviderPolicy.check(settings).blocker, isNull);
       final provider =
           ProviderPolicy.build(settings) as OllamaVisionProvider;
-      expect(provider.baseUrl, 'http://a-desktop.lan:11434');
+      expect(provider.baseUrl, 'http://a-desktop.invalid:11434');
     });
 
     test('the endpoint backend is built from the three fields the user typed',
