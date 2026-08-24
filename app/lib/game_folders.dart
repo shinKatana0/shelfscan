@@ -31,8 +31,8 @@ class InstalledGameSource implements DetectionSource {
 }
 
 /// One chosen folder and the entries a scan will be handed for it.
-class GameFolder {
-  const GameFolder(
+class MediaFolder {
+  const MediaFolder(
       {required this.path, required this.name, required this.entries});
 
   /// As the picker returned it: what the user recognises the folder by, and
@@ -177,7 +177,7 @@ bool _isRoot(String path) {
 /// A read that fails is never dropped: an unlistable directory falls back to
 /// its own name, and an unreadable `goggame-*.info` is handed over without
 /// content, which the metadata source declines by name.
-Future<GameFolder> readGameFolder(String path) async {
+Future<MediaFolder> readMediaFolder(String path) async {
   final name = folderName(path);
   final children = await _children(Directory(path));
   final entries = <SourceEntry>[];
@@ -190,7 +190,7 @@ Future<GameFolder> readGameFolder(String path) async {
     for (final file in own) {
       entries.add(await _metadataEntry(file, name));
     }
-    return GameFolder(path: path, name: name, entries: entries);
+    return MediaFolder(path: path, name: name, entries: entries);
   }
 
   for (final child in children) {
@@ -225,7 +225,7 @@ Future<GameFolder> readGameFolder(String path) async {
       entries.add(SourceEntry(name: _lastSegment(child.path)));
     }
   }
-  return GameFolder(path: path, name: name, entries: entries);
+  return MediaFolder(path: path, name: name, entries: entries);
 }
 
 /// Sorted, because a directory listing is in no defined order and the entries

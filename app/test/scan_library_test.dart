@@ -57,7 +57,7 @@ GalaxyLibrary _library(List<SourceEntry> entries) => GalaxyLibrary(
       schemaVersion: galaxySchemaVersion,
     );
 
-GameFolder _folder(String path, List<String> names) => GameFolder(
+MediaFolder _folder(String path, List<String> names) => MediaFolder(
       path: path,
       name: folderName(path),
       entries: [
@@ -150,7 +150,7 @@ Future<(_RecordingVision, _Reader)> _pump(
   Object? readerThrows,
   Completer<void>? readerGate,
   String visionTitle = 'READ',
-  GameFolder? folder,
+  MediaFolder? folder,
   String? operatingSystem,
 }) async {
   final vision = _RecordingVision(gates: gates, title: visionTitle);

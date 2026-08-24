@@ -71,7 +71,7 @@ void main() {
 
       expect(listing.entries.map((e) => e.name),
           ['Marlows Gate 3', 'setup_harbour_lantern_1.6.15.exe']);
-      expect(listing.gameDirectories, 1);
+      expect(listing.subdirectories, 1);
       expect(listing.looseFiles, 1);
       expect(listing.metadataFiles, 0);
       // Not the scanned directory's name: a container is read as a title when
@@ -299,7 +299,7 @@ void main() {
 
       expect(listing.entries.single.name, 'setup_harbour_lantern_1.6.15.exe');
       expect(listing.entries.single.container, 'New Folder');
-      expect(listing.gameDirectories, 1);
+      expect(listing.subdirectories, 1);
       expect(listing.installerNamed, 1);
 
       final doc = await _run(listing);

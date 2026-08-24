@@ -80,7 +80,7 @@ class ScanScreen extends StatefulWidget {
   /// with nothing added and nothing named. The walk itself is covered against
   /// real directories in `game_folders_test.dart`, which is a plain test.
   @visibleForTesting
-  final Future<GameFolder> Function(String path)? debugFolderReader;
+  final Future<MediaFolder> Function(String path)? debugFolderReader;
 
   /// Test seam: the GOG library, instead of Galaxy's own database.
   ///
@@ -115,7 +115,7 @@ class _ScanScreenState extends State<ScanScreen> {
   /// nothing, needs no key and fails in ways a photograph cannot, and the
   /// removals this project already learned to give the photo list (T-0138)
   /// have to work per input, not per run.
-  final List<GameFolder> _folders = [];
+  final List<MediaFolder> _folders = [];
 
   /// The GOG library, once the user has asked for it (T-0179).
   ///
@@ -381,7 +381,7 @@ class _ScanScreenState extends State<ScanScreen> {
       if (folderConcern(path) case final concern?) {
         if (!await _confirmFolder(path, concern) || !mounted) return;
       }
-      final folder = await (widget.debugFolderReader ?? readGameFolder)(path);
+      final folder = await (widget.debugFolderReader ?? readMediaFolder)(path);
       if (!mounted) return;
       setState(() => _folders.add(folder));
     } on Object catch (e) {
@@ -428,7 +428,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
   /// Behind [_busy] for [_removePhoto]'s reason: the run walks this list, and
   /// a pick appends to it after an await having already checked it.
-  void _removeFolder(GameFolder folder) {
+  void _removeFolder(MediaFolder folder) {
     if (_busy) return;
     setState(() => _folders.remove(folder));
   }

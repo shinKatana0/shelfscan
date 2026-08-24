@@ -286,7 +286,7 @@ void main() {
 
       final listing = readInstallDirectory(_root!);
 
-      expect(listing.gameDirectories, 5);
+      expect(listing.subdirectories, 5);
       expect(listing.entries.length, 5);
     });
   });
