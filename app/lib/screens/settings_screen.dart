@@ -428,6 +428,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'does not use it. Stored in the OS keychain, never in a '
                   'file in this app.',
             ),
+            // TMDB's terms require an application using their API to say that
+            // it does, and that TMDB has not endorsed or certified it. It is
+            // one sentence and it is here rather than on the review screen:
+            // this is the only place in the app a person passes through to
+            // make the API reachable at all, and the review screen carries
+            // rows for every run, nearly all of which touch no catalogue. The
+            // README (T-0379) carries the same statement for a reader who
+            // never opens Settings.
+            const SizedBox(height: 8),
+            Text(
+              'shelfscan uses the TMDB API but is not endorsed or certified '
+              'by TMDB.',
+              key: const Key('settings-tmdb-attribution'),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
 
             const _SectionTitle('Appearance'),
             SegmentedButton<ThemeMode>(

@@ -1,4 +1,4 @@
-<!-- Translated from 407ac0b (2026-08-24). The rule, and how to check
+<!-- Translated from 4516568 (2026-08-24). The rule, and how to check
      whether this is still true: README.md, "Translations".
      One thing this file does not carry: the "Translations" section's own rule
      text, which 2648d3e refined after the summary below it was written. The
@@ -1117,3 +1117,7 @@ GitHub не видна, а удалённая команда — видна.
 Этот проект не связан с Tonkatsu Box, CLZ или GAMEYE, не одобрен ими и не имеет
 к ним отношения. Все названия продуктов и товарные знаки принадлежат их
 правообладателям. Метаданные игр предоставляет IGDB.
+
+shelfscan использует TMDB API, но не одобрен и не сертифицирован TMDB.
+Обращение к этому API происходит только с токеном TMDB, который вы
+предоставляете сами.

@@ -723,6 +723,50 @@ void main() {
     expect(copied, tmdbApiSettingsUrl);
   });
 
+  // TMDB's terms require an application using their API to say that it does,
+  // and that TMDB has not endorsed or certified it (T-0379). The three
+  // READMEs carry the same statement for a reader who never installs; this is
+  // the in-app half, and why it is on this screen rather than the review one
+  // is argued in the comment beside the widget.
+  testWidgets('the TMDB attribution is stated, and asserts no relationship',
+      (tester) async {
+    // Unconditional on purpose: the requirement is about the application, and
+    // a person reads this section before there is a token to condition on.
+    for (final settings in [
+      ProviderSettings(),
+      ProviderSettings(tmdbToken: 'tmdb-not-a-token'),
+    ]) {
+      await _pump(tester, settings, _Backends());
+
+      final text = _textOf(tester, 'settings-tmdb-attribution');
+      expect(text, contains('uses the TMDB API'));
+      expect(text, contains('not endorsed or certified by TMDB'));
+
+      // The sentence exists to deny a relationship, so a warm phrasing
+      // defeats it however true the rest of the line is.
+      for (final claim in [
+        'partner',
+        'powered by',
+        'official',
+        'in association',
+        'together with',
+      ]) {
+        expect(text.toLowerCase(), isNot(contains(claim)),
+            reason: 'an attribution that reads as an endorsement is not one');
+      }
+
+      // And it is not a feature announcement. No run through this shell has
+      // ever had an answer from TMDB (doc/measurements.md, "TMDB's `year`
+      // filters, and the first live film searches"), and the tv endpoint has
+      // been called by nothing at all, so the line says what the app uses and
+      // claims nothing about what it got back.
+      for (final claim in ['film', 'series', 'match', 'result']) {
+        expect(text.toLowerCase(), isNot(contains(claim)),
+            reason: 'the attribution may not describe the path as exercised');
+      }
+    }
+  });
+
   testWidgets('a storage failure is reported instead of silently losing keys',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
