@@ -827,6 +827,22 @@ void main() {
     expect(tmdbLogoAsset, '../assets/tmdb/blue_long_1.svg');
     expect(tester.widget<SvgPicture>(logo).height, tmdbLogoHeight);
 
+    // Unaltered, and it decodes -- the two halves of "renders from the
+    // published SVG" that can be had without looking at a screen. The
+    // intrinsic size is the published viewBox: a recoloured, re-cropped or
+    // re-exported copy would not land on it, and a file the renderer cannot
+    // parse throws here instead of showing a blank.
+    final art = await vg.loadPicture(const SvgAssetLoader(tmdbLogoAsset), null);
+    expect(art.size.width, closeTo(423.04, 0.5));
+    expect(art.size.height, closeTo(35.4, 0.5));
+
+    // Aspect preserved, so the height above governs the whole mark: no BoxFit
+    // stretches it and nothing widens it independently.
+    final box = tester.getRect(logo);
+    expect(box.height, tmdbLogoHeight);
+    expect(box.width / box.height,
+        closeTo(art.size.width / art.size.height, 0.01));
+
     // Both comparisons, because they fail differently. The first is the
     // requirement as stated -- the mark against the type size of the mark it
     // must yield to. The second is what the two actually occupy once laid
