@@ -19,8 +19,8 @@ is the authority behind it.
 
 ## [Unreleased]
 
-Both `pubspec.yaml` files still read `0.1.0` and the `v0.1.0` tag has not
-moved, so this is not a release — it is what the tree does that the tagged
+Both `pubspec.yaml` files still read `0.1.0` and `v0.1.0` is still the only
+tag, so this is not a release — it is what the tree does that the tagged
 release did not.
 
 ### Added
@@ -110,9 +110,8 @@ release did not.
 
 ## [0.1.0] — 2026-08-17
 
-The first public release, described as it stood on the day it was tagged;
-where the tree has moved since, [Unreleased](#unreleased) says so. Highlights,
-not a task list:
+The first public release, described as it stood at the tag; where the tree has
+moved since, [Unreleased](#unreleased) says so. Highlights, not a task list:
 
 ### Added
 - Scan a folder of shelf photos with a local vision model (Ollama, the
