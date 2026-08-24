@@ -83,8 +83,8 @@ ReviewDocument _doc(
 /// it has to be told apart from.
 ///
 /// Neither candidate carries a platform, because a film has none (decision
-/// 0016): the row opens on `?` where a game row opens on a catalogue platform
-/// name, and the picker line omits the clause altogether.
+/// 0016): since T-0340 the row omits the clause altogether, as the picker
+/// line always did, where a game row opens on a catalogue platform name.
 ResolvedGame _film(
   String rawTitle, {
   required String title,
@@ -249,13 +249,16 @@ void main() {
         (tester) async {
       await _pump(tester, _films([retried(), corroborated()]));
 
+      // Both open on the raw clause, not on `?`: that placeholder says the
+      // branding could not be read and neither row has branding (T-0340).
       expect(
-          find.text('? - raw: "TIDEWRACK 1998" - 2001 - score 100% - '
+          find.text('raw: "TIDEWRACK 1998" - 2001 - score 100% - '
               'year did not match - Film'),
           findsOneWidget);
       expect(
-          find.text('? - raw: "PALE ANCHOR 1994" - 1994 - score 100% - Film'),
+          find.text('raw: "PALE ANCHOR 1994" - 1994 - score 100% - Film'),
           findsOneWidget);
+      expect(find.textContaining('? - '), findsNothing);
       // The negative half, on the list rather than on one row: the clause
       // marks the film the year could not corroborate and not every film.
       expect(find.textContaining('year did not match'), findsOneWidget);

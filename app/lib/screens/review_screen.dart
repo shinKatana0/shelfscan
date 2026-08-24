@@ -228,8 +228,10 @@ BoxDecoration _unmatchedFrame(ColorScheme scheme) => BoxDecoration(
 /// characters of row with its separator. It is also the only one no row in
 /// that measurement could have carried. A film is the only kind TMDB's retry
 /// reaches, and a film candidate has no platform at all (decision 0016), so
-/// the rows that pay it open on `?` where the rows the 88 came from open on a
-/// catalogue platform name.
+/// the rows that pay it print no platform clause where the rows the 88 came
+/// from print a catalogue platform name -- and since T-0340 they do not print
+/// the `?` that stood in for one either, which hands 4 characters back with
+/// its separator.
 List<String> _identity(Candidate candidate) => [
       if (candidate.releaseYear case final year?) '$year',
       if (candidate.matchedAlternativeName case final name?)
@@ -1159,8 +1161,19 @@ class _ReviewScreenState extends State<ReviewScreen> {
       leading: game.detection.isManual ? const Icon(Icons.edit_note) : null,
       title: Text(best?.title ?? game.detection.rawTitle),
       subtitle: Text([
-        (best == null ? game.detection.platformHint : best.platformName) ??
-            '?',
+        // Gated on the KIND rather than on the value, because `?` here is a
+        // claim: [Detection.platformHint] is null if unclear, so on a game
+        // row it says the branding could not be read -- the distinction
+        // T-0084 added `discardedPlatformHint` to keep. A film has no
+        // platform to read at all (decision 0016), and `correctWorkKind`
+        // clears the match and not the detection, so a row moved to one still
+        // holds the console hint its spine was read with. A kind with no
+        // platform therefore prints nothing here, which is the treatment
+        // [_identity]'s year already gets and the only one that does not read
+        // as a claim (T-0340).
+        if (game.detection.workKind == WorkKind.game)
+          (best == null ? game.detection.platformHint : best.platformName) ??
+              '?',
         if (game.detection.isManual)
           'added by hand'
         else
