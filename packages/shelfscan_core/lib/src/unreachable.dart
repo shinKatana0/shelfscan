@@ -1,4 +1,4 @@
-/// The one question three providers answer identically: did the endpoint
+/// The one question every provider answers identically: did the endpoint
 /// answer at all?
 library;
 
@@ -41,9 +41,60 @@ abstract class UnreachableEndpoint implements Exception {
   /// tell a blocked route from a dead host from an address typed wrong -- and
   /// a reader offered only somewhere to look in here will look in here. Name
   /// [endpoint], so it can be tried without this app at all, and point outward
-  /// without claiming which of the three it was.
+  /// without claiming which of the three it was. [checkOutsideThisApp] is that
+  /// outward half; each subclass composes it rather than writing it (T-0357).
   String get message;
 
   @override
   String toString() => message;
 }
+
+/// The outward half of [UnreachableEndpoint.message], composed once (T-0357).
+///
+/// It was written three times before this, once per provider file, because
+/// `providers/igdb.dart` deliberately depends on none of the vision vocabulary
+/// (its own comments say so twice) and `providers/tmdb.dart` on neither, so
+/// the copies could not import each other. This file depends on no provider at
+/// all, which is the reason the supertype is here and the same reason the
+/// clause is.
+///
+/// **It is a composition rather than a constant, because two parts are
+/// genuinely different sentences** (both measured T-0355):
+///
+/// - [stage] is the work that failed. `the scan` for the photographs, `the
+///   lookup` for the resolve stage -- `resolve` is a CLI command of its own
+///   that reads an existing review document and scans nothing, so `the scan`
+///   would name work that never ran.
+/// - [usually] is what a browser refused the same way points at, and that
+///   depends on where the host is. [outOnTheInternet] is the list for a host
+///   this machine has to reach across a network it does not own; a server on
+///   this machine or the next desk is a different and rarer story, and
+///   `providers/ollama_vision.dart` supplies its own.
+///
+/// Neither has a default, deliberately. A fifth family inheriting one in
+/// silence is the shape of the defect [UnreachableEndpoint] itself was filed
+/// for (T-0105).
+///
+/// **Why a browser, and which word carries the hedge** (T-0354, whose case
+/// bought this clause): settings copied from a working desktop onto a phone
+/// reported a reset. The reset was true -- the phone's own browser was refused
+/// by the same host -- and a day went into looking for a fault in here,
+/// because the sentence named somewhere to look inside this app and nowhere
+/// outside it. A browser is the check a person can run without the thing they
+/// are trying to test. A blocked route, a dead host and a mistyped address all
+/// arrive as one `ClientException`, so nothing here knows which happened: the
+/// conditional is the only firm claim, `usually` carries the rest, and
+/// `points outside` is a direction rather than a diagnosis.
+String checkOutsideThisApp({
+  required String stage,
+  required String usually,
+}) =>
+    'Open that address in a browser on this device: any answer at all, even '
+    'an error page, means the host is reachable from here. A browser refused '
+    'the same way points outside this app rather than at $stage -- usually '
+    '$usually.';
+
+/// [checkOutsideThisApp]'s [usually] for a host out on the internet, which is
+/// every family but the local one.
+const outOnTheInternet =
+    'this machine being offline, or a proxy or a firewall in the way';

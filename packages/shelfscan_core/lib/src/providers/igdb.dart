@@ -399,11 +399,12 @@ class IgdbUnreachableException extends UnreachableEndpoint {
       'Cannot reach ${host.service} at ${host.endpoint} -- no answer came back, '
       'so neither the IGDB client id nor the secret is what failed. That '
       'address is fixed in this build rather than typed by you, so there is '
-      'nothing to correct in your settings. $_checkOutsideThisApp '
+      'nothing to correct in your settings. $_outwardCheck '
       '$_rowsSurvive ($reason)';
 }
 
-/// The check that runs without this application (T-0354, extended here).
+/// The check that runs without this application (T-0354, T-0355), composed
+/// from `unreachable.dart` since T-0357 rather than copied.
 ///
 /// The vision family's other half -- `check that base URL first: it is yours
 /// to set` -- has no counterpart on this path and is dropped rather than
@@ -411,17 +412,14 @@ class IgdbUnreachableException extends UnreachableEndpoint {
 /// user could have got wrong. The check survives the difference because a host
 /// is nameable whether or not it is settable.
 ///
-/// `at the lookup` where the vision copy says `at the scan`: this is the
-/// resolve stage, and `resolve` is also a command of its own that scans
-/// nothing. `any answer at all` because both of these are POST endpoints --
-/// the search and the token request -- so a browser reaching either gets an
-/// error page rather than anything friendly, and an error page is the host
-/// answering.
-const _checkOutsideThisApp =
-    'Open that address in a browser on this device: any answer at all, even an '
-    'error page, means the host is reachable from here. A browser refused the '
-    'same way points outside this app rather than at the lookup -- usually '
-    'this machine being offline, or a proxy or a firewall in the way.';
+/// `the lookup` where the vision family says `the scan`: this is the resolve
+/// stage, and `resolve` is also a command of its own that scans nothing. The
+/// shared `any answer at all` is right here because both of these are POST
+/// endpoints -- the search and the token request -- so a browser reaching
+/// either gets an error page rather than anything friendly, and an error page
+/// is the host answering.
+final _outwardCheck =
+    checkOutsideThisApp(stage: 'the lookup', usually: outOnTheInternet);
 
 /// The exception for a non-2xx from either host.
 ///

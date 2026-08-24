@@ -121,28 +121,25 @@ class TmdbUnreachableException extends UnreachableEndpoint {
       'TMDB at $_tmdbHost did not answer, so no film title could be looked '
       'up. Nothing answered, so the TMDB token is not what failed. That '
       'address is fixed in this build rather than typed by you, so there is '
-      'nothing to correct in your settings. $_checkOutsideThisApp '
+      'nothing to correct in your settings. $_outwardCheck '
       'Rows still reach review unmatched ($reason)';
 }
 
-/// The check that runs without this application, word for word what
-/// `igdb.dart` says (T-0354, T-0355). The clause about a base URL `yours to
-/// set` is dropped rather than reworded, for the reason it is dropped there:
-/// [_tmdbHost] is a constant in this file.
+/// The check that runs without this application, composed with the same two
+/// arguments `igdb.dart` passes (T-0354, T-0355, hoisted T-0357). The clause
+/// about a base URL `yours to set` is dropped rather than reworded, for the
+/// reason it is dropped there: [_tmdbHost] is a constant in this file.
 ///
 /// **`any answer at all` is true here for a different reason, and the reason
-/// is the thing that had to be checked.** The vision copy's comment says it is
-/// needed because those are POST endpoints; [TmdbClient.searchMovie] is a GET.
-/// What makes an error page the expected result anyway is that the address
-/// named above is the bare host with no path, and that the search itself
-/// carries a bearer token a browser does not have. Either way a browser is
-/// answered with an error rather than anything friendly, which is what the
-/// clause stops the reader reading as a second failure.
-const _checkOutsideThisApp =
-    'Open that address in a browser on this device: any answer at all, even an '
-    'error page, means the host is reachable from here. A browser refused the '
-    'same way points outside this app rather than at the lookup -- usually '
-    'this machine being offline, or a proxy or a firewall in the way.';
+/// is the thing that had to be checked.** The vision family needs it because
+/// those are POST endpoints; [TmdbClient.searchMovie] is a GET. What makes an
+/// error page the expected result anyway is that the address named above is
+/// the bare host with no path, and that the search itself carries a bearer
+/// token a browser does not have. Either way a browser is answered with an
+/// error rather than anything friendly, which is what the clause stops the
+/// reader reading as a second failure.
+final _outwardCheck =
+    checkOutsideThisApp(stage: 'the lookup', usually: outOnTheInternet);
 
 class TmdbTimeoutException extends UnreachableEndpoint {
   TmdbTimeoutException(this.waited);

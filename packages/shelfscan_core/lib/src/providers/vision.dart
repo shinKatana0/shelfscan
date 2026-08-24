@@ -946,38 +946,23 @@ class VisionUnreachableException extends UnreachableEndpoint {
 /// The two halves that differ, and the whole of why they do: one of these URLs
 /// is the user's own and the other is this repository's, so `ollama serve`'s
 /// counterpart -- one thing to do -- exists for the configurable endpoint only.
-const _checkYourUrl =
+final _checkYourUrl =
     'Check that base URL first: it is yours to set, and a wrong host or port '
-    'fails exactly like this. $_checkOutsideThisApp';
-const _checkThisMachine =
+    'fails exactly like this. $_outwardCheck';
+final _checkThisMachine =
     'That address is fixed in this app rather than typed by you, so there is '
-    'nothing to correct in your settings. $_checkOutsideThisApp';
+    'nothing to correct in your settings. $_outwardCheck';
 
-/// The half they share, and the one the owner's case bought (T-0354).
+/// The half they share, and the one the owner's case bought (T-0354). Composed
+/// from `unreachable.dart` since T-0357, where the argument for the clause and
+/// for its hedging now lives; what is this file's own is the two arguments.
 ///
-/// Settings copied from a working desktop onto a phone reported a reset. The
-/// reset was true -- the phone's own browser was refused by the same host --
-/// and a day went into looking for a fault here, because the sentence named
-/// somewhere to look inside this app and nowhere outside it. A message that is
-/// true and sends the reader to the wrong place costs what a false one costs.
-///
-/// It suggests and does not diagnose, which is the line this whole class of
-/// sentence is written against: a blocked route, a dead host and a mistyped
-/// address all arrive as one `ClientException`, so nothing here knows which
-/// happened. What it does claim is the conditional -- a browser refused by the
-/// same host is a fact about the route, not about the scan -- and `usually`
-/// carries the rest.
-///
-/// A browser rather than a control in this app: it is the check a person can
-/// run without the thing they are trying to test. `any answer at all` goes
-/// with it because these are POST endpoints, so a browser reaching one gets an
-/// error page rather than anything friendly, and an error page is the host
-/// answering.
-const _checkOutsideThisApp =
-    'Open that address in a browser on this device: any answer at all, even an '
-    'error page, means the host is reachable from here. A browser refused the '
-    'same way points outside this app rather than at the scan -- usually this '
-    'machine being offline, or a proxy or a firewall in the way.';
+/// `the scan` is the work these providers do. The shared `any answer at all`
+/// is right for them because both cloud endpoints are POSTs, so a browser
+/// reaching one gets an error page rather than anything friendly -- and an
+/// error page is the host answering.
+final _outwardCheck =
+    checkOutsideThisApp(stage: 'the scan', usually: outOnTheInternet);
 
 /// The same two halves for the stall (T-0104), and one clause they share with
 /// the refusal above: a call that never got an answer never got a verdict on
