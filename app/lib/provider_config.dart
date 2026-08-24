@@ -746,6 +746,12 @@ class ProviderPolicy {
   /// nothing whatever about this shell, which had no token to register until
   /// now. What this field buys a user is that same route, travelled by them
   /// first.
+  ///
+  /// **And the series endpoint has been called by nobody at all**, in either
+  /// shell. The film path at least ran once; `/3/search/tv` is code written
+  /// against TMDB's published API and exercised only against a fake -- which
+  /// is exactly how the film path's own `year` comment came to be false
+  /// (T-0336). What a live run must show is in `doc/reports/T-0369.md`.
   static ResolverWorker buildResolver(
     ProviderSettings settings, {
     Map<String, String>? aliases,

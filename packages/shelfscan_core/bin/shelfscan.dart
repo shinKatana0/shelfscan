@@ -1844,9 +1844,15 @@ ResolverWorker _makeResolver(List<String> args, {bool required = false}) {
   // credentials the line above already says every row stays unresolved, and
   // repeating it per catalogue would be noise; with them, games are looked up
   // and films are not, which is the difference a person has to be told about.
+  //
+  // Anime joined the sentence with T-0369 rather than getting one of its own:
+  // the same token registers the same catalogue for those rows, so a person
+  // without it loses the same thing on both, and a second line would say the
+  // same thing twice.
   if (tmdbTokenFrom(env) == null) {
-    stdout.writeln('No $tmdbTokenVariable -- film rows are keyless: the title '
-        'read off the filename, CSV yes, .xcoll no. Games are unaffected.');
+    stdout.writeln('No $tmdbTokenVariable -- film and anime rows are keyless: '
+        'the title read off the filename, CSV yes, .xcoll no. Games are '
+        'unaffected.');
   }
   return resolverFor(
     env,

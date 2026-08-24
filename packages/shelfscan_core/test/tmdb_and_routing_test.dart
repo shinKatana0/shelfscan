@@ -545,14 +545,14 @@ void main() {
       final t = _client((_) async => http.Response(
           _body([
             _series(21, 'Tidewrack Lament',
-                original: 'Shiokaze no Requiem', aired: '2011-04-06'),
+                original: 'Vaskir Lomen', aired: '2011-04-06'),
           ]),
           200));
 
       final hit = (await t.client.search(TmdbSearch.series, 'x')).single;
       expect(hit.tmdbId, 21);
       expect(hit.title, 'Tidewrack Lament');
-      expect(hit.originalTitle, 'Shiokaze no Requiem');
+      expect(hit.originalTitle, 'Vaskir Lomen');
       expect(hit.releaseYear, 2011);
     });
 
