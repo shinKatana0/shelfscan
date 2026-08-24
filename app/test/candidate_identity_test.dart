@@ -8,6 +8,13 @@
 /// T-0156's desktop titles (doc/measurements.md, "The tie nobody could
 /// see").
 ///
+/// T-0337 adds the third clause, and it is the one the ROW has to carry: a
+/// film TMDB answered only once the year was dropped scores exactly what a
+/// corroborated one scores, so the number cannot be what tells the two apart
+/// and a person scanning the list has nothing else. Those fixtures are films
+/// and carry no platform, which is why they are built by `_film` rather than
+/// by `_candidate`.
+///
 /// Nothing here opens a save dialog, a share sheet or a network connection: no
 /// exporter is reached and the screen is handed a document, not a resolver.
 library;
@@ -69,6 +76,48 @@ ReviewDocument _doc(
           candidates: candidates,
         ),
       ],
+      unreadable: const [],
+    );
+
+/// One film row of the shape T-0336's retry produces, or the corroborated row
+/// it has to be told apart from.
+///
+/// Neither candidate carries a platform, because a film has none (decision
+/// 0016): the row opens on `?` where a game row opens on a catalogue platform
+/// name, and the picker line omits the clause altogether.
+ResolvedGame _film(
+  String rawTitle, {
+  required String title,
+  required int tmdbId,
+  required int catalogueYear,
+  required int filenameYear,
+  required MatchMethod matchMethod,
+}) {
+  final candidate = Candidate(
+    externalId: '$tmdbCatalogue:$tmdbId',
+    title: title,
+    score: 1.0,
+    releaseYear: catalogueYear,
+    matchMethod: matchMethod,
+  );
+  return ResolvedGame(
+    detection: Detection.fromSource(
+      rawTitle: rawTitle,
+      origin: DetectionOrigin.filename,
+      sourceEntry: '$rawTitle.mkv',
+      sourceYear: filenameYear,
+      workKind: WorkKind.movie,
+    ),
+    best: candidate,
+    candidates: [candidate],
+  );
+}
+
+ReviewDocument _films(List<ResolvedGame> games) => ReviewDocument(
+      version: 1,
+      created: '2026-08-16T00:00:00Z',
+      photos: const [],
+      games: games,
       unreadable: const [],
     );
 
@@ -175,5 +224,55 @@ void main() {
         find.text('PC (Microsoft Windows) - raw: "MOOR" - 1995 - '
             'matched by store id'),
         findsOneWidget);
+  });
+
+  group('a film found only after the year was dropped is not an ordinary '
+      'match (T-0337)', () {
+    // The retry sends the SAME title a second time, so the percentage is the
+    // identical number on both rows below and the clause is the whole of the
+    // difference between them. Built per test rather than shared: the screen
+    // writes `status` on the rows it is handed.
+    ResolvedGame retried() => _film('TIDEWRACK 1998',
+        title: 'Tidewrack',
+        tmdbId: 770001,
+        catalogueYear: 2001,
+        filenameYear: 1998,
+        matchMethod: MatchMethod.yearlessRetry);
+    ResolvedGame corroborated() => _film('PALE ANCHOR 1994',
+        title: 'Pale Anchor',
+        tmdbId: 770002,
+        catalogueYear: 1994,
+        filenameYear: 1994,
+        matchMethod: MatchMethod.fuzzy);
+
+    testWidgets('the row says so without anything being opened',
+        (tester) async {
+      await _pump(tester, _films([retried(), corroborated()]));
+
+      expect(
+          find.text('? - raw: "TIDEWRACK 1998" - 2001 - score 100% - '
+              'year did not match - Film'),
+          findsOneWidget);
+      expect(
+          find.text('? - raw: "PALE ANCHOR 1994" - 1994 - score 100% - Film'),
+          findsOneWidget);
+      // The negative half, on the list rather than on one row: the clause
+      // marks the film the year could not corroborate and not every film.
+      expect(find.textContaining('year did not match'), findsOneWidget);
+    });
+
+    testWidgets('so does its line in the picker', (tester) async {
+      await _openPicker(tester, _films([retried(), corroborated()]));
+
+      expect(find.text('2001 - score 100% - year did not match'),
+          findsOneWidget);
+    });
+
+    testWidgets('a corroborated film gains no new text', (tester) async {
+      await _openPicker(tester, _films([corroborated()]));
+
+      expect(find.text('1994 - score 100%'), findsOneWidget);
+      expect(find.textContaining('year did not match'), findsNothing);
+    });
   });
 }
