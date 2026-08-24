@@ -3,8 +3,11 @@
 ## Overview
 
 shelfscan is a pipeline utility, not an application. It turns photos of a
-physical game shelf — and, since T-0155 and T-0179, the games already on the
-machine — into an importable collection file for existing collection managers.
+physical shelf — and, since T-0155 and T-0179, what is already on the machine
+— into an importable collection file for existing collection managers. The
+shelf was games alone until T-0162; a disk source now answers films and
+animation series too, and decision 0015 makes the kind a property of the row
+rather than of the run.
 It deliberately owns **no catalog UI and no database** — those belong to the
 target apps (Tonkatsu Box, CLZ, ...).
 
@@ -213,7 +216,8 @@ Platform boundary rules:
 
 - New vision backend: implement `VisionProvider`, wire it in the CLI/app.
 - New export target: implement `Exporter`, register it in `exporters`.
-- New detection source — anything that names games without being photographed:
+- New detection source — anything that names a work without being
+  photographed:
   implement `DetectionSource` and add a `SourceRun` to the list
   `Orchestrator.runScan` takes beside the photos, any of which may be empty
   (T-0155, T-0179). The shell does the reading — walking a directory, querying
