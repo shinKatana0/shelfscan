@@ -577,7 +577,7 @@ class Detection {
   final String? sourceId;
 
   /// The release year the SOURCE printed, when it printed one where a title
-  /// cannot be (`parseGameFileName`'s positional rule, T-0158).
+  /// cannot be (`parseMediaFileName`'s positional rule, T-0158).
   ///
   /// A claim about the name, never a fact about the game, and that is the
   /// whole of what a consumer may treat it as. The rule that produced it reads

@@ -190,7 +190,7 @@ void main() {
   group('every corpus row', () {
     for (final row in corpus) {
       test('${row.container ?? "-"} / ${row.name}', () {
-        final parse = parseGameFileName(row.name, container: row.container);
+        final parse = parseMediaFileName(row.name, container: row.container);
         expect(parse.title, row.expected);
         if (!row.declines) {
           expect(parse.year, row.year);
@@ -225,7 +225,7 @@ void main() {
 
     for (final entry in measuredByT0156.entries) {
       test('${entry.key} carries no version into the query', () {
-        final parse = parseGameFileName(entry.key);
+        final parse = parseMediaFileName(entry.key);
         expect(parse.title, entry.value);
         expect(parse.version, isNotNull);
         expect(RegExp(r'\d+\.\d').hasMatch(parse.title!), isFalse);
@@ -254,7 +254,7 @@ void main() {
           isFalse);
       expect(
           volumeNumbersAgree(
-              parseGameFileName('setup_harbour_lantern_1.6.15.exe').title!,
+              parseMediaFileName('setup_harbour_lantern_1.6.15.exe').title!,
               'Harbour Lantern'),
           isTrue);
     });
@@ -280,28 +280,28 @@ void main() {
 
     for (final entry in sequels.entries) {
       test('${entry.key} keeps its number', () {
-        expect(parseGameFileName(entry.key).title, entry.value);
+        expect(parseMediaFileName(entry.key).title, entry.value);
       });
     }
 
     test('a lone number is never taken for a version', () {
-      expect(parseGameFileName('Ashfall 2').version, isNull);
-      expect(parseGameFileName('setup_ashfall_2_1.02.exe').version, '1.02');
+      expect(parseMediaFileName('Ashfall 2').version, isNull);
+      expect(parseMediaFileName('setup_ashfall_2_1.02.exe').version, '1.02');
     });
 
     test('the two are only told apart by dots, and that is the whole rule', () {
       // One title, two names, one difference. `2` survives and `2.0.0.7` does
       // not, and nothing else in the parser looks at either.
-      expect(parseGameFileName('setup_mire_2.exe').title, 'mire 2');
-      expect(parseGameFileName('setup_mire_2.0.0.7.exe').title, 'mire');
+      expect(parseMediaFileName('setup_mire_2.exe').title, 'mire 2');
+      expect(parseMediaFileName('setup_mire_2.0.0.7.exe').title, 'mire');
     });
 
     test('a roman numeral is a sequel too and is never stripped', () {
       // T-0059's half: `i v x l c d m` are also how an English word ends, so
       // no rule here touches them at all.
-      expect(parseGameFileName('setup_marlows_gate_ii_2.5.26.6.exe').title,
+      expect(parseMediaFileName('setup_marlows_gate_ii_2.5.26.6.exe').title,
           'marlows gate ii');
-      expect(parseGameFileName('Regent of Aurex II Battle at Kestrel.iso').title,
+      expect(parseMediaFileName('Regent of Aurex II Battle at Kestrel.iso').title,
           'Regent of Aurex II Battle at Kestrel');
     });
   });
@@ -313,12 +313,12 @@ void main() {
       );
       expect(reading.declined, isEmpty);
       expect(reading.items.single.rawTitle, "Marlow's Gate 3");
-      expect(parseGameFileName('setup.exe', container: "Marlow's Gate 3")
+      expect(parseMediaFileName('setup.exe', container: "Marlow's Gate 3")
           .fromContainer, isTrue);
     });
 
     test('the entry wins when it has one of its own', () {
-      final parse = parseGameFileName(
+      final parse = parseMediaFileName(
         'setup_harbour_lantern_1.6.15.exe',
         container: 'Downloads',
       );
@@ -328,7 +328,7 @@ void main() {
 
     test('a container that names no game is not a fallback', () {
       for (final container in ['Downloads', 'Games', 'Program Files (x86)']) {
-        final parse = parseGameFileName('setup.exe', container: container);
+        final parse = parseMediaFileName('setup.exe', container: container);
         expect(parse.title, isNull, reason: container);
         expect(parse.declined, DeclineReason.noTitle);
       }
@@ -338,7 +338,7 @@ void main() {
       // The folder gets its own entry from the shell; emitting it once per
       // uninstaller would be a row per file in the directory.
       final parse =
-          parseGameFileName('unins000.exe', container: 'Harbour Lantern');
+          parseMediaFileName('unins000.exe', container: 'Harbour Lantern');
       expect(parse.title, isNull);
       expect(parse.declined, DeclineReason.supportFile);
     });
@@ -488,7 +488,7 @@ void main() {
     test('an unnameable container declines rather than guessing', () {
       for (final entry in consolePlatformHints.entries) {
         if (entry.value != null) continue;
-        final parse = parseGameFileName('Sample Game.${entry.key}');
+        final parse = parseMediaFileName('Sample Game.${entry.key}');
         expect(parse.title, isNull, reason: entry.key);
         expect(parse.declined, DeclineReason.notAPcInstaller, reason: entry.key);
       }
@@ -497,24 +497,25 @@ void main() {
     test('a nameable container emits the title with that platform', () {
       for (final entry in consolePlatformHints.entries) {
         if (entry.value == null) continue;
-        final parse = parseGameFileName('Sample Game.${entry.key}');
+        final parse = parseMediaFileName('Sample Game.${entry.key}');
         expect(parse.title, 'Sample Game', reason: entry.key);
         expect(parse.platformHint, entry.value, reason: entry.key);
       }
     });
 
     test('two consoles in one name is a decline, not a first-mark-wins', () {
-      expect(parseGameFileName('Sample Game NSW.wbfs').declined,
+      expect(parseMediaFileName('Sample Game NSW.wbfs').declined,
           DeclineReason.notAPcInstaller);
-      expect(parseGameFileName('Sample Game [NSP].wbfs').declined,
+      expect(parseMediaFileName('Sample Game [NSP].wbfs').declined,
           DeclineReason.notAPcInstaller);
       // The same mark twice is one answer, not a conflict.
-      expect(parseGameFileName('Sample Game [NSP].nsz').platformHint, 'SWITCH');
+      expect(parseMediaFileName('Sample Game [NSP].nsz').platformHint,
+          'SWITCH');
     });
 
     test('the hint survives the container fallback', () {
       final parse =
-          parseGameFileName('setup.exe', container: 'Sample Game [NSP]');
+          parseMediaFileName('setup.exe', container: 'Sample Game [NSP]');
       expect(parse.title, 'Sample Game');
       expect(parse.fromContainer, isTrue);
       expect(parse.platformHint, 'SWITCH');
@@ -526,7 +527,8 @@ void main() {
       // parser and is pinned here with the shapes it must NOT read -- a build
       // id, an eight-digit hash and a tracker id all sit in brackets in this
       // same corpus.
-      expect(parseGameFileName('Sample Game B [0100000000000001]').platformHint,
+      expect(
+          parseMediaFileName('Sample Game B [0100000000000001]').platformHint,
           'SWITCH');
       for (final name in [
         'setup_harbour_lantern_1.6.15_(46424).exe',
@@ -534,7 +536,7 @@ void main() {
         'Sample Game [010000000000000]',
         'Toolkit Bundle v75 [tracker-4410295].iso',
       ]) {
-        expect(parseGameFileName(name).platformHint, filenamePlatformHint,
+        expect(parseMediaFileName(name).platformHint, filenamePlatformHint,
             reason: name);
       }
     });
@@ -554,10 +556,10 @@ void main() {
 
   group('the release year', () {
     test('is emitted when the name prints one where a title cannot be', () {
-      expect(parseGameFileName('Game.Name.2019.RePack-GROUP').year, 2019);
-      expect(parseGameFileName('Tulip.Hospital.(1997).GOG.zip').year, 1997);
+      expect(parseMediaFileName('Game.Name.2019.RePack-GROUP').year, 2019);
+      expect(parseMediaFileName('Tulip.Hospital.(1997).GOG.zip').year, 1997);
       expect(
-          parseGameFileName('Mire II The Founding of a Kingdom (1992).iso').year,
+          parseMediaFileName('Mire II The Founding of a Kingdom (1992).iso').year,
           1992);
     });
 
@@ -566,18 +568,18 @@ void main() {
       // last word, which is what IGDB lists the game as. Nothing in the shape
       // separates it from a scene name's year -- only what follows it does.
       for (final name in ['MOOR.2016.iso', 'Volo 2004', 'Punter PFL 2005']) {
-        expect(parseGameFileName(name).year, isNull, reason: name);
+        expect(parseMediaFileName(name).year, isNull, reason: name);
       }
-      expect(parseGameFileName('MOOR.2016.iso').title, 'MOOR 2016');
-      expect(parseGameFileName('Moor.Eternal.2020.MULTi9-ElAmigos.iso').year,
+      expect(parseMediaFileName('MOOR.2016.iso').title, 'MOOR 2016');
+      expect(parseMediaFileName('Moor.Eternal.2020.MULTi9-ElAmigos.iso').year,
           2020);
     });
 
     test('a year out of range is title, not metadata', () {
       // The one that decides the bound: 2077 is not a year yet.
-      expect(parseGameFileName('Neonwatch.2077.v2.1.CODEX.iso').title,
+      expect(parseMediaFileName('Neonwatch.2077.v2.1.CODEX.iso').title,
           'Neonwatch 2077');
-      expect(parseGameFileName('Neonwatch.2077.v2.1.CODEX.iso').year, isNull);
+      expect(parseMediaFileName('Neonwatch.2077.v2.1.CODEX.iso').year, isNull);
     });
 
     test('the lower bound is 1970 here, and did not move with the film one',
@@ -586,9 +588,9 @@ void main() {
       // needed most of a century more, and sharing one floor is what kept the
       // year inside every pre-1970 film's title.
       const old = 'Cabalists.1966.GOG-Razor1911.iso';
-      expect(parseGameFileName(old).year, isNull);
-      expect(parseGameFileName(old).title, 'Cabalists 1966');
-      expect(parseGameFileName('Cabalists.1970.GOG-Razor1911.iso').year, 1970);
+      expect(parseMediaFileName(old).year, isNull);
+      expect(parseMediaFileName(old).title, 'Cabalists 1966');
+      expect(parseMediaFileName('Cabalists.1970.GOG-Razor1911.iso').year, 1970);
     });
 
     test('it reaches the row as sourceYear, never as part of the title', () {
@@ -600,7 +602,7 @@ void main() {
           .read(const SourceEntry(name: 'Regent.of.Aurex.1993.DOSBox.GOG.zip'))
           .items
           .single;
-      expect(parseGameFileName('Regent.of.Aurex.1993.DOSBox.GOG.zip').year,
+      expect(parseMediaFileName('Regent.of.Aurex.1993.DOSBox.GOG.zip').year,
           1993);
       expect(row.rawTitle, 'Regent of Aurex');
       expect(row.toJson().containsKey('year'), isFalse);
@@ -618,7 +620,7 @@ void main() {
 
     for (final name in measured) {
       test('$name is not a game when the shell hands the directory over', () {
-        final parse = parseGameFileName(name);
+        final parse = parseMediaFileName(name);
         expect(parse.title, isNull);
         expect(parse.declined, DeclineReason.noTitle);
 
@@ -633,7 +635,7 @@ void main() {
       // The other half of the same list, unchanged. Kept beside the half above
       // so a future edit that splits them again fails here.
       for (final container in measured) {
-        final parse = parseGameFileName('setup.exe', container: container);
+        final parse = parseMediaFileName('setup.exe', container: container);
         expect(parse.title, isNull, reason: container);
         expect(parse.declined, DeclineReason.noTitle);
       }
@@ -645,8 +647,8 @@ void main() {
       // emitted, not only on the raw stem. Both still decline on the LIST and
       // not on T-0189's mark: the list is consulted first, and these two are
       // the reason a reader might think the mark was never needed.
-      expect(parseGameFileName('New folder (2)').declined, DeclineReason.noTitle);
-      expect(parseGameFileName('Games (2)').declined, DeclineReason.noTitle);
+      expect(parseMediaFileName('New folder (2)').declined, DeclineReason.noTitle);
+      expect(parseMediaFileName('Games (2)').declined, DeclineReason.noTitle);
     });
 
     test('a game whose folder is one ordinary word still has a title', () {
@@ -665,7 +667,7 @@ void main() {
         'Deepwarren',
         'Moor',
       ]) {
-        expect(parseGameFileName(name).title, name, reason: name);
+        expect(parseMediaFileName(name).title, name, reason: name);
         expect(
             const FilenameSource()
                 .read(SourceEntry(name: name, container: 'My Games'))
@@ -684,7 +686,7 @@ void main() {
       // `readMediaFolder` enumerates children only, so a non-GoG install has no
       // other entry carrying its own folder's name (T-0160/T-0161).
       for (final name in ['Screenshots', 'Saves', 'data']) {
-        final parse = parseGameFileName(name, container: 'Dusk-Rail 2');
+        final parse = parseMediaFileName(name, container: 'Dusk-Rail 2');
         expect(parse.title, 'Dusk-Rail 2', reason: name);
         expect(parse.fromContainer, isTrue);
       }
@@ -719,7 +721,7 @@ void main() {
         'Neuer Ordner (3)',
         '新建文件夹 (2)',
       ]) {
-        final parse = parseGameFileName(name);
+        final parse = parseMediaFileName(name);
         expect(parse.title, isNull, reason: name);
         expect(parse.declined, DeclineReason.numberedCopy, reason: name);
       }
@@ -732,7 +734,7 @@ void main() {
       // have come back titled `Downloaded games`, which is a worse row than
       // the one being removed and looks just as much like a game.
       final parse =
-          parseGameFileName('Новая папка (2)', container: 'Downloaded games');
+          parseMediaFileName('Новая папка (2)', container: 'Downloaded games');
       expect(parse.title, isNull);
       expect(parse.declined, DeclineReason.numberedCopy);
     });
@@ -743,21 +745,22 @@ void main() {
       // prefix, a version, a build, a separator no human types -- and each
       // keeps its title. Losing any of them would undo T-0183, whose whole
       // fix is reading the installer inside a folder like the one above.
-      expect(parseGameFileName('Moor (2).zip').title, 'Moor');
-      expect(parseGameFileName('setup_moor_1.0 (2).exe').title, 'moor');
-      expect(parseGameFileName('Moor 1.9 (2)').title, 'Moor');
-      expect(parseGameFileName('Tulip_Hospital (2)').title, 'Tulip Hospital');
+      expect(parseMediaFileName('Moor (2).zip').title, 'Moor');
+      expect(parseMediaFileName('setup_moor_1.0 (2).exe').title, 'moor');
+      expect(parseMediaFileName('Moor 1.9 (2)').title, 'Moor');
+      expect(parseMediaFileName('Tulip_Hospital (2)').title, 'Tulip Hospital');
     });
 
     test('is a copy number, not a year and not a build', () {
       // Three digits at most and whitespace in front, which is what tells the
       // mark apart from the other two trailing bracket groups in this corpus.
       final year =
-          parseGameFileName('Mire II The Founding of a Kingdom (1992)');
+          parseMediaFileName('Mire II The Founding of a Kingdom (1992)');
       expect(year.title, 'Mire II The Founding of a Kingdom');
       expect(year.year, 1992);
-      expect(parseGameFileName('Moor (21474)').title, 'Moor');
-      expect(parseGameFileName('Tulip_Hospital_2.1_(1100000018)_win_gog').title,
+      expect(parseMediaFileName('Moor (21474)').title, 'Moor');
+      expect(
+          parseMediaFileName('Tulip_Hospital_2.1_(1100000018)_win_gog').title,
           'Tulip Hospital');
     });
   });

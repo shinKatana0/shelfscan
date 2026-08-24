@@ -70,7 +70,7 @@ void main() {
         'wux': 'WIIU',
       };
       for (final entry in expected.entries) {
-        final parse = parseGameFileName('Sample Game.${entry.key}');
+        final parse = parseMediaFileName('Sample Game.${entry.key}');
         expect(parse.title, 'Sample Game', reason: entry.key);
         expect(parse.platformHint, entry.value, reason: entry.key);
       }
@@ -78,7 +78,7 @@ void main() {
 
     test('the five that span systems still decline', () {
       for (final ext in ['pkg', 'chd', 'cso', 'rvz', 'vpk']) {
-        expect(parseGameFileName('Sample Game.$ext').declined,
+        expect(parseMediaFileName('Sample Game.$ext').declined,
             DeclineReason.notAPcInstaller,
             reason: ext);
       }
