@@ -312,7 +312,7 @@ class OllamaUnreachableException extends UnreachableEndpoint {
   String get message => waited == null
       ? 'Cannot reach Ollama at $baseUrl -- nothing answered there. Start the '
           'server with: ollama serve. If that address is another machine, check '
-          'it is right and reachable from here. ($reason)'
+          'it is right and reachable from here. $_outwardCheck ($reason)'
       : timedOutMessage(
           service: 'Ollama',
           endpoint: baseUrl,
@@ -321,6 +321,34 @@ class OllamaUnreachableException extends UnreachableEndpoint {
           remedy: stallRemedy,
         );
 }
+
+/// The outward check the other three families carry (T-0354, T-0355), with
+/// both of its arguments decided here rather than carried across (T-0357).
+///
+/// `the scan` is the same stage `vision.dart` names -- this provider does that
+/// work. The second half is not the same, and it is the half that must not be
+/// copied: a host out on the internet can be cut off by this machine being
+/// offline or by a proxy, and none of that describes an address on this
+/// machine or the next desk. A proxy or a firewall between a machine and
+/// itself is a rarer story than one between a machine and the internet, so
+/// what a browser refused at a local address actually leaves is that nothing
+/// is listening there.
+///
+/// **Why the check is added to a family whose remedy already looks complete.**
+/// It is worth more here than anywhere else: a local address either answers or
+/// does not, with no route in between to take the blame, so the browser
+/// settles it outright. `even an error page` is a broadening rather than a
+/// correction in this one case -- an Ollama root answers a GET with friendly
+/// text, and the clause only says that an unfriendly answer would count too.
+///
+/// It does not repeat `ollama serve`, which the sentence has already named:
+/// what it adds is the way to find out whether starting the server is the
+/// remedy at all.
+final _outwardCheck = checkOutsideThisApp(
+  stage: 'the scan',
+  usually: 'nothing listening on that port, or, for an address on another '
+      'machine, a firewall or a server there that only listens to itself',
+);
 
 /// Why this one does not repeat `ollama serve`: a server that is not running
 /// refuses the connection and is the message above. This is a server that IS
