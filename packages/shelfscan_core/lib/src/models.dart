@@ -130,32 +130,85 @@ enum MediaType {
 /// rather than by the kind.
 ///
 /// `game` is still the only value round-tripped through the importer (T-0009);
-/// the other two are verified against the format's own files rather than
-/// against an import.
+/// the others are verified against the format's own files rather than against
+/// an import.
+///
+/// **[wire] and [key] are two wires, not one, and T-0368 is where they came
+/// apart.** One string served both while the two files agreed kind for kind.
+/// They stop agreeing the moment a kind is finer than Tonkatsu's `media_type`:
+/// [animationFilm] and [animationSeries] are one `media_type` to the importer
+/// and two different rows here, so a single string would write the person's
+/// film-or-series answer into `review.json` and read it back as the question.
+/// That file is the contract between review and export, so a lossy round trip
+/// in it destroys exactly the answer the review step exists to collect.
 enum WorkKind {
-  game('game', 'Game'),
+  game('game', 'game', 'Game'),
 
   /// Tonkatsu's spelling for a film. `external_id` for one of these is a TMDB
   /// id, not an IGDB id, and a published movie item carries no `platform_id`
   /// at all -- both are the exporter's business, not this enum's.
-  movie('movie', 'Film'),
+  movie('movie', 'movie', 'Film'),
 
-  /// One kind for an anime film and an anime series. Its `platform_id` is
-  /// Tonkatsu's discriminator between the two -- `0` film, `1` series -- and
-  /// nothing in this pipeline knows which, which is why `TonkatsuExporter`
-  /// declines the row rather than picking one.
-  animation('animation', 'Anime');
+  /// An anime whose film-or-series question is still open.
+  ///
+  /// What a person reaches by correcting a row to `Anime` and stopping there,
+  /// and what a document written before the other two existed reads back as.
+  /// `TonkatsuExporter` declines it, because the number separating it from its
+  /// two siblings is the one thing that target's item needs and nobody has
+  /// supplied.
+  animation('animation', 'animation', 'Anime'),
 
-  const WorkKind(this.wire, this.label);
+  /// An anime film: `platform_id` `0` (T-0162).
+  animationFilm('animation_film', 'animation', 'Anime film'),
 
-  /// The `media_type` string Tonkatsu writes for this kind. Only value in this
-  /// file that an external format reads.
+  /// An anime series: `platform_id` `1` (T-0162).
+  ///
+  /// The one animation kind a source answers on its own. A fansub-shaped file
+  /// name numbers an episode of a named series, which settles for that name
+  /// the question the other two leave to the person.
+  animationSeries('animation_series', 'animation', 'Anime series');
+
+  const WorkKind(this.key, this.wire, this.label);
+
+  /// The `work_kind` string this project's own `review.json` carries.
+  ///
+  /// Unique across [values], unlike [wire]: this document has to survive its
+  /// own round trip, and two kinds sharing a spelling here would make a load
+  /// forget which of them was written.
+  final String key;
+
+  /// The `media_type` string Tonkatsu writes for this kind. The only value in
+  /// this file an EXTERNAL format reads, and the one of the two that may
+  /// repeat -- that importer files an anime film and an anime series alike.
   final String wire;
 
   /// What a person is shown. Never [wire]: the file format is somebody else's
   /// vocabulary and a review row is read by the owner of the shelf, who calls
   /// an anime an anime whatever the importer files it under.
   final String label;
+
+  /// The three kinds a person names, before any refinement of one of them.
+  ///
+  /// [animationFilm] and [animationSeries] are refinements of [animation]
+  /// rather than siblings of [game] and [movie]: they answer a second question
+  /// only an anime row is asked. A picker over [values] would put that
+  /// question to every row on the screen instead.
+  static const named = <WorkKind>[game, movie, animation];
+
+  /// The three states of the one kind whose target item needs an answer this
+  /// pipeline does not always have.
+  static const animations = <WorkKind>{
+    animation,
+    animationFilm,
+    animationSeries
+  };
+
+  /// Whether this kind is an anime, in any of its three states.
+  bool get isAnimation => animations.contains(this);
+
+  /// Which of [named] this kind is one of -- itself, for all but the two
+  /// refinements.
+  WorkKind get asNamed => isAnimation ? animation : this;
 
   /// Absent is [game] -- the whole collection was games before this field
   /// existed. An unrecognised value is NOT: `unknown` is an honest answer for
@@ -164,13 +217,15 @@ enum WorkKind {
   /// what the row is. `review.json` is hand-editable by design (T-0050).
   /// Both messages list [values] rather than spelling the kinds out: a third
   /// kind was added here once and the two hardcoded sentences did not move.
-  static String get _allowed => values.map((e) => e.wire).join(', ');
+  static String get _allowed => values.map((e) => e.key).join(', ');
 
+  /// Matches [key] and never [wire], which is what keeps the round trip
+  /// lossless now that two kinds share one `media_type`.
   static WorkKind parse(Object? value, String path) {
     final name = _shapeOrNull<String>(value, path, 'one of $_allowed');
     if (name == null) return WorkKind.game;
     return WorkKind.values.firstWhere(
-      (e) => e.wire == name,
+      (e) => e.key == name,
       orElse: () => throw ReviewFormatException(
           path, 'is "$name"; it must be one of $_allowed'),
     );
@@ -619,10 +674,11 @@ class Detection {
         // empty, and here it covers every document anyone has yet written: a
         // scan of games writes the exact bytes it wrote before this field
         // existed.
-        // [WorkKind.wire], not the identifier, and the same string `.xcoll`
-        // carries: one spelling per kind across both files is what stops a
-        // hand-edited document and an export from disagreeing about a row.
-        if (workKind != WorkKind.game) 'work_kind': workKind.wire,
+        // [WorkKind.key], this document's own spelling, and NOT the
+        // `media_type` string `.xcoll` carries. The two were one field until a
+        // kind became finer than the importer's vocabulary; writing `wire`
+        // here now would read back as a different kind (T-0368).
+        if (workKind != WorkKind.game) 'work_kind': workKind.key,
       };
 
   /// Every field except `raw_title` is optional, so the minimum a human has
