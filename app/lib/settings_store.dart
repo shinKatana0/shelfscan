@@ -7,8 +7,8 @@
 /// point of the file, so keep it visible:
 ///   * [SecretStore]  -> flutter_secure_storage -> OS keychain / Keystore.
 ///     Anthropic API key, the OpenAI-compatible endpoint's key, IGDB client
-///     id AND secret. The client id is half of a credential pair, so it is
-///     a secret too.
+///     id AND secret, TMDB read token. The client id is half of a credential
+///     pair, so it is a secret too.
 ///   * [PrefsStore]   -> shared_preferences -> plain, world-readable-ish
 ///     file. Everything else, and nothing more.
 /// A secret must never be handed to [PrefsStore]. There is a test for it, and
@@ -94,6 +94,7 @@ class SettingsStore {
   static const keyOpenAiApiKey = 'openai_compatible_api_key';
   static const keyIgdbClientId = 'igdb_client_id';
   static const keyIgdbClientSecret = 'igdb_client_secret';
+  static const keyTmdbToken = 'tmdb_token';
 
   // Plain preference keys.
   static const keyBackend = 'vision_backend';
@@ -136,6 +137,7 @@ class SettingsStore {
       openAiApiKey: await secrets.read(keyOpenAiApiKey) ?? '',
       igdbClientId: await secrets.read(keyIgdbClientId) ?? '',
       igdbClientSecret: await secrets.read(keyIgdbClientSecret) ?? '',
+      tmdbToken: await secrets.read(keyTmdbToken) ?? '',
     );
   }
 
@@ -150,6 +152,7 @@ class SettingsStore {
     await secrets.write(keyOpenAiApiKey, settings.openAiApiKey);
     await secrets.write(keyIgdbClientId, settings.igdbClientId);
     await secrets.write(keyIgdbClientSecret, settings.igdbClientSecret);
+    await secrets.write(keyTmdbToken, settings.tmdbToken);
   }
 
   /// Loading must never fail the app start: a missing keychain entry or an
