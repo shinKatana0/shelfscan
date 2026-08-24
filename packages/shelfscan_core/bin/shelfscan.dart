@@ -773,7 +773,7 @@ String noPhotosMessage(PhotoDirectory listing, String dirPath,
       'Accepted: ${acceptedList(convertsHeic: convertsHeic)}';
 }
 
-/// A games folder, enumerated for the source stage (T-0160).
+/// A media folder, enumerated for the source stage (T-0160).
 ///
 /// The counts are separate because they are the three different things a
 /// directory can hold and each one behaves differently downstream; the summary
@@ -782,7 +782,7 @@ class InstallDirectory {
   InstallDirectory({
     required this.entries,
     required this.unreadable,
-    required this.gameDirectories,
+    required this.subdirectories,
     required this.metadataFiles,
     required this.looseFiles,
     this.installerNamed = 0,
@@ -796,11 +796,11 @@ class InstallDirectory {
   /// A source can name what it declined; it cannot name what never reached it.
   final List<SkippedFile> unreadable;
 
-  final int gameDirectories;
+  final int subdirectories;
   final int metadataFiles;
   final int looseFiles;
 
-  /// How many of [gameDirectories] went over under an installer's name rather
+  /// How many of [subdirectories] went over under an installer's name rather
   /// than their own (T-0178). A subset, not a fourth kind of entry, so the
   /// three counts above still sum to [entries].
   final int installerNamed;
@@ -812,7 +812,7 @@ class InstallDirectory {
   final int videoNamed;
 }
 
-/// Reads a games folder two levels deep, and the second level only for
+/// Reads a media folder two levels deep, and the second level only for
 /// `goggame-*.info`.
 ///
 /// What each level is for:
@@ -823,7 +823,7 @@ class InstallDirectory {
 ///   nowhere else, and that name keeps the apostrophe and the capitals that
 ///   `setup_marlows_gate_3_2.0.0.7_(64bit).exe` has thrown away (T-0158).
 /// - inside each subdirectory, `goggame-*.info` and nothing else. That single
-///   filter is what keeps a games folder reviewable: the rest of an installed
+///   filter is what keeps a media folder reviewable: the rest of an installed
 ///   game is hundreds of `.dll`, `.pak` and `.exe` files, and every one that
 ///   reached the source stage would be a decline to group or a row the owner
 ///   must reject.
@@ -869,7 +869,7 @@ class InstallDirectory {
 InstallDirectory readInstallDirectory(Directory dir) {
   final entries = <SourceEntry>[];
   final unreadable = <SkippedFile>[];
-  var gameDirectories = 0;
+  var subdirectories = 0;
   var metadataFiles = 0;
   var looseFiles = 0;
   var installerNamed = 0;
@@ -884,7 +884,7 @@ InstallDirectory readInstallDirectory(Directory dir) {
     }
     if (entity is! Directory) continue;
     final name = leafName(entity.path);
-    gameDirectories++;
+    subdirectories++;
 
     final List<FileSystemEntity> contents;
     try {
@@ -957,7 +957,7 @@ InstallDirectory readInstallDirectory(Directory dir) {
   return InstallDirectory(
     entries: entries,
     unreadable: unreadable,
-    gameDirectories: gameDirectories,
+    subdirectories: subdirectories,
     metadataFiles: metadataFiles,
     looseFiles: looseFiles,
     installerNamed: installerNamed,
@@ -1070,7 +1070,7 @@ String installsNotice(String dirPath) =>
 /// How much of the directory the run covered, for the summary line.
 String installScope(InstallDirectory listing) =>
     '${listing.entries.length} entry(ies) '
-    '(${listing.gameDirectories} folder(s), ${listing.looseFiles} loose '
+    '(${listing.subdirectories} folder(s), ${listing.looseFiles} loose '
     'file(s), ${listing.metadataFiles} goggame-*.info)'
     '${listing.installerNamed == 0 ? '' : ', ${listing.installerNamed} '
         'folder(s) read under an installer name inside them'}'

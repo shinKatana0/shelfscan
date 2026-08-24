@@ -681,7 +681,7 @@ void main() {
       // subdirectory emitting its parent's title as expected behaviour; these
       // names take the same path, so the folder the user pointed at IS the
       // title and stage 2 merges the duplicates. A hard decline would lose it:
-      // `readGameFolder` enumerates children only, so a non-GoG install has no
+      // `readMediaFolder` enumerates children only, so a non-GoG install has no
       // other entry carrying its own folder's name (T-0160/T-0161).
       for (final name in ['Screenshots', 'Saves', 'data']) {
         final parse = parseGameFileName(name, container: 'Dusk-Rail 2');
