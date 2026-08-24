@@ -14,8 +14,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelfscan_app/heic_android.dart';
 import 'package:shelfscan_app/heic_wic.dart';
+import 'package:shelfscan_app/photo_files.dart';
 
-final _heic = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
+/// A real HEIC file signature over invented bytes: `sniffImage` reads the
+/// `ftyp` box and the brand, and nothing here decodes it.
+final _heic = Uint8List.fromList([
+  0, 0, 0, 24, ...'ftyp'.codeUnits, ...'heic'.codeUnits, //
+  ...List.filled(12, 0),
+]);
 final _jpeg = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, 9, 9]);
 
 void _handler(Future<Object?> Function(MethodCall call)? handler) =>
@@ -84,6 +90,22 @@ void main() {
             contains('no HEIC decoder wired up'))),
       );
     });
+  });
+
+  test('the picker path hands the scan JPEG bytes under the picked name',
+      () async {
+    _handler((_) async => _jpeg);
+
+    // The seam `scan_screen.dart` uses, entered the way it enters it.
+    final loaded = await loadPickedPhotos(
+      [(name: 'phone.heic', bytes: _heic)],
+      decodeHeic: heicDecoderFor('android'),
+    );
+
+    expect(loaded.rejected, isEmpty);
+    expect(loaded.photos.single.mimeType, 'image/jpeg');
+    expect(loaded.photos.single.bytes, _jpeg);
+    expect(loaded.photos.single.name, 'phone.heic');
   });
 
   test('both halves agree on the channel name', () {
