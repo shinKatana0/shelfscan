@@ -22,6 +22,15 @@ keep its runtime dependencies at `http` alone. CI runs these same four
 commands as two jobs, each `test` with `--reporter expanded` so a failing
 test is named in the log.
 
+**Do not run the app suite while an Android release build is running in the
+same checkout.** `flutter analyze`, `flutter test` and `flutter pub get` each
+rewrite `GeneratedPluginRegistrant.java` within seconds of starting, and they
+write the version the release build must not compile: the build fails on a dev
+dependency, naming a generated file, and looks like a defect in the tree. The
+measurement and the recovery are in
+[`doc/android-build.md`](doc/android-build.md), trap 5. Nothing here builds for
+Android, so the two are only ever concurrent by choice.
+
 Before publishing anything, run both suites through `tool/check-suites.sh`
 instead. Neither runner can be trusted to say what happened to itself: when a
 suite file's test host process dies, every test in that file — including tests
@@ -77,9 +86,10 @@ rediscovered:
 
 - **Windows** — two things `flutter doctor` does not check at all:
   [`README.md`](README.md), *Setup → The app*.
-- **Android** — the toolchain, and four failures: three that name something
-  other than the missing step, and one that does not fail the build at all and
-  is invisible to every debug build.
+- **Android** — the toolchain, and five failures: three that name something
+  other than the missing step, one that does not fail the build at all and
+  is invisible to every debug build, and one you cause by running the suites
+  beside the build.
   [`doc/android-build.md`](doc/android-build.md). **Android Studio is not
   required**; the command-line SDK is enough, and that page is the shortest
   route from a bare Windows machine to an apk.
