@@ -326,5 +326,40 @@ void main() {
     test('the check is on the last segment, not on the path', () {
       expect(folderConcern(r'C:\Downloads\GOG Games'), isNull);
     });
+
+    test('the warning names every kind the control above it offers', () {
+      for (final concern in [
+        folderConcern(r'C:\Users\someone\Downloads')!,
+        folderConcern(r'C:\')!,
+      ]) {
+        expect(concern, contains('read by name, subdirectories included'));
+        expect(concern, contains('a film can come back as a game'));
+        expect(concern, contains('an application as either'));
+        expect(concern, contains('Review every row'));
+      }
+    });
+
+    test('and no longer promises that every entry is read as a game', () {
+      expect(folderConcern(r'C:\'),
+          isNot(contains('read as the name of a game')));
+      expect(folderConcern(r'C:\Users\someone\Downloads'),
+          isNot(contains('where games are installed')));
+    });
+
+    // The distinction T-0351 exists for: T-0158 measured a Downloads folder
+    // against an application installer, and nothing else. That a film comes
+    // back as a game is T-0162's third way for a name to be read wrong and
+    // carries no rate, so the citation stays behind the measured sentence
+    // rather than in front of both.
+    test('the T-0158 citation stays on the sentence T-0158 measured', () {
+      const measured = 'not one of them is a game -- it reads '
+          'NoteWellSetup.exe exactly as it reads setup_moor_1.9.exe (T-0158)';
+      final concern = folderConcern(r'C:\Users\someone\Downloads')!;
+
+      expect(concern, contains(measured));
+      expect('(T-0158)'.allMatches(concern).length, 1);
+      expect(concern.indexOf('a film can come back as a game'),
+          lessThan(concern.indexOf(measured)));
+    });
   });
 }

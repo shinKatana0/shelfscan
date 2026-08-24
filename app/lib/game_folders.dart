@@ -1,5 +1,5 @@
-/// A folder of games as a scan input: what the shell enumerates, which source
-/// reads each entry, and which folders it refuses to enumerate quietly.
+/// A folder handed to a scan: what the shell enumerates, which source reads
+/// each entry, and which folders it questions before enumerating.
 ///
 /// The filesystem half of T-0155's seam. `shelfscan_core` imports no
 /// `dart:io` (ARCHITECTURE.md), so walking the directory and reading the
@@ -56,8 +56,8 @@ String folderName(String path) {
   return name.isEmpty ? path : name;
 }
 
-/// Folders that hold whatever was put in them, so the games in one are a
-/// minority of what a scan would read. Folded, matched against the last
+/// Folders that hold whatever was put in them, so most of what a scan reads
+/// there is neither a game nor a film. Folded, matched against the last
 /// segment only.
 const _mixedFolders = {
   'downloads',
@@ -80,12 +80,21 @@ const _mixedFolders = {
   'users',
 };
 
-/// The measurement this whole control is shaped around (T-0158).
-const _measurement =
-    'Nothing in a file name separates a game installer from an application '
-    'one: over a Downloads folder this titles every installer it finds, and '
-    'not one of them is a game -- it reads NoteWellSetup.exe exactly as it '
-    'reads setup_moor_1.9.exe (T-0158).';
+/// The tail both warnings share, and its two halves are not equally sourced.
+///
+/// **`(T-0158)` sits on the sentence it measured and covers nothing else**: a
+/// Downloads folder read by name titled every installer in it and not one was
+/// a game. That a film comes back as a game is T-0349's trace of one
+/// folder-per-film layout, and T-0162's third way for a name to be read wrong
+/// -- a hazard nobody has put a rate on, so it carries no citation and does
+/// not borrow that one.
+const _warning =
+    'Every file and folder in it is read by name, subdirectories included, '
+    'and a name is all this reads: a film can come back as a game, and an '
+    'application as either. Over a Downloads folder this titles every '
+    'installer it finds and not one of them is a game -- it reads '
+    'NoteWellSetup.exe exactly as it reads setup_moor_1.9.exe (T-0158). '
+    'Review every row.';
 
 /// Why the chosen folder is probably not the one the user meant, or null.
 ///
@@ -97,12 +106,11 @@ const _measurement =
 String? folderConcern(String path) {
   final name = folderName(path);
   if (_isRoot(path)) {
-    return 'That is the whole of $name. Every file and folder in it would be '
-        'read as the name of a game. $_measurement';
+    return 'That is the whole of $name. $_warning';
   }
   if (_mixedFolders.contains(name.toLowerCase())) {
-    return '$name is where files land rather than where games are installed. '
-        '$_measurement';
+    return '$name is where files land rather than where you keep games and '
+        'films. $_warning';
   }
   return null;
 }
