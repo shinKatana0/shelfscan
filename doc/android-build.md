@@ -5,9 +5,10 @@ Debug and release apks were built from this tree on 2026-08-23, on Flutter
 SDK on it. Getting there cost four diagnoses, and not one of them presents as a
 missing step: three fail the build while naming something else, or naming
 nothing at all, and the fourth does not fail the build. This page is those
-diagnoses written down so that the next person pays for none of them -- and,
-below them, what the plugin upgrade later cost, which is the same kind of
-knowledge arriving from a different direction.
+diagnoses written down so that the next person pays for none of them -- plus a
+fifth trap that belongs to nobody's first day (T-0365) and, below them, what
+the plugin upgrade later cost, which is the same kind of knowledge arriving
+from a different direction.
 
 Windows desktop has its own two undocumented prerequisites, and they are
 elsewhere: [`README.md`](../README.md), *Setup → The app*.
