@@ -34,7 +34,7 @@ final _jpeg =
 const _gogGames = r'C:\GOG Games';
 const _downloads = r'C:\Users\someone\Downloads';
 
-GameFolder _folder(String path, List<String> names) => GameFolder(
+MediaFolder _folder(String path, List<String> names) => MediaFolder(
       path: path,
       name: folderName(path),
       entries: [
@@ -105,7 +105,7 @@ Future<_RecordingVision> _pump(
   required _BothPicker picker,
   VisionBackend backend = VisionBackend.local,
   Map<String, Completer<void>> gates = const {},
-  GameFolder? folder,
+  MediaFolder? folder,
 }) async {
   final vision = _RecordingVision(gates: gates);
   final held = folder ?? _folder(_gogGames, const ['setup_moor_1.9.exe']);

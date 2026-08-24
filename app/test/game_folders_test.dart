@@ -31,7 +31,7 @@ String _gogInfo(String name, String id) =>
 
 /// Every entry of the chosen folder, read by the source the app hands it to.
 Future<List<SourceReading>> _readings() async => [
-      for (final entry in (await readGameFolder(_root.path)).entries)
+      for (final entry in (await readMediaFolder(_root.path)).entries)
         const InstalledGameSource().read(entry)
     ];
 
@@ -45,7 +45,7 @@ void main() {
       _file('Marlows.Gate.3.GOG.zip');
       _file('notes.txt');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect(folder.path, _root.path);
       expect(folder.name, folderName(_root.path));
@@ -67,7 +67,7 @@ void main() {
           _gogInfo('Harbour Lantern', '1100000001'));
       _file('Harbour Lantern/unins000.exe');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect([for (final entry in folder.entries) entry.name],
           ['goggame-1100000001.info']);
@@ -80,7 +80,7 @@ void main() {
       _dir('Dusk-Rail 2/bin');
       _file('Dusk-Rail 2/hbl2.exe');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect([for (final entry in folder.entries) entry.name], ['Dusk-Rail 2']);
       expect(folder.entries.single.container, isNull);
@@ -91,7 +91,7 @@ void main() {
         _file('Dusk-Rail 2/bin/module$i.dll');
       }
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       // 41 files are on disk under it and the folder is one entry: at depth 2
       // every one of them would be a DeclinedEntry on the review screen.
@@ -103,7 +103,7 @@ void main() {
       _dir('Saves');
       _file('goggame-1100000014.info', _gogInfo('Ombra 4', '1100000014'));
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect([for (final entry in folder.entries) entry.name],
           ['goggame-1100000014.info']);
@@ -116,7 +116,7 @@ void main() {
           '{"gameId": "1100000006", "rootGameId": "1100000007", '
               '"name": "Astralane: Pre-Order Bonus"}');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect(folder.entries.length, 2);
       // The DLC is core's to decline (GogMetadataSource.dlcNotAGame); the
@@ -133,7 +133,7 @@ void main() {
       _file('New Folder/setup_harbour_lantern_1.6.15.exe');
       _file('New Folder/setup_harbour_lantern_1.6.15-1.bin');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect([for (final entry in folder.entries) entry.name],
           ['setup_harbour_lantern_1.6.15.exe']);
@@ -150,7 +150,7 @@ void main() {
       }
       _file('Screenshots/Screenshot 1.png');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect([for (final entry in folder.entries) entry.name],
           ['New Folder', 'Screenshots']);
@@ -159,7 +159,7 @@ void main() {
     test('a folder that names a game keeps it when the file agrees', () async {
       _file('Harbour Lantern/Harbour Lantern.exe');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect([for (final entry in folder.entries) entry.name],
           ['Harbour Lantern']);
@@ -175,7 +175,7 @@ void main() {
       _file('Harbour Lantern/setup_tulip_hospital_2.1.0.9.exe');
       _file('Новая папка/setup_iron_march_2_ultimate_2.1.0.4.exe');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect([for (final entry in folder.entries) entry.name], [
         'setup_tulip_hospital_2.1.0.9.exe',
@@ -188,7 +188,7 @@ void main() {
           _gogInfo('Harbour Lantern', '1100000001'));
       _file('New Folder/setup_tulip_hospital_2.1.0.9.exe');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect([for (final entry in folder.entries) entry.name],
           ['goggame-1100000001.info']);
@@ -196,7 +196,7 @@ void main() {
     });
 
     test('an empty folder hands over nothing and does not throw', () async {
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
       expect(folder.entries, isEmpty);
     });
   });
@@ -205,7 +205,7 @@ void main() {
     // Scanned under a name of its own rather than the `shelfscan_folder<n>`
     // temp directory the group above uses: a borrowed title has to be
     // recognisable as the chosen folder's when it appears.
-    Future<GameFolder> chosen() => readGameFolder(_dir('Downloaded games'));
+    Future<MediaFolder> chosen() => readMediaFolder(_dir('Downloaded games'));
 
     test('a subdirectory that titles nothing borrows nothing', () async {
       _dir('Downloaded games/New Folder');
@@ -278,7 +278,7 @@ void main() {
       _file('Harbour Lantern (2007) [1080p BluRay]/'
           'Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
 
-      final entry = (await readGameFolder(_root.path)).entries.single;
+      final entry = (await readMediaFolder(_root.path)).entries.single;
 
       expect(entry.name, 'Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
       expect(entry.container, isNull);
@@ -302,10 +302,10 @@ void main() {
       // one level down in its own.
       const film = 'Tidewrack.1998.1080p.BluRay.x264-LANTERN.mkv';
       _file(film);
-      final flat = (await readGameFolder(_root.path)).entries.single;
+      final flat = (await readMediaFolder(_root.path)).entries.single;
       File('${_root.path}${Platform.pathSeparator}$film').deleteSync();
       _file('Tidewrack (1998)/$film');
-      final nested = (await readGameFolder(_root.path)).entries.single;
+      final nested = (await readMediaFolder(_root.path)).entries.single;
 
       expect(nested.name, flat.name);
       expect(nested.container, flat.container);
@@ -340,7 +340,7 @@ void main() {
       _file('Films/Tidewrack.1998.1080p.BluRay.x264-LANTERN.mkv');
       _file('Films/Pale.Anchor.1994.720p.WEB-DL.h264-MOOR.mp4');
 
-      final entry = (await readGameFolder(_root.path)).entries.single;
+      final entry = (await readMediaFolder(_root.path)).entries.single;
 
       expect(entry.name, 'Films');
     });
@@ -370,7 +370,7 @@ void main() {
       _file('Clips/clip.mkv');
       _file('Clips/holiday.mp4');
 
-      final entry = (await readGameFolder(_root.path)).entries.single;
+      final entry = (await readMediaFolder(_root.path)).entries.single;
 
       expect(entry.name, 'Clips');
     });
@@ -379,7 +379,7 @@ void main() {
       _file('Moor/goggame-1100000002.info', _gogInfo('MOOR', '1100000002'));
       _file('Moor/Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect([for (final entry in folder.entries) entry.name],
           ['goggame-1100000002.info']);
@@ -405,7 +405,7 @@ void main() {
       }
       _dir('Marlows Gate 3/Data/Localization');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       expect(folder.entries.length, 1);
       expect(folder.entries.single.name, 'Marlows Gate 3');
@@ -419,7 +419,7 @@ void main() {
       _file('Marlows Gate 3/MarlowsGate3.exe');
       _file('Clips/clip.mkv');
 
-      final folder = await readGameFolder(_root.path);
+      final folder = await readMediaFolder(_root.path);
 
       // The budget alone, so that widening the rule fails HERE and changing
       // which name an entry took does not: five subdirectories, five entries,
