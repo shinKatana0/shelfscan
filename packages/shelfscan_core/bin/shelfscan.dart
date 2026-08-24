@@ -91,12 +91,9 @@
 /// credentials `resolve` refuses to run; the entry then stays unmatched,
 /// which the csv export still carries (see below) and `.xcoll` does not.
 ///
-/// Providers:
+/// Providers, in the order the app offers them too (T-0343):
 ///   --provider ollama      local, needs a running Ollama server (DEFAULT)
 ///                          (SHELFSCAN_OLLAMA_MODEL, SHELFSCAN_OLLAMA_URL to override)
-///   --provider anthropic   cloud, needs ANTHROPIC_API_KEY
-///                          (SHELFSCAN_ANTHROPIC_MODEL to override the model;
-///                          a model named there is sent with no temperature)
 ///   --provider openai      any endpoint speaking the OpenAI
 ///                          /chat/completions API -- Groq, OpenRouter,
 ///                          Mistral, GitHub Models, Cerebras, Gemini's
@@ -106,6 +103,9 @@
 ///                          https://api.groq.com/openai/v1),
 ///                          SHELFSCAN_OPENAI_MODEL and
 ///                          SHELFSCAN_OPENAI_API_KEY.
+///   --provider anthropic   cloud, needs ANTHROPIC_API_KEY
+///                          (SHELFSCAN_ANTHROPIC_MODEL to override the model;
+///                          a model named there is sent with no temperature)
 ///   Policy: on desktop local is the default; every cloud endpoint is an
 ///   explicit opt-in. Your photos are uploaded in full to whichever
 ///   endpoint you name, and free tiers are commonly funded by training on
@@ -123,9 +123,9 @@
 /// (T-0011, T-0032). Off unless asked for; when on it doubles the vision cost
 /// of the run, one extra call per photo:
 ///   SHELFSCAN_OLLAMA_FALLBACK_MODEL=gemma3:12b   bigger LOCAL model
-///   --fallback anthropic                          cloud, needs ANTHROPIC_API_KEY
 ///   --fallback openai                             cloud, needs the three
 ///                                                 SHELFSCAN_OPENAI_* variables
+///   --fallback anthropic                          cloud, needs ANTHROPIC_API_KEY
 ///   --fallback none                               off, whatever the env says
 /// The env var can only ever select a local model: sending photos to the
 /// cloud takes the explicit flag, because a run started as local must not
@@ -1342,7 +1342,11 @@ Never _usage() {
       'local model cannot report the spines it failed to read (T-0028), so\n'
       'there is nothing to decide on.\n'
       '\n'
-      'Vision providers: ollama (local, the default), anthropic, openai.\n'
+      'Vision providers: ollama (local, the default), openai, anthropic.\n'
+      '"openai" is any endpoint speaking the OpenAI /chat/completions API\n'
+      '(Groq, OpenRouter, Mistral, GitHub Models, Cerebras, Gemini compat)\n'
+      'and reads SHELFSCAN_OPENAI_BASE_URL, SHELFSCAN_OPENAI_MODEL and\n'
+      'SHELFSCAN_OPENAI_API_KEY.\n'
       '"anthropic" reads ANTHROPIC_API_KEY and, optionally,\n'
       'SHELFSCAN_ANTHROPIC_MODEL -- unset uses a built-in default model, so\n'
       'you need not know an id to start. Model ids are Anthropic\'s to\n'
@@ -1351,12 +1355,9 @@ Never _usage() {
       'temperature, because newer Claude models reject the parameter; its\n'
       'sampling is then Anthropic\'s rather than this tool\'s, and the run\n'
       'prints which of the two it used.\n'
-      '"openai" is any endpoint speaking the OpenAI /chat/completions API\n'
-      '(Groq, OpenRouter, Mistral, GitHub Models, Cerebras, Gemini compat)\n'
-      'and reads SHELFSCAN_OPENAI_BASE_URL, SHELFSCAN_OPENAI_MODEL and\n'
-      'SHELFSCAN_OPENAI_API_KEY. Both cloud providers upload your photos in\n'
-      'full to the endpoint you name, and free tiers are commonly funded by\n'
-      'training on what is submitted to them.\n'
+      'Both cloud providers upload your photos in full to the endpoint you\n'
+      'name, and free tiers are commonly funded by training on what is\n'
+      'submitted to them.\n'
       '\n'
       'SHELFSCAN_VISION_TIMEOUT=<seconds> bounds ONE vision call, per photo,\n'
       'whichever provider reads it. Unset is ${visionCallTimeout.inSeconds} s,'
