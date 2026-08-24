@@ -3,6 +3,62 @@
          build ships without it and every provider call fails on the device
          with no error the app can distinguish from a dead network. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- There is deliberately no android:networkSecurityConfig here, and no
+         android:usesCleartextTraffic. That is a decision (T-0361), not an
+         omission, and this is what it permits and what it costs.
+
+         WHY IT LOOKS NEEDED. Local recognition on this platform points the
+         phone at an Ollama server the user names on their own network.
+         Ollama speaks plain HTTP, and from targetSdk 28 Android blocks
+         cleartext by default, so a network security config permitting it
+         looks like the missing piece.
+
+         WHAT IT WOULD ACTUALLY GOVERN: nothing this app sends. Android
+         enforces that policy in its own network stack. Every request here is
+         made by package:http over a dart:io socket, which the Flutter engine
+         owns, and Flutter says so itself in the breaking change note for the
+         network policy it landed and then reverted in 2.2: "The following
+         only applies to platform native sockets (sockets owned by the Android
+         and iOS platforms). Flutter does not enforce any policy at socket
+         level; you would be responsible for securing the connection. If the
+         socket is owned by Dart/Flutter, no policy will be enforced." The
+         request to restore that enforcement, flutter/flutter#106678, was
+         closed as not planned. So cleartext to the LAN already works, and no
+         flag in this file is what makes it work.
+
+         WHAT ANDROID COULD EXPRESS, AND IT IS NOT WHAT WE WOULD WANT. The
+         config keys cleartext by name: <base-config> covers every
+         destination, <domain-config> covers the exact hostnames listed under
+         it. There is no CIDR notation, no address range and no wildcard, and
+         it is a resource compiled into the apk, so an address the user types
+         at runtime cannot be named in it at all. "Permit cleartext to the
+         local network only" is therefore not expressible. The one option
+         that is, the whole app one, would relax the platform rule for every
+         destination in order to bless a single LAN address.
+
+         WHAT IS AND IS NOT GUARANTEED, PLAINLY. The photographs travel to
+         that server unencrypted and unauthenticated: anything on the same
+         network can read them in transit, and this app does not wrap them in
+         anything. Declaring nothing here does NOT prevent that; nothing in
+         this manifest can. What it does is leave the platform rule as tight
+         as it is today for the part of the app the platform does govern,
+         which is every plugin and anything future that uses the Java stack.
+         So the guarantee kept is about the plugins, and the exposure on the
+         wire is real and is stated to the user where the address is typed
+         (lanPrivacyWarning in lib/provider_config.dart, and the Local
+         section of the settings screen). It is not softened in either place.
+
+         WHAT WOULD CHANGE THIS. If the engine ever enforces the policy for
+         Dart owned sockets, local recognition on Android stops working with
+         a cleartext error and this comment is where to start. A runtime
+         address still could not be named, so the only reachable option would
+         be the whole app one above, with the cost above. That is a decision
+         to take deliberately at that point, not a flag to add by reflex now.
+
+         UNVERIFIED: none of this was exercised on a device. It rests on the
+         two published statements quoted above and on the merged manifest of
+         the release build, which carries no cleartext attribute from any
+         plugin. -->
     <application
         android:label="shelfscan"
         android:name="${applicationName}"

@@ -151,7 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final localAllowed = ProviderPolicy.localAllowed;
+    final onThisMachine = ProviderPolicy.localServerIsThisMachine;
     final inForce = _inForce;
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -182,15 +182,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              localAllowed
+              onThisMachine
                   ? 'Local runs entirely on this machine and needs no keys. '
                       'Endpoint sends the photos to any OpenAI-compatible '
                       'service you name, with your own key. Cloud needs your '
                       'own Anthropic API key.'
-                  : 'This device is cloud-only: on-device models are too weak '
-                      'for shelf spines. Endpoint sends the photos to any '
-                      'OpenAI-compatible service you name, with your own key; '
-                      'Cloud needs your own Anthropic key.',
+                  : 'This device runs no vision model of its own: on-device '
+                      'models are too weak for shelf spines. Local instead '
+                      'sends the photos to an Ollama server you name on your '
+                      'own network, and needs no keys. Endpoint sends them to '
+                      'any OpenAI-compatible service you name, with your own '
+                      'key; Cloud needs your own Anthropic key.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
 
@@ -206,27 +208,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (inForce.warning case final warning?)
               _PrivacyWarning(warning, inForce.advice),
 
-            // Ollama is a desktop-only capability; on a cloud-only platform
-            // these fields would be dead controls, so they are not rendered.
-            if (localAllowed) ...[
-              const _SectionTitle('Local (Ollama)'),
-              TextField(
-                key: const Key('settings-ollama-url'),
-                controller: _ollamaUrl,
-                decoration: const InputDecoration(
-                  labelText: 'Ollama server URL',
-                  hintText: defaultOllamaUrl,
-                ),
+            // Rendered on every platform since T-0361. Where the server is
+            // another machine the paragraph below IS the field: this app has
+            // no address to offer, and two of the three things needed are on
+            // the other machine rather than on this screen.
+            const _SectionTitle('Local (Ollama)'),
+            if (!onThisMachine)
+              Text(
+                'This device runs no model. Local sends each photo to an '
+                'Ollama server on your own network, usually the desktop, and '
+                'the reading happens there. That machine needs Ollama running '
+                'and listening on the network rather than on loopback only '
+                '(OLLAMA_HOST=0.0.0.0), and its address goes below. The '
+                'photos travel over plain HTTP, so anything on that network '
+                'can read them on the way.',
+                key: const Key('settings-ollama-lan-note'),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-              TextField(
-                key: const Key('settings-ollama-model'),
-                controller: _ollamaModel,
-                decoration: const InputDecoration(
-                  labelText: 'Vision model',
-                  hintText: defaultOllamaModel,
-                ),
+            TextField(
+              key: const Key('settings-ollama-url'),
+              controller: _ollamaUrl,
+              decoration: InputDecoration(
+                labelText: onThisMachine
+                    ? 'Ollama server URL'
+                    : 'Ollama server URL (the other machine, not this one)',
+                // T-0082 made the hint the default, because clearing the field
+                // resolves to it. Where there is no default -- loopback on a
+                // phone is the phone -- the hint may not look like one: it
+                // shows the shape instead, and a cleared field stays cleared
+                // and blocks the scan by name rather than resolving to an
+                // address nobody chose. The port is read off the default so
+                // this is not a second copy of it.
+                hintText: onThisMachine
+                    ? defaultOllamaUrl
+                    : 'http://ADDRESS:${Uri.parse(defaultOllamaUrl).port}',
               ),
-            ],
+            ),
+            TextField(
+              key: const Key('settings-ollama-model'),
+              controller: _ollamaModel,
+              decoration: const InputDecoration(
+                labelText: 'Vision model',
+                hintText: defaultOllamaModel,
+              ),
+            ),
 
             const _SectionTitle('Endpoint (any OpenAI-compatible service)'),
             Text(
