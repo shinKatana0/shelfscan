@@ -266,8 +266,9 @@ const keylessConsequence =
 /// **The kind that is NOT looked up is named, and the CLI is why.** Its
 /// `_makeResolver` prints the film clause only on a run that can be surprised
 /// by it, and says in place that repeating it per catalogue with nothing
-/// configured would be noise. That is exactly the split below: [noCatalogueNote]
-/// enumerates nothing, and these three name the other kind in four words.
+/// configured would be noise. That is exactly the split below:
+/// [noCatalogueNote] enumerates nothing, and these three name the other kind
+/// in four words.
 /// What a keyless row then costs is not restated here -- Settings says it
 /// where the credential is typed, and the review screen says it per row.
 const igdbOnlyConsequence =
@@ -283,8 +284,8 @@ const tmdbOnlyConsequence =
     'catalog app turns into cover art. Games are not looked up.';
 
 const bothCataloguesConsequence =
-    'Games are looked up on IGDB and films on TMDB, and those ids are what '
-    '.xcoll carries: what a catalog app turns into cover art and metadata.';
+    'Games are looked up on IGDB and films on TMDB. Those ids are what .xcoll '
+    'carries: a catalog app turns them into cover art and metadata.';
 
 /// Asked for, and nothing registered to answer it. Phrased as the two ways
 /// forward rather than as a fault: one of them is to scan now, which is the
