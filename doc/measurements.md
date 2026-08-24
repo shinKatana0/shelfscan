@@ -43,8 +43,9 @@ first is a photograph:
   invented platform bands — the density ladder (T-0278) and the generation cap
   (T-0281) are measured on nothing else, and each says so at its head;
 - **no imagery at all** — probes replayed off the shared control capture or off
-  recorded provider answers (T-0113, T-0147, T-0165), and IGDB's own public
-  catalogue listing (T-0159);
+  recorded provider answers (T-0113, T-0147, T-0165), IGDB's own public
+  catalogue listing (T-0159), and TMDB's live answers on two public films (the
+  last section);
 - **private folders on a disk** (the disk sources), which photograph nothing
   and are held to the same publication rule as the photographs.
 
@@ -1360,3 +1361,103 @@ combinatorial series, which is an invitation to continue a pattern that real
 spine titles do not extend. It is evidence that a frame past the ceiling can
 fabricate rows that parse and look like reads, not a measurement of the rate on
 anything real. Filed as its own task rather than folded in here.
+
+## TMDB's `year` filters, and the first live film searches (orchestrator, 2026-08-23)
+
+The first requests this project has ever made to TMDB. Five searches settled
+one question — what the `year` parameter does — and a scan of three constructed
+filenames the same evening verified that the film path runs at all. Both halves
+are below; the limits under them are as much of the measurement as the figures,
+because two titles on one machine on one evening are what this rests on.
+
+**On what.** No imagery, and nothing off anybody's disk: two films chosen as
+public examples for the test, *Metropolis* (1927) and *Alien* (1979), asked of
+the live service through the shipped `TmdbClient` with an API Read Access Token
+supplied for the run. They are **neither a private collection nor part of this
+tree's invented fixture family** — nothing quotes them as a fixture and nothing
+should start; they are public-catalogue rows used as evidence, the way T-0159's
+GOG products are.
+
+### The five searches
+
+| query | `year` | results | first row |
+|---|---|---|---|
+| `Metropolis` | — | 81 | *Metropolis*, 1927 |
+| `Metropolis` | 1927 | **1** | *Metropolis*, 1927 |
+| `Metropolis` | 1926 | **0** | — |
+| `Alien` | 1979 | 9 | *Alien*, 1979 |
+| `Alien` | 1978 | 8 | *The Alien Factor*, 1978 — **the 1979 film is not in the list** |
+
+**`year` filters rather than prefers.** A film whose catalogued release year is
+not the one asked for is **absent from the answer, not demoted in it**. The two
+off-by-one rows are the finding, and they show it failing in both of the ways
+it can: a narrow title comes back empty, a common one comes back full of other
+films. Nothing in the answer says a year was applied, so from inside the
+process the two are indistinguishable from a title the catalogue does not have.
+
+**The `results` column is what the service reported as the total, which is not
+what reaches the resolver.** `TmdbClient.searchMovie` makes one unpaginated
+request and reads that page: the query TMDB reported 81 results for handed the
+resolver 20 rows. The two figures are the same measurement and neither is a
+correction of the other — see the third row of the end-to-end table, where the
+20 are what the tie rule then had to judge.
+
+Three things were already resting on this before it was written down here:
+
+- **The parameter stays**, and the measurement is the argument for keeping it:
+  the same title goes from 81 candidates to 1, and the 1 is right. Dropping the
+  year to avoid the off-by-one would hand a person eighty-one rows to read.
+- **The zero-result retry (T-0336) is what the off-by-one costs.** A retry
+  without the year, on a query that found nothing at all, is the whole of the
+  remedy the filter needs; it fires only where the row was already lost.
+- **A doc comment asserting the opposite was corrected by it.**
+  `TmdbClient.searchMovie` had said that `year` prefers but does not require a
+  match, so a filename year off by one still finds the film. Every clause was
+  false. It had been written against a fake, which answered as it was told to —
+  which is the reason this section exists rather than a second fake test.
+
+### The path, end to end, the same evening
+
+Three release-style filenames (`<Title>.<year>.1080p…mkv`, constructed for the
+test — nothing was read off a disk), through the shipped CLI's film path:
+
+| the row's year | outcome |
+|---|---|
+| *Alien*, 1979 | `tmdb:348`, release year 1979, **score 1.0**, auto-matched |
+| *Metropolis*, 1927 | `tmdb:19`, release year 1927, one candidate, auto-matched |
+| *Metropolis*, 1926 | the year emptied the query, the retry fired, **20 candidates** came back and **`best` stayed null** |
+
+So the client, the credential in a header, the request shape, the parse, the
+`tmdb:` namespacing and the retry are all verified on live answers. The third
+row is the one worth reading twice: it is not a failure. Three films are called
+*Metropolis*, the year that would have separated them is exactly the thing the
+retry just spent, and the tie rule refused to pick — a refusal reaching a human
+is the designed outcome, and it is T-0165's rule holding on a catalogue it was
+not measured on.
+
+### What this does not establish, and it is most of it
+
+- **Nothing about match quality.** Two titles is not a rate. No proportion of
+  anything auto-matches, resolves or misses on the strength of this; a figure
+  of that kind would need a corpus, and none was run.
+- **Nothing about a release name that differs from the catalogue's.** Both
+  examples are catalogued under the name they were asked by, so
+  `TmdbHit.originalTitle` — the field that exists for exactly the opposite case,
+  and where anime and other non-English releases live — was never exercised
+  against the live service.
+- **Nothing about the app.** The film path measured here is the CLI's. `app/`
+  cannot take a TMDB token at all: the CLI reads it from the environment, the
+  shell keeps credentials in the OS keychain and Settings has no field for a
+  third one, so a film row reaches `SkipResolver` on every path through the app
+  (`provider_config.dart`). Adding the field is user-facing and unbuilt.
+- **Nothing past resolution.** No film row has been exported and imported into
+  a collection manager. "Verified end to end" still belongs to the photograph
+  path alone (T-0009), exactly as it does for the disk sources above.
+- **Nothing about the failure paths.** No rate limit, no 401, no unreachable
+  host was seen live; those messages remain offline claims against a fake, as
+  does every other assertion in `tmdb.dart` that is not the `year` question.
+- **The counts are third-party and dated.** Like the resolver's buckets, they
+  can move without this repository changing — TMDB gains films, and a search
+  total is a property of its catalogue on the day. Treat every number above as
+  of 2026-08-23. What does not move with the catalogue is the finding: a
+  filtering parameter stays a filtering parameter.
