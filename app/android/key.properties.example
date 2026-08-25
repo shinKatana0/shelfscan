@@ -1,0 +1,30 @@
+# Release signing for the Android build. Copy this file to `key.properties`
+# beside it and fill the four values in. That copy is gitignored and must never
+# be committed; neither must the keystore it names.
+#
+# Without it, a release build FAILS and prints these instructions. Debug and
+# profile builds never read this file.
+#
+#   storeFile      absolute path to your keystore, which lives OUTSIDE this
+#                  repository (a relative path resolves against
+#                  app/android/app, which is inside it -- do not)
+#   storePassword  the password of the keystore
+#   keyAlias       the alias of the key inside it
+#   keyPassword    the password of that key
+#   storeType      optional, only if the keystore is not the JDK default format
+#
+# Create the keystore with keytool, from your JDK's bin directory:
+#
+#   keytool -genkeypair -v -keystore <path outside the repo>/<name>.jks \
+#     -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias <alias>
+#
+# Back it up somewhere else. An installed Android app can only be updated by an
+# artifact signed with the same key.
+#
+# The values below are empty on purpose. Filling this file in with anything
+# that looks real is how a placeholder gets copied into a build.
+
+storeFile=
+storePassword=
+keyAlias=
+keyPassword=
