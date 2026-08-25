@@ -135,17 +135,18 @@ if (signingProblem != null) {
         |with no key.properties at all.
         """.trimMargin()
 
-    gradle.taskGraph.whenReady(
-        Action<TaskExecutionGraph> { graph ->
-            val wantsRelease =
-                graph.allTasks.any {
-                    it.path.startsWith(":app:") && it.name.contains("Release")
-                }
-            if (wantsRelease) {
-                throw GradleException(refusal)
+    // The refusal is bound to the task graph, not to the buildType: it has to
+    // fire for a release build and for nothing else, and `this` here is the
+    // graph the Kotlin DSL hands an Action.
+    gradle.taskGraph.whenReady {
+        val wantsRelease =
+            allTasks.any {
+                it.path.startsWith(":app:") && it.name.contains("Release")
             }
-        },
-    )
+        if (wantsRelease) {
+            throw GradleException(refusal)
+        }
+    }
 }
 
 kotlin {

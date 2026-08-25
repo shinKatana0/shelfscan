@@ -280,8 +280,17 @@ What you do once:
    location it has stored, and the `bin` directory is under it.
 
    ```
-   keytool -genkeypair -v -keystore <path outside the repo>/<name>.jks      -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias <alias>
+   keytool -genkeypair -v -keystore <path outside the repo>/<name>.jks \
+     -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 \
+     -alias <alias>
    ```
+
+   `-storetype JKS` is what Flutter's own instructions say, and keytool
+   answers it with a warning that JKS is a proprietary format and PKCS12 is
+   the standard one. It is a warning and not an error -- the keystore is
+   written and the build signs with it (measured T-0398). Leave the flag off
+   and you get PKCS12, which this config also accepts; `storeType` in
+   `key.properties` is there for a keystore that is neither.
 
 2. **Copy `app/android/key.properties.example` to
    `app/android/key.properties`** and fill in `storeFile` (an absolute path),
