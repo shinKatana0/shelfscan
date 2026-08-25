@@ -73,6 +73,24 @@ release did not.
   said where you choose it, rather than a state you fall into by leaving two
   fields blank.
 
+- **TMDB is credited the way its terms require.** The mandated sentence
+  appears verbatim, with only the bracketed word substituted, in all three
+  READMEs, on the settings screen and in the CLI, and TMDB's own mark ships
+  beside it in the READMEs. The file is byte-identical to the one TMDB
+  publishes -- its SHA-256 is the digest in the published URL -- and it ships
+  unaltered rather than rasterised, because TMDB publishes SVG and no raster
+  format at all. What the published page does **not** give: no minimum size,
+  no clear space, no alteration rule. Nothing here invents one.
+- **An open-source licences page**, reachable from Settings. The notices file
+  has been generated into every build all along; what was missing was a route
+  to it. 90 packages ship, measured on the transitive closure of the direct
+  dependencies rather than by subtracting the declared development ones --
+  two packages declared for development ship anyway, pulled in by others.
+  **How far this has been run:** the page's *contents* cannot be observed by
+  any test this project can write -- Flutter's test binding registers no
+  licences at all, deliberately -- so this is proved in code and tests and
+  still wants one look on a real run.
+
 ### Changed
 - **The CSV's id column is `external_id`, and it names which catalogue
   answered** — `igdb:1234`, `tmdb:1234` — where it was `igdb_id` carrying a
@@ -96,6 +114,21 @@ release did not.
   versions will fail on it.
 
 ### Fixed
+- **An asset declared by a `../` path never reached a built app**, on Windows
+  or Android, and no test could have caught it: `flutter test` builds its
+  bundle beside the files such a key escapes to, so the broken path resolves
+  in a test and nowhere else. Both bundled files now sit under `app/`. **What
+  it cost, stated plainly because the first account of it overstated the
+  case:** the alias table's fallback holds the same three pairs the file does,
+  byte for byte, so no title resolved worse for it -- but the TMDB mark could
+  not load at all, and the file and its fallback would have diverged silently
+  the first time anyone added a fourth entry. A check under `tool/` now fails
+  a build whose manifest names a file the bundle does not carry, and says so
+  as *rebuild this* when the artefact merely predates the declaration.
+- **A run holding a TMDB credential and no IGDB pair was told the resolve
+  stage would be skipped**, and then resolved film and anime rows on TMDB. It
+  now says what that run will actually do; a run with neither credential says
+  what it always did, word for word.
 - A photograph holding more spines than the local model will report is still
   declined, but the request now carries a generation cap and the advice
   arrives in a fraction of the wait, instead of after minutes of the model
