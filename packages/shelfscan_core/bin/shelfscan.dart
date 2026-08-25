@@ -149,8 +149,9 @@
 /// a missing one cannot -- but the trade is real and it is not free.
 ///
 /// Resolution (IGDB) is optional: without IGDB_CLIENT_ID/IGDB_CLIENT_SECRET
-/// the resolve stage is skipped and games stay unresolved in the review
-/// file. Note: the tonkatsu export needs resolved IGDB ids and silently
+/// games stay unresolved in the review file, and the stage is skipped
+/// outright unless a TMDB token keys the film and anime catalogues
+/// (T-0387). Note: the tonkatsu export needs resolved IGDB ids and silently
 /// omits every approved item without one; csv exports an unmatched item
 /// using the detection's own title and platform hint.
 ///
