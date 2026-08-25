@@ -124,8 +124,9 @@ package built before it already declares.
 ### Fixed
 - **Every Android package this project had ever built declared the same
   version**, so none of them was an upgrade of any other as far as Android is
-  concerned, and installing a newer one over an older one was not something
-  the system would agree to do. The cause was an absence: with no build number
+  concerned: the system decides what is an update by that integer alone, and
+  packages carrying the same one are the same version to it however different
+  their contents. The cause was an absence: with no build number
   behind the version in `pubspec.yaml`, Flutter substitutes `1` and warns
   nobody, so the apks came out carrying `versionCode='1'` whatever was in
   them. The version now carries one, and a test fails if it ever stops —
