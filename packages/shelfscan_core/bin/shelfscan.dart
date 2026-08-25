@@ -160,6 +160,23 @@
 /// one. The file is a flat JSON object, `"regional fragment": "igdb
 /// fragment"`, and editing it needs no rebuild. Missing or malformed, it
 /// degrades to three built-in aliases with a warning.
+///
+/// There is deliberately no `licenses` command here, and that is where this
+/// shell parts company with T-0384 (T-0388). The TMDB attribution transferred
+/// to the CLI because it binds *use of the API*, which this shell does. A
+/// permissive licence's reproduce-the-notice clause binds *distribution of
+/// the software*, which this shell does not do: `dart run` builds nothing and
+/// hands nobody anything -- pub fetched every dependency straight from pub.dev
+/// onto the user's own disk, each under its own licence and with its own
+/// LICENSE file beside it. The app owes the notices because it is packaged and
+/// handed over; running from source is not that.
+///
+/// The condition that would change the answer, stated so it is recognised
+/// rather than rediscovered: compiling this CLI to a standalone binary
+/// (`dart compile exe`) and distributing it. That binary would carry the
+/// dependency code, so its distributor would owe the notices -- and unlike a
+/// Flutter build there is no generated NOTICES to route to, so it would need
+/// assembling. Nothing in this repository compiles or ships such a binary.
 library;
 
 import 'dart:convert';

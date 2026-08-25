@@ -8,6 +8,14 @@
 /// The screen knows nothing about platforms: it renders whatever
 /// [ProviderPolicy] offers. That keeps the policy in one file.
 ///
+/// It also carries the only route to the third-party licence notices (T-0388).
+/// Here rather than in the scan screen's app bar, which holds the two controls
+/// a run needs and has no room to spend on a page read once; and here rather
+/// than on a new about screen, because this is already where the app's other
+/// third-party obligation lives -- the TMDB sentence and mark below -- and
+/// splitting attribution across two screens is how one half stops being
+/// maintained.
+///
 /// It configures every backend and selects none (T-0115). Choosing one is the
 /// scan screen's switch, which writes the same `vision_backend` preference
 /// this screen's Save does; the copy that used to live here staged the choice
@@ -48,6 +56,29 @@ const tmdbLogoAsset = 'assets/tmdb/blue_long_1.svg';
 /// the app's own ThemeData rather than a copied number, so raising either
 /// fails there.
 const tmdbLogoHeight = 14.0;
+
+/// The header [showLicensePage] renders above the notices.
+///
+/// It exists because the generated notices do not cover this application:
+/// `NOTICES.Z` is assembled from the resolved dependency graph, and neither
+/// the root package nor a path dependency is in it -- measured, a built
+/// bundle's notices name `shelfscan_core` nowhere. So the only statement of
+/// what shelfscan itself is licensed under is this string.
+///
+/// The copyright clause is a second copy of the one in `LICENSE` at the
+/// repository root, which is the source of truth; `settings_licenses_test.dart`
+/// reads that file and fails if the two stop matching, because a copyright
+/// notice that has drifted from the licence it cites is worse than none.
+///
+/// No `applicationVersion` is passed with it. Nothing in the app knows its own
+/// version today: `pubspec.yaml` holds it, no build-time constant carries it,
+/// and reading it at runtime would mean a new package for one decorative line.
+/// A hand-written constant would be a third copy that nothing checks -- and
+/// the notices are generated from the build they ship in, so they cannot be
+/// out of step with it whether a version is displayed or not.
+const appLegalese = 'Copyright (c) 2026 shinKatana0 -- shelfscan itself is '
+    'MIT licensed, and the full text is in LICENSE in the source repository. '
+    'Listed below are the third-party components this build contains.';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -510,6 +541,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: _saving ? null : _save,
               icon: const Icon(Icons.save),
               label: const Text('Save'),
+            ),
+
+            // Below Save, and last on the screen, because it is not part of
+            // the form: Save is the form's action and nothing unrelated may
+            // sit between the fields and it. Last is also where both target
+            // platforms put "About" in their own settings.
+            const _SectionTitle('About'),
+            ListTile(
+              key: const Key('settings-licenses'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Open-source licences'),
+              subtitle: const Text(
+                'The notices for the third-party components in this build.',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => showLicensePage(
+                context: context,
+                applicationName: 'shelfscan',
+                applicationLegalese: appLegalese,
+              ),
             ),
           ],
         ),
