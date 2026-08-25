@@ -311,20 +311,36 @@ your machine.
 
 ### Reading the signature off an apk
 
+**Not with `keytool`.** `keytool -printcert -jarfile <apk>` is the answer
+everywhere and it answers `Not a signed jar file` here (measured T-0398): the
+app's `minSdk` is high enough that AGP turns v1 JAR signing off and signs with
+APK Signature Scheme v2 only, and keytool reads v1. Nothing is wrong with the
+apk -- keytool is looking in `META-INF` for something no longer put there.
+
+`apksigner`, from the Android SDK's `build-tools`, reads all of the schemes:
+
 ```
-keytool -printcert -jarfile <apk>
+<sdk>/build-tools/<version>/apksigner verify --print-certs <apk>
 ```
 
-The debug key answers `Owner: CN=Android Debug, O=Android, C=US`; your own key
-answers what you typed at step 1. That is the whole check, it needs no Android
-SDK on `PATH`, and it is worth running once on the first signed build --
-`build.gradle.kts` refusing to fall back is a claim about the build file, and
-this is the claim about the artefact.
+It needs `JAVA_HOME` set, which is the one thing `flutter build` does for you
+and a bare shell does not. The line to read is `V2 Signer: certificate DN`. An
+apk signed with the debug key answers
 
-`app/test/release_signing_test.dart` guards the other direction: it fails if
-the debug config comes back into `build.gradle.kts`, if the refusal goes, or if
-either ignore file stops covering the secrets. It reads source text, so it runs
-everywhere the suite runs -- no SDK, no keystore, no build.
+```
+V2 Signer: certificate DN: C=US, O=Android, CN=Android Debug
+```
+
+and your own key answers the distinguished name you typed at step 1. That is
+the check worth running once on a first signed build: `build.gradle.kts`
+refusing the fallback is a claim about the build file, and this is the claim
+about the artefact.
+
+`app/test/release_signing_test.dart` guards the other direction, and needs
+neither an SDK nor a keystore nor a build: it fails if the debug config comes
+back into `build.gradle.kts`, if the refusal or its instructions go, if
+`key.properties.example` gains a value, or if either ignore file stops covering
+the secrets.
 
 ## What the Android CLI sends to Google
 
