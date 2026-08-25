@@ -20,6 +20,14 @@
 // Exit 2 matters as much as exit 1: a run that found no bundle has proved
 // nothing, and must not read as green (doc/conventions.md 4a).
 //
+// A missing key has two causes and only one of them is a defect (T-0389). An
+// artefact built before the declaration it is judged against carries the asset
+// layout of that older build, whatever the pubspec says now -- so it is
+// reported STALE and told to rebuild, rather than told its declaration is
+// wrong. It still fails: a bundle that cannot run correctly must not read as
+// green either, and the rebuild is what makes the next run's answer mean
+// something.
+//
 // What it prints is a scratch reading, not an artefact: the bundle labels are
 // absolute paths of the machine that ran it, so do not paste the output into
 // anything committed. `tool/check-suites.sh` says the same of its logs.
@@ -45,6 +53,11 @@ const defaultBundles = <String>[
 /// Where a Flutter bundle sits inside an Android package.
 const apkBundlePrefix = 'assets/flutter_assets/';
 
+/// The declaration every bundle is judged against: the `assets:` block here is
+/// what the manifest's keys were written from, so a bundle older than this
+/// file was judged against a declaration it never saw.
+const declarationPath = 'app/pubspec.yaml';
+
 void main(List<String> args) {
   if (args.contains('-h') || args.contains('--help')) {
     stdout.write(_usage);
@@ -52,6 +65,9 @@ void main(List<String> args) {
   }
 
   final root = _repositoryRoot();
+  final declaration = File('$root/$declarationPath');
+  final declaredAt =
+      declaration.existsSync() ? declaration.lastModifiedSync() : null;
   final targets = args.isNotEmpty
       ? args
       : [
@@ -67,27 +83,42 @@ void main(List<String> args) {
   }
 
   var checked = 0;
-  var failed = false;
+  var stale = 0;
+  var defective = 0;
   for (final target in targets) {
     final bundle = _open(target);
     if (bundle == null) {
       stderr.writeln('$target: no AssetManifest.bin here -- not a bundle.');
-      failed = true;
+      defective++;
       continue;
     }
     checked++;
-    failed = !_report(bundle) || failed;
+    final verdict = _report(bundle, declaredAt);
+    if (verdict == _Verdict.stale) stale++;
+    if (verdict == _Verdict.defective) defective++;
   }
 
   if (checked == 0) {
     stderr.writeln('check-bundle-assets: nothing was checked.');
     exit(2);
   }
-  stdout.writeln(failed
-      ? 'BUNDLE ASSETS: MISSING -- the manifest names files the bundle '
-          'does not carry.'
-      : 'BUNDLE ASSETS: OK -- $checked bundle(s), every manifest key present.');
-  exit(failed ? 1 : 0);
+  if (defective > 0) {
+    stdout.writeln('BUNDLE ASSETS: MISSING -- the manifest names files the '
+        'bundle does not carry.');
+    if (stale > 0) {
+      stdout.writeln('   ...and $stale stale bundle(s) besides, which say '
+          'nothing either way until rebuilt.');
+    }
+  } else if (stale > 0) {
+    stdout.writeln('BUNDLE ASSETS: STALE -- $stale bundle(s) predate '
+        '$declarationPath.');
+    stdout.writeln('Rebuild and re-run; nothing here says the declaration is '
+        'wrong.');
+  } else {
+    stdout.writeln(
+        'BUNDLE ASSETS: OK -- $checked bundle(s), every manifest key present.');
+  }
+  exit(defective > 0 || stale > 0 ? 1 : 0);
 }
 
 const _usage = '''
@@ -98,27 +129,44 @@ usage: dart run tool/check-bundle-assets.dart [BUNDLE...]
           output under app/build/ that exists.
 
 exit: 0 every key present | 1 a key has no file | 2 nothing was checked
+
+A bundle older than app/pubspec.yaml is reported STALE: rebuild it before
+reading a missing key there as a defect. It still fails.
 ''';
 
 /// One bundle, reduced to what the check needs: its manifest and the set of
 /// paths it holds.
 class Bundle {
-  Bundle({required this.label, required this.manifest, required this.paths});
+  Bundle({
+    required this.label,
+    required this.manifest,
+    required this.paths,
+    required this.builtAt,
+    required this.builtLabel,
+  });
 
   final String label;
   final Uint8List manifest;
 
   /// Every file in the bundle, as a bundle-relative slash-separated path.
   final Set<String> paths;
+
+  /// When this artefact was written, and the file that timestamp is of.
+  final DateTime builtAt;
+  final String builtLabel;
 }
 
-bool _report(Bundle bundle) {
+/// What one bundle came to. `stale` and `defective` both fail; they differ in
+/// what the reader is told to do about it.
+enum _Verdict { ok, stale, defective }
+
+_Verdict _report(Bundle bundle, DateTime? declaredAt) {
   final Map<String, Set<String>> wanted;
   try {
     wanted = _manifestPaths(bundle.manifest);
   } on Object catch (e) {
     stderr.writeln('${bundle.label}: AssetManifest.bin unreadable ($e).');
-    return false;
+    return _Verdict.defective;
   }
 
   final missing = <String, List<String>>{};
@@ -133,7 +181,7 @@ bool _report(Bundle bundle) {
       '${bundle.paths.length} file(s) in the bundle.');
   if (missing.isEmpty) {
     stdout.writeln('   OK: every key resolves to a file.');
-    return true;
+    return _Verdict.ok;
   }
   stdout.writeln('   MISSING: ${missing.length} key(s) name no file here.');
   for (final entry in missing.entries) {
@@ -142,15 +190,39 @@ bool _report(Bundle bundle) {
       stdout.writeln('       no file at  $path');
     }
   }
+  if (declaredAt != null && bundle.builtAt.isBefore(declaredAt)) {
+    stdout.writeln('   STALE: this artefact is older than the declaration it '
+        'is being judged');
+    stdout.writeln('   against, so the keys above are the layout it was built '
+        'with rather');
+    stdout.writeln('   than the one declared now.');
+    stdout.writeln('     built     ${_stamp(bundle.builtAt)}  '
+        '${bundle.builtLabel}');
+    stdout.writeln('     declared  ${_stamp(declaredAt)}  $declarationPath');
+    stdout.writeln('   Rebuild it and re-run. Nothing here says the '
+        'declaration is wrong.');
+    return _Verdict.stale;
+  }
   // A `../` key is the one cause measured here, so name it rather than
-  // leaving the next reader to rediscover T-0386.
+  // leaving the next reader to rediscover T-0386. It is said only of a bundle
+  // built since the declaration: on an older one it sends the reader to fix a
+  // pubspec that is already right (T-0389).
   if (missing.keys.any((k) => k.startsWith('../'))) {
     stdout.writeln('   A key beginning `../` is written relative to '
         'build/flutter_assets/ and');
     stdout.writeln('   therefore lands outside it. Declare the asset from '
         'inside app/ instead.');
   }
-  return false;
+  return _Verdict.defective;
+}
+
+/// `YYYY-MM-DD HH:MM:SS`, local time. Written out because the two timestamps
+/// are read side by side and `DateTime.toString` carries microseconds.
+String _stamp(DateTime when) {
+  final t = when.toLocal();
+  String pad(int n) => n.toString().padLeft(2, '0');
+  return '${t.year}-${pad(t.month)}-${pad(t.day)} '
+      '${pad(t.hour)}:${pad(t.minute)}:${pad(t.second)}';
 }
 
 /// Asset key -> every bundle-relative path that key promises: the key itself
@@ -193,11 +265,16 @@ Bundle? _openDirectory(String dir) {
         .replaceAll(r'\', '/'));
   }
   return Bundle(
-      label: dir, manifest: manifest.readAsBytesSync(), paths: paths);
+      label: dir,
+      manifest: manifest.readAsBytesSync(),
+      paths: paths,
+      builtAt: manifest.lastModifiedSync(),
+      builtLabel: 'AssetManifest.bin');
 }
 
 Bundle? _openArchive(String path) {
-  final zip = _Zip(File(path).readAsBytesSync());
+  final file = File(path);
+  final zip = _Zip(file.readAsBytesSync());
   final names = zip.names
       .where((n) => n.startsWith(apkBundlePrefix) && !n.endsWith('/'))
       .toList();
@@ -208,6 +285,11 @@ Bundle? _openArchive(String path) {
     label: '$path ($apkBundlePrefix)',
     manifest: zip.read(manifestName),
     paths: {for (final n in names) n.substring(apkBundlePrefix.length)},
+    // The package's own mtime, not the entry's: a ZIP entry timestamp is
+    // DOS format -- two-second resolution, no time zone -- and every entry
+    // here was written by the one packaging step anyway.
+    builtAt: file.lastModifiedSync(),
+    builtLabel: 'the package file',
   );
 }
 
