@@ -82,10 +82,13 @@ flutter build apk --debug
 The apk lands at `app\build\app\outputs\flutter-apk\app-debug.apk` and carries
 the `applicationId` set in `app/android/app/build.gradle.kts`.
 
-`flutter build apk` gives you the release one. Both succeeded here on
-2026-08-23: **debug 155 MB, release 50.9 MB**. R8 runs on the release build and
-leaves a mapping file beside the apk. A debug apk three times the size of the
-release one is not a symptom of anything — expect it.
+`flutter build apk` gives you the release one, and **that one needs a signing
+key**: since T-0398 a release build with no `app/android/key.properties` fails
+rather than falling back to the debug key. *Signing the release build* below is
+what to do about it; the debug build above needs none of it. Both succeeded
+here on 2026-08-23: **debug 155 MB, release 50.9 MB**. R8 runs on the release
+build and leaves a mapping file beside the apk. A debug apk three times the
+size of the release one is not a symptom of anything — expect it.
 
 **Test on a release build, not only a debug one.** Trap 4 below is invisible to
 `flutter run`.
@@ -249,25 +252,95 @@ Traps 1 and 5 have no site to live at: what is at fault in trap 1 is not in the
 tree, and trap 5's file is generated on every command and gitignored, so a
 comment in it would be overwritten within seconds of being written.
 
-## The release build is signed with the debug key
+## Signing the release build
 
-`app/android/app/build.gradle.kts` sets, under `buildTypes.release`:
+`app/android/app/build.gradle.kts` reads `app/android/key.properties` and signs
+the release build with the key it names. **When that file is absent or
+incomplete the release build fails**, printing what is missing and what to do
+about it.
 
-```kotlin
-signingConfig = signingConfigs.getByName("debug")
+**There is no fallback to the debug key, and the refusal is the feature.**
+Until T-0398 there was a fallback -- `flutter create`'s own line, with
+`flutter create`'s own `TODO` above it -- so every release apk this project
+produced was signed with a key that is public and identical in every Flutter
+checkout: anybody can build a package Android accepts as an update to it, and
+no store will take it. It survived because it never failed. A scaffold that
+silently works is a scaffold nobody revisits.
+
+**Debug and profile builds do not read the file at all.** `flutter run`,
+`flutter build apk --debug` and `flutter build apk --profile` work with no
+`key.properties`, so a contributor is never blocked on a secret they cannot
+have. Only `flutter build apk` / `--release` and `flutter build appbundle`
+need a key.
+
+What you do once:
+
+1. **Create a keystore outside this repository**, with `keytool` from your
+   JDK's `bin` directory. It is not on `PATH`; `flutter config` prints the JDK
+   location it has stored, and the `bin` directory is under it.
+
+   ```
+   keytool -genkeypair -v -keystore <path outside the repo>/<name>.jks \
+     -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 \
+     -alias <alias>
+   ```
+
+   `-storetype JKS` is what Flutter's own instructions say, and keytool
+   answers it with a warning that JKS is a proprietary format and PKCS12 is
+   the standard one. It is a warning and not an error -- the keystore is
+   written and the build signs with it (measured T-0398). Leave the flag off
+   and you get PKCS12, which this config also accepts; `storeType` in
+   `key.properties` is there for a keystore that is neither.
+
+2. **Copy `app/android/key.properties.example` to
+   `app/android/key.properties`** and fill in `storeFile` (an absolute path),
+   `storePassword`, `keyAlias` and `keyPassword`. The example file is committed
+   and holds key names and empty values only -- deliberately, because a
+   plausible-looking example value is the thing that gets copied.
+
+3. **Back the keystore up somewhere that is not this machine.** An installed
+   Android app can only be updated by an artifact signed with the same key: if
+   the keystore is lost, the `applicationId` is dead and the only route to a
+   user is a new application.
+
+`key.properties`, `*.jks` and `*.keystore` are gitignored in two places -- the
+repository root and `app/android/.gitignore` -- so neither the keystore nor the
+passwords can be committed by accident. Nothing in the repository holds a
+password and nothing should; the file the build reads is yours and stays on
+your machine.
+
+### Reading the signature off an apk
+
+**Not with `keytool`.** `keytool -printcert -jarfile <apk>` is the answer
+everywhere and it answers `Not a signed jar file` here (measured T-0398): the
+app's `minSdk` is high enough that AGP turns v1 JAR signing off and signs with
+APK Signature Scheme v2 only, and keytool reads v1. Nothing is wrong with the
+apk -- keytool is looking in `META-INF` for something no longer put there.
+
+`apksigner`, from the Android SDK's `build-tools`, reads all of the schemes:
+
+```
+<sdk>/build-tools/<version>/apksigner verify --print-certs <apk>
 ```
 
-That is the Flutter template's line and it is still there, with the template's
-`TODO` above it. Two things follow, and they are worth stating because a reader
-who assumes the opposite will go and do unnecessary work:
+It needs `JAVA_HOME` set, which is the one thing `flutter build` does for you
+and a bare shell does not. The line to read is `V2 Signer: certificate DN`. An
+apk signed with the debug key answers
 
-- **You do not need a keystore to build a release apk.** It builds, installs
-  and runs. Nothing on this page asks you to create one.
-- **The apk is not publishable as it stands.** Google Play will not accept an
-  artifact signed with the debug key, so a real signing config is a
-  prerequisite of a release rather than of a build.
+```
+V2 Signer: certificate DN: C=US, O=Android, CN=Android Debug
+```
 
-No signing procedure is written here, because none has been run here.
+and your own key answers the distinguished name you typed at step 1. That is
+the check worth running once on a first signed build: `build.gradle.kts`
+refusing the fallback is a claim about the build file, and this is the claim
+about the artefact.
+
+`app/test/release_signing_test.dart` guards the other direction, and needs
+neither an SDK nor a keystore nor a build: it fails if the debug config comes
+back into `build.gradle.kts`, if the refusal or its instructions go, if
+`key.properties.example` gains a value, or if either ignore file stops covering
+the secrets.
 
 ## What the Android CLI sends to Google
 
