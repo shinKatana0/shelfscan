@@ -19,9 +19,14 @@ is the authority behind it.
 
 ## [Unreleased]
 
-Both `pubspec.yaml` files still read `0.1.0` and `v0.1.0` is still the only
-tag, so this is not a release — it is what the tree does that the tagged
-release did not.
+Both `pubspec.yaml` files now read `0.2.0+2`, but `v0.1.0` is still the only
+tag, so this is still not a release — it is what the tree does that the tagged
+release did not. The number is `0.2.0` rather than `0.1.1` because the entries
+below add capability a user can see, which is what
+[`doc/decisions/0014`](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md)
+defines MINOR against; `+2` is the build number that record's 2026-08-25
+amendment introduced, and it starts at 2 because 1 is what every Android
+package built before it already declares.
 
 ### Added
 - **Films are read as films.** A video file whose name is release-shaped —
@@ -90,6 +95,9 @@ release did not.
   any test this project can write -- Flutter's test binding registers no
   licences at all, deliberately -- so this is proved in code and tests and
   still wants one look on a real run.
+- **The app says which build it is.** The licence page carries the version,
+  so two hand-installed packages can be told apart from inside the one you
+  are holding, which until now they could not be — from inside or out.
 
 ### Changed
 - **The CSV's id column is `external_id`, and it names which catalogue
@@ -114,6 +122,14 @@ release did not.
   versions will fail on it.
 
 ### Fixed
+- **Every Android package this project had ever built declared the same
+  version**, so none of them was an upgrade of any other as far as Android is
+  concerned, and installing a newer one over an older one was not something
+  the system would agree to do. The cause was an absence: with no build number
+  behind the version in `pubspec.yaml`, Flutter substitutes `1` and warns
+  nobody, so the apks came out carrying `versionCode='1'` whatever was in
+  them. The version now carries one, and a test fails if it ever stops —
+  the absence is silent and nothing else in the tree would have said so.
 - **An asset declared by a `../` path never reached a built app**, on Windows
   or Android, and no test could have caught it: `flutter test` builds its
   bundle beside the files such a key escapes to, so the broken path resolves
