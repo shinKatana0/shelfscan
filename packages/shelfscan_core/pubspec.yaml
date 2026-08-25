@@ -1,6 +1,6 @@
 name: shelfscan_core
 description: Core pipeline turning shelf photos into an importable game collection.
-version: 0.1.0
+version: 0.2.0+2
 publish_to: none
 
 environment:

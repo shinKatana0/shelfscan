@@ -1,6 +1,6 @@
 name: shelfscan_app
 description: Turn shelf photos into an importable game collection (Windows + Android).
-version: 0.1.0
+version: 0.2.0+2
 publish_to: none
 
 environment:
