@@ -149,8 +149,9 @@
 /// a missing one cannot -- but the trade is real and it is not free.
 ///
 /// Resolution (IGDB) is optional: without IGDB_CLIENT_ID/IGDB_CLIENT_SECRET
-/// the resolve stage is skipped and games stay unresolved in the review
-/// file. Note: the tonkatsu export needs resolved IGDB ids and silently
+/// games stay unresolved in the review file, and the stage is skipped
+/// outright unless a TMDB token keys the film and anime catalogues
+/// (T-0387). Note: the tonkatsu export needs resolved IGDB ids and silently
 /// omits every approved item without one; csv exports an unmatched item
 /// using the detection's own title and platform hint.
 ///
@@ -1895,8 +1896,21 @@ ResolverWorker _makeResolver(List<String> args, {bool required = false}) {
           'nothing useful to do without them.');
       exit(2);
     }
-    stdout.writeln('IGDB credentials not set -- resolve stage will be '
-        'skipped, games stay unresolved (fine for vision validation).');
+    // Two sentences rather than one, because the stage is skipped in only
+    // one of these runs: with a TMDB token set, `resolverFor` still registers
+    // the film and anime catalogues and those rows are looked up while games
+    // are not (T-0387).
+    //
+    // The keyless wording is byte-for-byte what shipped, and has to stay so:
+    // three guides and three READMEs quote it, and
+    // `guide_transcript_test.dart` pins it as `igdb-skipped` by stdout line
+    // index -- so neither the text nor the number of lines printed here may
+    // move on that branch.
+    stdout.writeln(tmdbTokenFrom(env) == null
+        ? 'IGDB credentials not set -- resolve stage will be skipped, games '
+            'stay unresolved (fine for vision validation).'
+        : 'IGDB credentials not set -- games stay unresolved; film and anime '
+            'rows are still looked up on TMDB.');
     _sayTmdbAttribution(env);
     return resolverFor(env);
   }
