@@ -1162,4 +1162,3 @@ or otherwise approved by TMDB. It reaches those APIs only with a TMDB token
 you supply yourself.
 
 <img src="app/assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">
-</content>
