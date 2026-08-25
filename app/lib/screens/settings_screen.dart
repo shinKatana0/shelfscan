@@ -27,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../app_version.dart';
 import '../main.dart' show ThemeModeScope, ThemeModeLabel;
 import '../provider_config.dart';
 import '../settings_store.dart';
@@ -70,12 +71,12 @@ const tmdbLogoHeight = 14.0;
 /// reads that file and fails if the two stop matching, because a copyright
 /// notice that has drifted from the licence it cites is worse than none.
 ///
-/// No `applicationVersion` is passed with it. Nothing in the app knows its own
-/// version today: `pubspec.yaml` holds it, no build-time constant carries it,
-/// and reading it at runtime would mean a new package for one decorative line.
-/// A hand-written constant would be a third copy that nothing checks -- and
-/// the notices are generated from the build they ship in, so they cannot be
-/// out of step with it whether a version is displayed or not.
+/// `applicationVersion` is passed with it, from [appVersion] (T-0404). The
+/// line is not decorative: these packages are hand-installed, and until the
+/// build number existed every one of them declared the same version, so
+/// holding two of them was no way to tell which was which. The objection this
+/// comment used to carry -- a hand-written constant is a copy nothing checks
+/// -- is answered by `app_version_test.dart`, which is what now checks it.
 const appLegalese = 'Copyright (c) 2026 shinKatana0 -- shelfscan itself is '
     'MIT licensed, and the full text is in LICENSE in the source repository. '
     'Listed below are the third-party components this build contains.';
@@ -560,6 +561,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => showLicensePage(
                 context: context,
                 applicationName: 'shelfscan',
+                applicationVersion: appVersion,
                 applicationLegalese: appLegalese,
               ),
             ),
