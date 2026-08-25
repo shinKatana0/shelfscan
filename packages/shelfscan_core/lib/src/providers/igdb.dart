@@ -204,8 +204,8 @@ const externalGameSources = <String, int>{'gog': 5};
 /// that reason alone -- a third of that run's misses -- and every one of them
 /// now auto-matches the right game.
 ///
-/// ™ and ℠ go too, though 9 titles carrying one returned the same hit count
-/// and the same top hit either way: whether a title carries a mark at all is
+/// ™ and ℠ go too, though every title carrying one returned the same hit
+/// count and the same top hit either way: whether a title carries a mark at all is
 /// the first-ask/repeat difference in the vision model, and it also costs
 /// Levenshtein distance, so leaving them in leaves the resolver's answer
 /// depending on whether that server process had already been asked for this

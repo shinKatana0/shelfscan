@@ -897,10 +897,10 @@ class _DedupeGroup {
   /// so completeness stays first, as T-0024 left it. What changed in T-0027
   /// is everything below that: two reads with the same key used to be settled
   /// by `confidence`, which is 1.0 for every local read, so the winner was
-  /// whichever photo the caller happened to list first. On the five control
-  /// photographs that decided rows (`FROST WAKE(tm)`, `CHRONOS 3
-  /// REMADE(tm)`, `PATH OF EMBER: ENDLESS HARVEST(tm)` against the clean
-  /// hi-res reads of the same spines) purely by filename order.
+  /// whichever photo the caller happened to list first. Across the control
+  /// photographs, cut-short reads (`FROST WAKE(tm)`, `CHRONOS 3 REMADE(tm)`,
+  /// `PATH OF EMBER: ENDLESS HARVEST(tm)`) beat the clean hi-res reads of the
+  /// same spines purely by filename order.
   /// Confidence stays as the last tiebreak because a cloud provider does
   /// report a real spread across reads of one photo, where yield cannot.
   ///

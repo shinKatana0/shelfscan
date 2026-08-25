@@ -1063,8 +1063,8 @@ together on one real file. A first run with the IGDB variables absent
 reported the credentials missing and left the row unresolved, which is the
 designed behaviour and not a failure.
 
-**The staged-downloads folder — three staged folders, `scan-installs`.** By the
-shape of the name the parser was handed, not by the name:
+**The staged-downloads folders, `scan-installs`.** By the shape of the name
+the parser was handed, not by the name — one row per folder below:
 
 | folder on disk | read | resolved |
 |---|---|---|
