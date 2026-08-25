@@ -71,10 +71,13 @@ Orchestrator
 
 Either half of stage 1 may be empty: photographs alone, sources alone (on an
 `Orchestrator.resolveOnly`, which has no vision provider to call), or both in
-one run. Stage 3 asks IGDB nothing without credentials: both shells pick
-`SkipResolver` instead of a real `ResolverWorker`, and it returns every
-detection unmatched — the same shape a failed resolution degrades to, so
-review and both exporters handle it unchanged.
+one run. Stage 3 is keyed on catalogues, not on one credential: both shells
+pick `SkipResolver` only when no catalogue is configured at all, and it
+returns every detection unmatched — the same shape a failed resolution
+degrades to, so review and both exporters handle it unchanged. Configure some
+but not all, and they pick a `CatalogueRouter` with `SkipResolver` behind it:
+a run holding a TMDB token and no IGDB pair looks its film and anime rows up
+and leaves its game rows unmatched (T-0387).
 
 Design rules:
 
@@ -118,7 +121,8 @@ packages/shelfscan_core/
     │   ├── vision.dart        # VisionProvider + Anthropic implementation
     │   ├── ollama_vision.dart # local VisionProvider (Ollama, Windows default)
     │   ├── openai_compatible_vision.dart # any /chat/completions endpoint
-    │   └── igdb.dart          # IGDB search via Twitch OAuth
+    │   ├── igdb.dart          # IGDB search via Twitch OAuth
+    │   └── tmdb.dart          # TMDB search: films, and series by endpoint
     ├── sources/               # DetectionSource impls: text in, Detection out
     │   ├── filename_source.dart # file/folder name -> Detection (or a decline)
     │   ├── gog_library.dart   # GOG Galaxy library row (owned, not installed)
@@ -141,7 +145,10 @@ app/                           # Flutter shell: Windows + Android
     ├── title_aliases.dart    # loads the alias table (bundled asset)
     ├── export_saver.dart     # save dialog (desktop) / share sheet (Android)
     ├── photo_files.dart      # which picked files are photos, by signature
-    ├── heic_wic.dart         # HEIC -> JPEG in-process, WIC over dart:ffi
+    ├── input_picker.dart     # the pick dialogs, behind an interface we own
+    ├── heic_decoder.dart     # what a HEIC decoder is, and how it fails
+    ├── heic_wic.dart         # HEIC -> JPEG over dart:ffi, and the host gate
+    ├── heic_android.dart     # the same, through Android's own codec
     ├── media_folders.dart    # walks a media folder into SourceEntry list
     ├── galaxy_db.dart        # the CLI reader's twin; dart:ffi cannot live in core
     └── screens/
@@ -155,7 +162,7 @@ flowchart LR
   subgraph shell["Shell — the CLI in bin/, the Flutter app in app/"]
     direction TB
     walk["dart:io — pick photos, walk folders"]
-    heic["HEIC to JPEG — PowerShell+WIC in bin/, dart:ffi WIC in app/"]
+    heic["HEIC to JPEG — PowerShell+WIC in bin/, WIC or Android's codec in app/"]
     sqlite["SQLite — winsqlite3 over dart:ffi, one reader per shell"]
     sink["write file, share sheet, keychain, progress"]
   end
@@ -175,8 +182,11 @@ flowchart LR
 is why one file exists twice.** `galaxy_db.dart` is in `bin/` and in `app/lib/`
 as a deliberate copy — a `dart:ffi` SQLite reader cannot live in core, and the
 shell that needs it cannot import the other shell's. HEIC decoding is the same
-shape with two different implementations, because the CLI may spawn
-`powershell` and an app may not.
+shape three times over: the CLI may spawn `powershell` and an app may not, so
+the app decodes through WIC over `dart:ffi` on Windows and through the
+platform's own codec on Android — one `HeicDecoder` signature in
+`heic_decoder.dart`, and a host gate in `heic_wic.dart` that picks between
+them.
 
 Platform boundary rules:
 
