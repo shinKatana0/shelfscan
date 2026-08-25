@@ -17,12 +17,15 @@
 /// The dependency that would answer it is `package_info_plus`, which reads the
 /// artefact itself -- Android's `PackageManager`, the Windows exe's version
 /// resource. It was not taken: it adds a plugin to the release graph and a
-/// notice `settings_licenses_test.dart` then has to be told to expect, it
+/// notice `settings_licenses_test.dart` then has to be told to expect; it
 /// answers only over a platform channel and so is a fake under `flutter test`
-/// exactly where the display is asserted, and its Windows half reads
-/// `Runner.rc`, which carries no build number in its string field. What it
-/// buys over this constant is a disagreement that `app_version_test.dart`
-/// already fails on.
+/// exactly where the display is asserted; and the two platforms hold the
+/// number differently -- measured on this build, the apk's manifest carries
+/// `versionName='0.2.0'` and `versionCode='2'` as two fields, while the
+/// Windows exe's resource carries `0.2.0+2` whole -- so the displayed line
+/// would have to be reassembled per platform to read alike. What it buys over
+/// this constant is a disagreement that `app_version_test.dart` already fails
+/// on.
 ///
 /// So this is a second copy that is *checked*: that test reads both
 /// `pubspec.yaml` files and this string and fails if any two differ, in the
