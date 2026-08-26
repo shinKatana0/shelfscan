@@ -5,7 +5,7 @@
      anything here beyond a typo and both are stale. In the same commit either
      update them and bump the blob name on their TRANSLATED-FROM line, or set
      that line's last word to STALE. The rule in full, and what the marker
-     names, is one place only: ../README.md, "Translations". -->
+     names, is one place only: ../CONTRIBUTING.md, "Translations". -->
 
 <!-- TRANSCRIPTS. Some blocks below are program output and are pinned, byte
      for byte, against a real run of the command: they carry a marker of the

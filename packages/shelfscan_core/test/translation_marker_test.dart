@@ -17,7 +17,8 @@
 ///     TRANSLATED-FROM: README.md blob <40 hex> CURRENT
 ///
 /// Neither a merge nor a rewrite changes what a file says, so the name keeps
-/// answering. The rule in full is README.md, "Translations".
+/// answering. The rule in full is CONTRIBUTING.md, "Translations" -- it was
+/// README.md's until T-0425 moved it to the page a contributor reads.
 ///
 /// ## What is asserted, and which direction it fails in
 ///
@@ -26,7 +27,7 @@
 /// point of the word, and both guides are legitimately stale. So this file
 /// catches exactly one failure, a translation claiming a currency it lost, and
 /// the fix it asks for is one word, in a language the person fixing it need not
-/// read. That is what separates it from the CI check README.md carried as
+/// read. That is what separates it from the CI check CONTRIBUTING.md carries as
 /// considered-and-rejected: the rejected one left a contributor no honest exit
 /// but to translate.
 ///
@@ -122,7 +123,7 @@ void main() {
 
         expect(markers, hasLength(1),
             reason: '${entry.key} must carry exactly one TRANSLATED-FROM '
-                'line; README.md, "Translations" has the form');
+                'line; CONTRIBUTING.md, "Translations" has the form');
         expect(markers.single.source, entry.value,
             reason: '${entry.key} follows ${entry.value}');
       });
@@ -182,10 +183,11 @@ void main() {
 
   // The rule is published and the check is here; pinning the commands stops
   // the two describing different mechanisms, which is how the marker rotted.
-  group('README.md, "Translations", and this file agree', () {
+  group('CONTRIBUTING.md, "Translations", and this file agree', () {
     late String rule;
 
-    setUp(() => rule = File('${_repoRoot.path}/README.md').readAsStringSync());
+    setUp(() =>
+        rule = File('${_repoRoot.path}/CONTRIBUTING.md').readAsStringSync());
 
     test('it names the form the markers are in', () {
       expect(rule, contains('TRANSLATED-FROM: README.md blob'));

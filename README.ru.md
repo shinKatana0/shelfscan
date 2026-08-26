@@ -1,12 +1,14 @@
-<!-- TRANSLATED-FROM: README.md blob b2358c3527333d5bfc430c9e62832c473c7024bf CURRENT
+<!-- TRANSLATED-FROM: README.md blob ad6696930531e5985220faf8aa6fe5d470b88d0d CURRENT
      Translated 2026-08-26. What that line names, and how to check it:
-     README.md, "Translations". It names content rather than a commit, so it
-     survives a merge and a history rewrite; the commit hash it replaced
+     CONTRIBUTING.md, "Translations". It names content rather than a commit,
+     so it survives a merge and a history rewrite; the commit hash it replaced
      survived neither (T-0406).
-     One thing this file does not carry: the "Translations" section's own rule
-     text, which is English-only and which T-0300 refined after the summary
-     below it was written. That summary still says a replaced command goes
-     into all four translated files; English says wherever they carry it. -->
+     Two blocks this file no longer carries at all, because T-0425 moved them
+     out of README.md and into CONTRIBUTING.md, which is English-only by the
+     owner's decision: the build diagnoses that sat under "Setup -> The app",
+     and the whole development-workflow section, the "Translations" rule
+     included. A reader of this file who needs either goes to CONTRIBUTING.md;
+     nothing here summarises them any more. -->
 
 [English](README.md) · **Русский** · [日本語](README.ja.md)
 
@@ -559,164 +561,23 @@ export IGDB_CLIENT_SECRET=...
 
 Обе платформы собирали из этого дерева. Ни одна не собирается по
 зелёному `flutter doctor`, и то, чего каждой не хватает, записано — чтобы не
-выяснять это заново: **Windows** — прямо ниже, **Android** — в
+выяснять это заново: **Windows** — в
+[`CONTRIBUTING.md`](CONTRIBUTING.md#building-the-app) (англ.), **Android** — в
 [`doc/android-build.md`](doc/android-build.md) (англ.): инструментарий и четыре
 сбоя, три из которых указывают куда угодно, только не на пропущенный шаг, а
 один вообще не роняет сборку. Android Studio не нужна ни для той, ни для
 другой.
 
-**Папки платформ хранятся в репозитории.** `flutter create` однажды создал
-`app/windows/` и `app/android/`; с тех пор это правленный руками исходный код,
-в котором лежит всё, чем приложение представляется в релизе — `Runner.rc`,
-`AndroidManifest.xml`, `applicationId`, иконки, — и ревью он проходит наравне с
-любым другим файлом. То, что внутри них действительно генерируется, отсекает
-`.gitignore`, который `flutter create` кладёт в саму папку, а результат сборки
-лежит и вовсе по другому пути. Комментарий у этой записи в
-[`.gitignore`](.gitignore) говорит то же самое, только подробнее.
-
-Так что в клоне они уже есть, и вся установка — это:
+Папки платформ хранятся в репозитории, так что в клоне они уже есть; что это
+значит, если вы их правите, — в
+[`CONTRIBUTING.md`](CONTRIBUTING.md#building-the-app) (англ.). Вся установка —
+это:
 
 ```
 cd app
 flutter pub get
 flutter run -d windows   # or: flutter run -d <android-device>
 ```
-
-**Не запускайте `flutter create` поверх этого дерева.** Он пересоздаст эти папки
-и вернёт `com.example` вместо всего перечисленного выше, а на Android ещё и
-выбросит разрешение `INTERNET`, которое релизной сборке взять больше неоткуда, —
-потеря, на которой не падает ни одна сборка и которую не воспроизводит ни одна
-отладочная. Если вы уже его запустили, `git status` перечислит все затронутые
-файлы, а `git checkout --` по ним вернёт всё на место.
-
-Ещё `flutter create` пишет два файла из шаблонного счётчика, которые к этому
-проекту отношения не имеют и здесь не отслеживаются: `app/README.md` и
-`app/test/widget_test.dart`. Удалите оба. Тест поднимает `MyApp`, которого здесь
-нет (приложение называется `ShelfscanApp`), так что если его оставить,
-`flutter test` падает на файле, который никто не писал:
-
-```
-test/widget_test.dart:16:35: Error: Couldn't find constructor 'MyApp'.
-```
-
-Ни один из них намеренно не внесён в `.gitignore`: именно то, что они не
-отслеживаются и не игнорируются, и заставляет `git status` их назвать, — а это
-единственное предупреждение, что команда вообще запускалась.
-
-#### Windows: два условия, о которых `flutter doctor` вам не скажет
-
-**Зелёный `flutter doctor` не означает, что сборка под Windows заработает.** Его
-проверка Visual Studio ищет рабочую нагрузку `Desktop development with C++` и
-ровно два компонента (`VC.Tools.x86.x64` и `VC.CMake.Project`), а проверки
-Windows Developer Mode у него нет вообще — поэтому он печатает
-`[✓] Visual Studio - develop Windows apps`, когда обе вещи ниже отсутствуют.
-Первая сборка этого приложения наткнулась на них именно в таком порядке.
-
-**1. Включите режим разработчика Windows.** Без него `flutter create` и любая
-сборка с плагинами обрываются с:
-
-```
-Building with plugins requires symlink support.
-
-Please enable Developer Mode in your system settings. Run
-  start ms-settings:developers
-to open settings.
-```
-
-Flutter подключает исходники плагинов в сборку символьными ссылками, а Windows
-разрешает их создавать только администраторам, пока не включён режим
-разработчика. Выполните ту самую команду `start ms-settings:developers` и
-щёлкните переключателем. На свежей машине он выключен: ключ реестра, который он
-пишет,
-`HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock\AllowDevelopmentWithoutDevLicense`,
-вообще не существует, пока режим разработчика не включён впервые, и читается как
-`1` после этого.
-
-**2. Добавьте компонент C++ ATL в Visual Studio.** Рабочая нагрузка
-`Desktop development with C++` ATL не включает — это отдельная запись в
-*Individual components*. Без неё сборка прогоняет весь тулчейн и умирает на одном
-плагине:
-
-```
-flutter_secure_storage_windows_plugin.cpp(6): fatal error C1083: Cannot open include file: 'atlstr.h': No such file or directory
-```
-
-Visual Studio Installer → Modify → **Individual components** → поиск `ATL` →
-отметить **C++ ATL for x64/x86 (Latest MSVC)**. Так это называется в Build Tools
-2026; формулировка следует за тулсетом, поэтому VS 2022 показывает то же самое
-как `C++ ATL for latest v143 build tools (x86 & x64)`. Название к тому же
-переводится в локализованном установщике, так что всегда работающая зацепка —
-идентификатор компонента `Microsoft.VisualStudio.Component.VC.ATL`.
-
-Текст ошибки компилятора локализован так же: на русской установке та строка
-C1083 читается как `Не удается открыть файл включение: atlstr.h`. Токены,
-переживающие перевод, — это `C1083` и `atlstr.h`; ищите в выводе консоли их, а не
-английское предложение.
-
-Зависимость от ATL наша, а не Flutter'а: `flutter_secure_storage`, который держит
-ваши ключи в связке ключей ОС, — единственное в этом проекте, что подключает
-`<atlstr.h>`.
-
-#### Как выглядит первая успешная сборка
-
-Измерено на Flutter 3.47.0 stable, Visual Studio Build Tools 2026
-18.9.12105.275 с MSVC 14.51.36231, Windows 11 25H2:
-
-| Команда | Холодная сборка | Что даёт |
-|---|---|---|
-| `flutter build windows --debug` — то, что компилирует `flutter run -d windows` | 124 с | `app\build\windows\x64\runner\Debug\shelfscan_app.exe` |
-| `flutter build windows` | 164 с | `app\build\windows\x64\runner\Release\shelfscan_app.exe` |
-
-Холодная — значит, ничего не закэшировано: ни `build\`, ни `.dart_tool\`.
-Рассчитывайте на пару минут и не считайте, что всё зависло.
-
-Release-exe весит всего 90 КБ и сам по себе не запускается: рядом с ним лежат
-`flutter_windows.dll`, `data\` и по одной DLL на плагин. Распространяйте папку.
-
-#### Не удаляйте `app\build\` руками — используйте `flutter clean`
-
-Вычистить результат сборки руками, оставив `app\.dart_tool\` на месте, —
-очевидный рефлекс, и он ломает любую последующую сборку, что debug, что release.
-Сборка успешно всё компилирует и умирает на проекте INSTALL:
-
-```
-error MSB3073: "...\cmake.exe" -DBUILD_TYPE=Debug -P cmake_install.cmake [...\app\build\windows\x64\INSTALL.vcxproj]
-```
-
-Ничто здесь не называет причину. Она видна, только если выполнить ту же строку
-cmake руками из `app\build\windows\x64`:
-
-```
-CMake Error at cmake_install.cmake:231 (file):
-  file INSTALL cannot find
-  ".../app/build/native_assets/windows": No error.
-```
-
-**Причина: инкрементальный кэш в `.dart_tool\flutter_build` пережил каталог,
-который он описывает, в `build\`.** Отметка `install_code_assets` там всё ещё
-проходит проверку, поэтому шаг, создающий `build\native_assets\windows`,
-пропускается, а шаг установки CMake по-прежнему требует, чтобы этот каталог
-существовал. `flutter pub get` отметку не чистит и не помогает.
-
-Как чинить:
-
-```
-cd app
-flutter clean
-flutter pub get
-flutter build windows --debug
-```
-
-`flutter clean` удаляет `build\` и `.dart_tool\` вместе, и поэтому работает там,
-где удаление одного `build\` не работает.
-
-Это **не** проблема свежего клона — по-настоящему холодное дерево собирается
-нормально (таблица выше), так что запускать `flutter clean` после клонирования
-незачем.
-
-Как и с ошибкой ATL выше, текст обёртки MSBuild локализован; токены,
-переживающие перевод, — `MSB3073`, `cmake_install.cmake`, `INSTALL.vcxproj` и
-`native_assets`.
 
 Политика провайдеров живёт в одном файле (`app/lib/provider_config.dart`), и
 обе платформы предлагают одни и те же три бэкенда: локальную модель (Ollama),
@@ -1107,45 +968,12 @@ app/                       # Flutter shell: Windows (built and run), Android (ne
 ## Рабочий процесс разработки
 
 Хотите поучаствовать? Начните с [CONTRIBUTING.md](CONTRIBUTING.md) (англ.) — как
-гонять два набора тестов и что изменение не должно тихо сломать. Остаток раздела
-— о том, как организована сама работа.
-
-Почти всё здесь написано по схеме «оркестратор/воркер» на агентах, на движке
-[briefboard](https://github.com/shinKatana0/briefboard) — это доска задач, где
-до реализации обязательно пишется задание, а до слияния проходит ревью. Задания,
-отчёты воркеров и сама доска остаются на приватном диске и **не публикуются**:
-это артефакты разработки, а не продукт, они дословно цитируют разговоры, и их
-около 25 000 строк против ~2 100 строк выжимки, которая их здесь заменила, —
-[ARCHITECTURE.md](ARCHITECTURE.md) о том, как это устроено,
-[doc/decisions/](doc/decisions/) о том, почему именно так, и
-[doc/measurements.md](doc/measurements.md) о том, на чём это стоит.
-
-**Поэтому идентификатор задачи — не ссылка.** Страницы здесь ссылаются на
-идентификаторы вида `T-0086`, потому что идентификатор — устойчивое имя решения,
-а утверждение, называющее свой источник, может проверить тот, у кого эта запись
-есть. Ничто из опубликованного не требует такого поиска.
-
-Доску контрибьютору тоже не нужно разворачивать. Это рабочий инструмент одного
-человека; pull request рассматривается как pull request.
-
-### Переводы
-
-Правило, по которому эти переводы держатся в строю, живёт в одном месте:
-[`README.md`, «Translations»](README.md#translations). Коротко: английский —
-источник; перевод следует за ним и никогда не идёт впереди; каждый переведённый
-файл записывает в самом начале строку `TRANSLATED-FROM` с именем содержимого
-(git blob) своего английского оригинала — не с коммитом (в переводах README —
-HTML-комментарием, в двух руководствах в `doc/` — видимой строкой), и правка
-английского обязывает тем же коммитом либо обновить перевод, либо пометить его
-`STALE`. Блоки кода, вывод программы и инженерные записи не
-переводятся.
-
-Из этого следует оговорка к пометке: если правка английского
-удалила или заменила команду, блок кода, флаг, путь или имя файла,
-то же удаление или замену вносят во все переводы тем же коммитом. Знания
-языка это не требует — такой текст во всех файлах один и тот же, и один
-`grep` находит все копии. А одной пометки мало: она HTML-комментарий и на
-GitHub не видна, а удалённая команда — видна.
+гонять два набора тестов и что изменение не должно тихо сломать. Там же — о том,
+как организована сама работа
+([How this repository is developed](CONTRIBUTING.md#how-this-repository-is-developed)),
+и там же правило, которому подчиняется любая правка этих файлов
+([Translations](CONTRIBUTING.md#translations)). Обе страницы — только на
+английском.
 
 <a id="disclaimer"></a>
 

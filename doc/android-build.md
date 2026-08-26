@@ -11,7 +11,8 @@ the plugin upgrade later cost, which is the same kind of knowledge arriving
 from a different direction.
 
 Windows desktop has its own two undocumented prerequisites, and they are
-elsewhere: [`README.md`](../README.md), *Setup → The app*.
+elsewhere: [`CONTRIBUTING.md`](../CONTRIBUTING.md#building-the-app),
+*Building the app*.
 
 ## What you need, and what you do not
 

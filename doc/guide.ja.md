@@ -29,7 +29,7 @@
 > 一度もないこと――を含んでいません。
 > 上の `TRANSLATED-FROM` 行が何を指すのか、そこから英語の原文が先に進んで
 > いないかをどう確かめるのか――規則の全文は一箇所にのみ置いてあります:
-> [`../README.md` の「Translations」](../README.md#translations)。
+> [`../CONTRIBUTING.md` の「Translations」](../CONTRIBUTING.md#translations)。
 > **コードブロックとプログラムの出力は翻訳していません。** それらはツール自身が
 > 印字する文字列です。このページが参照する資料（`measurements.md`、
 > `decisions/`、`../ARCHITECTURE.md`）は英語のみです。

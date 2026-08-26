@@ -1,12 +1,14 @@
-<!-- TRANSLATED-FROM: README.md blob b2358c3527333d5bfc430c9e62832c473c7024bf CURRENT
+<!-- TRANSLATED-FROM: README.md blob ad6696930531e5985220faf8aa6fe5d470b88d0d CURRENT
      Translated 2026-08-26. What that line names, and how to check it:
-     README.md, "Translations". It names content rather than a commit, so it
-     survives a merge and a history rewrite; the commit hash it replaced
+     CONTRIBUTING.md, "Translations". It names content rather than a commit,
+     so it survives a merge and a history rewrite; the commit hash it replaced
      survived neither (T-0406).
-     One thing this file does not carry: the "Translations" section's own rule
-     text, which is English-only and which T-0300 refined after the summary
-     below it was written. That summary still says a replaced command goes
-     into all four translated files; English says wherever they carry it. -->
+     Two blocks this file no longer carries at all, because T-0425 moved them
+     out of README.md and into CONTRIBUTING.md, which is English-only by the
+     owner's decision: the build diagnoses that sat under "Setup -> The app",
+     and the whole development-workflow section, the "Translations" rule
+     included. A reader of this file who needs either goes to CONTRIBUTING.md;
+     nothing here summarises them any more. -->
 
 [English](README.md) · [Русский](README.ru.md) · **日本語**
 
@@ -534,163 +536,22 @@ export IGDB_CLIENT_SECRET=...
 
 どちらのターゲットもこのリポジトリからビルドしている。ただし
 `flutter doctor` が緑でもどちらも通らない。それぞれに足りない前提は、後から
-調べ直さずに済むよう書き出してある。**Windows** はすぐ下、**Android** は
+調べ直さずに済むよう書き出してある。**Windows** は
+[`CONTRIBUTING.md`](CONTRIBUTING.md#building-the-app)（英語）に、**Android** は
 [`doc/android-build.md`](doc/android-build.md)（英語）に、ツールチェーンと四つの
 つまずき — うち三つは足りない手順とは別のものを名指しし、一つはビルドを落とし
 さえしない — がある。どちらにも Android Studio は要らない。
 
-**プラットフォーム用フォルダはリポジトリに入っている。** `flutter create` が
-`app/windows/` と `app/android/` を一度だけ生成した。それ以降は手で編集してきた
-ソースであり、リリース版の識別情報 — `Runner.rc`、`AndroidManifest.xml`、
-`applicationId`、アイコン — を持ち、ほかのファイルと同じようにレビューされる。
-その中で本当に生成されるものは、`flutter create` がそのフォルダに書く
-`.gitignore` が除外しているし、ビルド生成物はそもそも別のパスにある。
-[`.gitignore`](.gitignore) のその項目のコメントが、同じことをもっと詳しく書いて
-いる。
-
-だからクローンした時点ですでにあり、セットアップはこれだけである:
+プラットフォーム用フォルダはリポジトリに入っているので、クローンした時点で
+すでにある。それらを編集する場合に何を意味するかは
+[`CONTRIBUTING.md`](CONTRIBUTING.md#building-the-app)（英語）にある。
+セットアップはこれだけである:
 
 ```
 cd app
 flutter pub get
 flutter run -d windows   # or: flutter run -d <android-device>
 ```
-
-**この作業ツリーの上で `flutter create` を走らせないこと。** それらのフォルダを
-作り直し、上に挙げた識別情報の代わりに `com.example` を返してくる。Android では
-さらに、リリースビルドがほかに得る手段のない `INTERNET` 権限を落とす — どの
-ビルドも失敗せず、デバッグビルドでも再現しない喪失である。すでに走らせて
-しまったなら、`git status` が触れたファイルをすべて挙げるので、それらに
-`git checkout --` をかければ元に戻る。
-
-`flutter create` はさらに、既定のカウンタテンプレートから、このプロジェクトの
-一部ではなく、ここでは追跡もされていないファイルを二つ書く。`app/README.md` と
-`app/test/widget_test.dart` である。どちらも削除すること。テストはここに存在
-しない `MyApp` を起動するので（このアプリは `ShelfscanApp`）、残しておくと
-`flutter test` は誰も書いていないファイルで落ちる:
-
-```
-test/widget_test.dart:16:35: Error: Couldn't find constructor 'MyApp'.
-```
-
-どちらも意図的に `.gitignore` に入れていない。追跡されず無視もされていないから
-こそ `git status` がそれらを挙げるのであり、それがコマンドを走らせてしまった
-ことに対する唯一の警告だからである。
-
-#### Windows: `flutter doctor` が教えてくれない二つの前提
-
-**`flutter doctor` が緑でも、Windows ビルドが通るとは限らない。** その Visual
-Studio のチェックが見るのは `Desktop development with C++` ワークロードと、
-ちょうど二つのコンポーネント（`VC.Tools.x86.x64` と `VC.CMake.Project`）だけで、
-Windows の開発者モードのチェックはそもそも存在しない。だから下の二つがどちらも
-欠けていても `[✓] Visual Studio - develop Windows apps` と表示する。このアプリの
-最初のビルドは、この順で両方に当たった。
-
-**1. Windows の開発者モードを有効にする。** これがないと `flutter create` と
-プラグインを含むすべてのビルドが次で中断する:
-
-```
-Building with plugins requires symlink support.
-
-Please enable Developer Mode in your system settings. Run
-  start ms-settings:developers
-to open settings.
-```
-
-Flutter はプラグインのソースをシンボリックリンクでビルドに繋ぎ込むが、Windows
-は開発者モードが有効になるまで管理者にしかシンボリックリンクの作成を許さない。
-その `start ms-settings:developers` を実行してスイッチを入れる。新品のマシンでは
-無効である。これが書き込むレジストリ値
-`HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock\AllowDevelopmentWithoutDevLicense`
-は、開発者モードを一度も有効にしていないうちはそもそも存在せず、有効にした後は
-`1` になる。
-
-**2. Visual Studio に C++ ATL コンポーネントを追加する。**
-`Desktop development with C++` ワークロードに ATL は含まれない。*Individual
-components* の下の別項目である。これがないと、ビルドはツールチェーン全体を回し
-きったうえで、たった一つのプラグインで死ぬ:
-
-```
-flutter_secure_storage_windows_plugin.cpp(6): fatal error C1083: Cannot open include file: 'atlstr.h': No such file or directory
-```
-
-Visual Studio Installer → Modify → **Individual components** → `ATL` を検索 →
-**C++ ATL for x64/x86 (Latest MSVC)** にチェック。これは Build Tools 2026 での
-名前で、文言はツールセットに追随するため、VS 2022 では同じものが
-`C++ ATL for latest v143 build tools (x86 & x64)` と表示される。名前はローカライズ
-された installer では翻訳もされるので、常に効く手がかりはコンポーネント ID の
-`Microsoft.VisualStudio.Component.VC.ATL` である。
-
-コンパイラのエラー文言も同じように翻訳される。ロシア語環境ではその C1083 の行は
-`Не удается открыть файл включение: atlstr.h` と出る。翻訳を生き延びるトークンは
-`C1083` と `atlstr.h` である。英語の文ではなくそれらでコンソール出力を検索する
-こと。
-
-ATL への依存は Flutter のものではなくこちらのものである。BYOK の資格情報を OS の
-キーチェーンに保持する `flutter_secure_storage` が、このプロジェクトで
-`<atlstr.h>` を include している唯一のものである。
-
-#### 最初に成功したビルドがどう見えるか
-
-Flutter 3.47.0 stable、Visual Studio Build Tools 2026 18.9.12105.275、MSVC
-14.51.36231、Windows 11 25H2 で計測:
-
-| コマンド | コールドビルド | 生成物 |
-|---|---|---|
-| `flutter build windows --debug` — `flutter run -d windows` がコンパイルするもの | 124 秒 | `app\build\windows\x64\runner\Debug\shelfscan_app.exe` |
-| `flutter build windows` | 164 秒 | `app\build\windows\x64\runner\Release\shelfscan_app.exe` |
-
-コールドとは、何もキャッシュされていない状態を指す。`build\` も `.dart_tool\`
-もない。数分かかると見込み、固まったと判断しないこと。
-
-リリースの exe はわずか 90 KB で、単体では動かない。`flutter_windows.dll`、
-`data\`、そしてプラグインごとに一つの DLL が隣に置かれる。配布するのはフォルダで
-ある。
-
-#### `app\build\` を手で消さないこと — `flutter clean` を使う
-
-`app\.dart_tool\` を残したままビルド出力を手で消すのは自然な反射だが、それは
-以後のビルドを debug も release も残らず壊す。ビルドは全部のコンパイルに成功した
-うえで INSTALL プロジェクトで死ぬ:
-
-```
-error MSB3073: "...\cmake.exe" -DBUILD_TYPE=Debug -P cmake_install.cmake [...\app\build\windows\x64\INSTALL.vcxproj]
-```
-
-この中に原因を名指しするものは何もない。原因が見えるのは、`app\build\windows\x64`
-から同じ cmake の行を手で実行したときだけである:
-
-```
-CMake Error at cmake_install.cmake:231 (file):
-  file INSTALL cannot find
-  ".../app/build/native_assets/windows": No error.
-```
-
-**原因は、`.dart_tool\flutter_build` にある増分キャッシュが、それが記述している
-`build\` 内のディレクトリより長生きしたことである。** そこの
-`install_code_assets` のスタンプが依然として有効と判定されるため、
-`build\native_assets\windows` を作る手順が飛ばされる一方、CMake の install 手順
-はそのディレクトリの存在を要求し続ける。`flutter pub get` はスタンプを消さず、
-助けにもならない。
-
-直し方:
-
-```
-cd app
-flutter clean
-flutter pub get
-flutter build windows --debug
-```
-
-`flutter clean` は `build\` と `.dart_tool\` をまとめて消す。`build\` だけを
-消しても直らないのに、これで直るのはそのためである。
-
-これは**新規クローンの問題ではない**。本当に何もない木は問題なくビルドできる
-（上の表）ので、クローン後に `flutter clean` を走らせる理由はない。
-
-上の ATL のエラーと同じく、MSBuild のラッパーの文言もローカライズされる。翻訳を
-生き延びるトークンは `MSB3073`、`cmake_install.cmake`、`INSTALL.vcxproj`、
-`native_assets` である。
 
 プロバイダの方針は一つのファイル（`app/lib/provider_config.dart`）にだけ置かれて
 おり、二つのプラットフォームはどちらも同じ三つのバックエンド——ローカル
@@ -1063,44 +924,12 @@ app/                       # Flutter shell: Windows (built and run), Android (ne
 ## 開発の進め方
 
 参加するなら [CONTRIBUTING.md](CONTRIBUTING.md)（英語）から。二つのテスト群の
-走らせ方と、変更が黙って壊してはいけないものが書いてある。この節の残りは、作業
-そのものがどう組まれているかである。
-
-ここにあるものはほぼすべて、[briefboard](https://github.com/shinKatana0/briefboard)
-によるオーケストレータ／ワーカー方式のエージェントワークフローで書かれた。実装前
-の課題定義が必須で、マージ前にレビューが入る課題ボードである。課題定義、ワーカー
-の報告、そしてボード自体は私的なディスクに残り、**公開されない**。それらは製品
-ではなく開発の副産物であり、会話をそのまま引用しており、分量はおよそ
-25,000 行——ここでそれらに取って代わった約 2,100 行の要約に対して、である。その
-要約とは、どう組まれているかの [ARCHITECTURE.md](ARCHITECTURE.md)、なぜそう組まれ
-たかの [doc/decisions/](doc/decisions/)、そしてそれが何の上に立っているかの
-[doc/measurements.md](doc/measurements.md) である。
-
-**だから課題 ID はリンクではない。** ここでの各ページが `T-0086` のような ID を
-挙げるのは、ID が決定の安定した名前だからであり、出どころを名指しする主張は、その
-記録を持つ者なら誰でも検証できるからである。公開されているもののうち、ID を引く
-必要があるものは一つもない。
-
-ボードは参加者が導入するものでもない。一人の作業道具であり、pull request は
-pull request として扱われる。
-
-### 翻訳について
-
-これらの翻訳を実態から離れさせないための規則は、一箇所にだけ置いてある:
-[`README.md` の「Translations」](README.md#translations)。要点は、英語が出どころ
-であり、翻訳はそれに従うのであって先行しないこと。各翻訳ファイルは、その英語版の
-内容名（git の blob 名であって、コミットではない）を `TRANSLATED-FROM` 行として
-冒頭に記していること（README の翻訳では HTML コメント
-として、`doc/` の二つのガイドでは見えるかたちで）。そして英語を編集したら、同じ
-コミットの中で翻訳を更新するか、`STALE` と印を付けるかのどちらかが要ること。
-コードブロック、プログラムの出力、技術記録は翻訳しない。
-
-この最後の点から、印には一つ但し書きが付く。英語の編集がコマンド、
-コードブロック、フラグ、パス、ファイル名を削除または置換したときは、
-同じ削除・置換を同じコミットですべての翻訳にも施す。そうした文字列は
-どのファイルでも同じなので、対象言語の知識は要らず、`grep` 一つで全部見つかる。
-印だけでは足りないのは、印が HTML コメントで GitHub では見えないのに、
-消したはずのコマンドは見えるからである。
+走らせ方と、変更が黙って壊してはいけないものが書いてある。作業そのものがどう
+組まれているか
+([How this repository is developed](CONTRIBUTING.md#how-this-repository-is-developed))
+も、これらのファイルへの編集が従う規則
+([Translations](CONTRIBUTING.md#translations)) も、同じページにある。
+どちらも英語のみである。
 
 **この日本語訳は機械翻訳ではないが、母語話者の校閲を受けていない。**
 数値・主張は英語原文と突き合わせて確認済みだが、語感の保証はない。
