@@ -146,6 +146,27 @@ package built before it already declares.
   versions will fail on it.
 
 ### Fixed
+- **The documents said a cloud backend is never a default; on Android one
+  is.** `SECURITY.md` said it outright and the README left it to be inferred,
+  stating only that Android's Local backend is never the default and never
+  what it starts on instead — on the section `SECURITY.md` sends a reader to
+  for the full per-provider breakdown, so the summary said more about the
+  platform split than the detail it pointed at. `SECURITY.md` and all three
+  READMEs now say which backend each platform starts on: an OpenAI-compatible endpoint you
+  name is never a default anywhere, Anthropic is not the default where a
+  local model can run, and Anthropic is the Android default because the phone
+  runs none of its own and its Local backend cannot start until you have
+  typed a server address. They also carry the qualifier that fact needs:
+  nothing is uploaded before you have supplied your own key, because a
+  keyless cloud backend is refused at the tap and the run makes no call at
+  all. And `SECURITY.md` stops giving one backend's reason for both — the
+  free-tier training warning belongs to an endpoint you name, not to a paid
+  Anthropic account, which is how the app has always worded the two.
+- **`SECURITY.md`'s supported-versions paragraph no longer says there is no
+  released version.** `v0.1.0` has been tagged since 2026-08-17. The policy is
+  unchanged — only the latest commit on `main` is supported — and the page now
+  says what that means for a tag: it is not separately supported, and a fix
+  goes out on `main` rather than backwards into a release already made.
 - **`SECURITY.md`'s account of what leaves your machine named one
   catalogue.** Its "Your photographs" list is what a security-minded reader
   opens on purpose, and since films got their own catalogue the resolve stage
