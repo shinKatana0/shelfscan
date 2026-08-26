@@ -20,6 +20,14 @@
 /// exit claims and of scripts is asserted, and the extractor carries a
 /// control in each direction (`doc/conventions.md` 4a, fifth shape).
 ///
+/// **One claim the extractor cannot read** (T-0419). The section also says
+/// the changelog voice joins a run only once the version this tree declares
+/// is known, and that one voice with a non-zero exit is a complete answer
+/// rather than a truncated one. That is prose and not a quoted string, so the
+/// last test below holds the tool to it rather than the page, and carries a
+/// control that goes red exactly when the tool starts folding both voices
+/// into every answer -- the change that would make the old wording true.
+///
 /// **Nothing here invokes `git`.** All three files ship in every clone, so
 /// this is a text comparison over them plus calls into the tool's own pure
 /// `judge` -- the T-0231 class, and the reason that check lives outside the
@@ -107,6 +115,15 @@ List<_Quote> _quotes(String section) {
   }
   return quotes;
 }
+
+/// Which of the labels the page quotes a verdict actually speaks under.
+/// A continuation line is indented, so a label opening a line is that
+/// voice speaking.
+Set<String> _spoken(Verdict verdict, Set<String> labels) => {
+      for (final label in labels)
+        if (verdict.lines.any((line) => line.startsWith('$label:')))
+          label,
+    };
 
 String _section(String page) {
   final lines = page.split('\n');
@@ -320,5 +337,36 @@ void main() {
             '. If the test above is also red, that one names the real cause '
             'and this follows from it; if it is green, the page has gained a '
             'verdict no run here reaches -- add a case to _scenarios().');
+  });
+
+  // The section's other behavioural claim (T-0419): the changelog voice joins
+  // a run only once the tree's version is known, so a run may print one voice
+  // -- and the page tells the reader that when it does, the answer is
+  // complete rather than truncated. The labels come from the page like
+  // everything else here, so this names no voice either.
+  test('a run that speaks one voice never answers with exit 0', () {
+    final labels = quotes.map((q) => q.label).toSet();
+    final oneVoice = [
+      for (final verdict in _scenarios())
+        if (_spoken(verdict, labels).length < labels.length) verdict,
+    ];
+
+    expect(oneVoice, isNotEmpty,
+        reason: 'no run above reaches a branch that speaks fewer voices than '
+            'the page quotes, so the assertion below holds vacuously. Either '
+            '_scenarios() lost its early-return cases, or the tool now folds '
+            'both voices into every answer -- and in that case the document '
+            'to fix is CONTRIBUTING.md, "Cutting a release", which says the '
+            'changelog voice joins the run only once the version this tree '
+            'declares is known.');
+
+    for (final verdict in oneVoice) {
+      expect(verdict.outcome.exitCode, isNot(0),
+          reason: 'CONTRIBUTING.md, "Cutting a release", says one voice and '
+              'a non-zero exit is a complete answer rather than a truncated '
+              'one. This run spoke one voice and answered with exit 0, so a '
+              'reader following that page would see a single line and a green '
+              'exit and have no way to read it: ${verdict.lines.first}');
+    }
   });
 }
