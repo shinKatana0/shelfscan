@@ -1097,9 +1097,9 @@ each translated from the same base, and neither branch's hash has the other's
 work in its ancestry: each marker then reports the other branch's commits as
 English it has not caught up with. Rewrite the history — this repository has
 done it twice — and every recorded hash names an object no clone holds, so the
-check is `fatal: bad object` and cannot be run at all. A blob name survives
-both, because neither a merge nor a rewrite changes what a file says. Measured:
-`README.md` at one commit hashed to
+check answers `fatal: bad revision` and cannot be run at all. A blob name
+survives both, because neither a merge nor a rewrite changes what a file says.
+Measured: `README.md` at one commit hashed to
 `905149e2634f446c4821e92eb2893282c65e4f2c` before the identity rewrite of
 2026-08-25 and to the same 40 characters after it, while the commit that named
 it is no longer on `main` at all.
