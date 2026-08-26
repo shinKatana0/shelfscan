@@ -132,7 +132,11 @@ as green on a second artefact built at `+2` as on the first.
 dart run tool/check-release-order.dart ; echo "EXIT=$?"
 ```
 
-It answers in two voices, one per question, and prints both every time.
+It answers in two voices, one per question. The changelog voice joins the run
+only once the tree's version is known: an answer that comes before that says
+the tree is in no state to cut a release at all, and each of those fixes is
+upstream of the changelog. So one voice and a non-zero exit is a complete
+answer rather than a truncated one.
 
 The release order:
 
