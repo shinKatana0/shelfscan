@@ -317,6 +317,8 @@ void main() {
             'produced by one of the runs above, or its code is asserted '
             'against nothing. Not produced: '
             '${claimed.map((q) => q.text).where((t) => !exercised.contains(t))}'
-            ' -- add a case to _scenarios().');
+            '. If the test above is also red, that one names the real cause '
+            'and this follows from it; if it is green, the page has gained a '
+            'verdict no run here reaches -- add a case to _scenarios().');
   });
 }
