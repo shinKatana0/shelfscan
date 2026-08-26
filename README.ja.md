@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob 800a65d429097077f593fa180f778042988491ba CURRENT
+<!-- TRANSLATED-FROM: README.md blob b2358c3527333d5bfc430c9e62832c473c7024bf CURRENT
      Translated 2026-08-26. What that line names, and how to check it:
      README.md, "Translations". It names content rather than a commit, so it
      survives a merge and a history rewrite; the commit hash it replaced
@@ -704,7 +704,10 @@ flutter build windows --debug
 （スマートフォン上の `localhost` はそのスマートフォン自身である）ので、Android
 では Local は選べるが既定には
 決してならず、設定でサーバのアドレスを `http://ADDRESS:PORT` の形で入れるまで
-起動もしない。
+起動もしない。**代わりに Android が既定とするのは Anthropic である。**
+アドレスを入れるまで動かない既定は初回起動を壊すことになり、また、あなたが
+指定するエンドポイントはどのプラットフォームでも既定にはならないので、残るのは
+クラウドのバックエンドである。
 
 **この経路は写真をインターネットへは出さないが、暗号化もしない。** 一枚ごとに
 あなた自身のネットワークを越えてそのサーバへ平文の HTTP で渡るので、暗号化も
@@ -985,7 +988,13 @@ JPEG へ変換される。ここで写真に加えられる変更はそれだけ
   エンドポイントも既定にしていないのはそのためである。このプロジェクトがあなたの
   代わりに選んだベース URL は、あなたが選んでいないサービスになってしまう。
 - **Anthropic（`--provider anthropic`、アプリの Cloud バックエンド）:** すべての
-  写真が丸ごと Anthropic へ送信される。
+  写真が丸ごと Anthropic へ送信される。**アプリの Android での既定はこれである。**
+  スマートフォンは自前のモデルを動かさず、そこでの Local はあなた自身の
+  ネットワーク上のサーバを指すので、そのアドレスを入れるまで動かない。だから
+  スマートフォンは、あなたが別を選ばない限り Anthropic を通して読み取る。
+  あなた自身のキーを入れるまで、何も送信されない。キーのないクラウドの
+  バックエンドはタップの時点で拒否され、必要な資格情報の名を告げ、実行は
+  呼び出しを一度もしない。
 - **`--fallback` — 上のどれかに重ねる二つ目のモデル:** これは一つ目のモデルが
   手こずった写真ではなく、**すべての**写真を読み直し、二つの読みを統合する。
   つまり実行の画像認識呼び出しは倍になり、二人目がクラウドなら**すべての写真が

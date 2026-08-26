@@ -701,7 +701,10 @@ name on your own network, typically the same desktop that already serves
 the Windows app. Nothing can guess that address for you (`localhost` on a
 phone *is* the phone), so on Android Local is offered but never the
 default, and it will not start until you have put the server's address in
-Settings as `http://ADDRESS:PORT`.
+Settings as `http://ADDRESS:PORT`. **What Android defaults to instead is
+Anthropic:** a default that cannot work until an address is typed would be
+a broken first launch, and an endpoint you name is never a default
+anywhere, so the cloud backend is what is left.
 
 **That path keeps your photos off the internet; it does not encrypt
 them.** Each one crosses your own network to that server over plain HTTP,
@@ -978,7 +981,13 @@ directory, never next to your original.
   a default here — a base URL this project picked for you would be a
   service you never chose.
 - **Anthropic (`--provider anthropic`, the app's Cloud backend):** every
-  photo is uploaded in full to Anthropic.
+  photo is uploaded in full to Anthropic. **It is the app's default on
+  Android**, where the phone runs no model of its own and Local means a
+  server on your own network that cannot work until you have typed its
+  address — so a phone scans through Anthropic unless you choose
+  otherwise. Nothing is uploaded before you have supplied your own key:
+  a cloud backend without one is refused at the tap, naming the credential
+  it wants, and the run makes no call at all.
 - **`--fallback` — a second model, on top of any of the above:** it
   re-reads **every** photo, not the ones the first model struggled with,
   and the two reads are merged. So the run makes twice the vision calls,
