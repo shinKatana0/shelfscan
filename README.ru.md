@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob 10e94ef0f7b932c691dd87860c4e2140a4676da6 CURRENT
+<!-- TRANSLATED-FROM: README.md blob 800a65d429097077f593fa180f778042988491ba CURRENT
      Translated 2026-08-26. What that line names, and how to check it:
      README.md, "Translations". It names content rather than a commit, so it
      survives a merge and a history rewrite; the commit hash it replaced
