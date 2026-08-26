@@ -1,10 +1,12 @@
-<!-- Translated from c524e81 (2026-08-26). The rule, and how to check
-     whether this is still true: README.md, "Translations".
+<!-- TRANSLATED-FROM: README.md blob 800a65d429097077f593fa180f778042988491ba CURRENT
+     Translated 2026-08-26. What that line names, and how to check it:
+     README.md, "Translations". It names content rather than a commit, so it
+     survives a merge and a history rewrite; the commit hash it replaced
+     survived neither (T-0406).
      One thing this file does not carry: the "Translations" section's own rule
-     text, which 2648d3e refined after the summary below it was written. The
-     summary still says a replaced command goes into all four translated files
-     in one commit; English now says wherever they carry it, and two commits
-     when you translate rather than only mark. -->
+     text, which is English-only and which T-0300 refined after the summary
+     below it was written. That summary still says a replaced command goes
+     into all four translated files; English says wherever they carry it. -->
 
 [English](README.md) · [Русский](README.ru.md) · **日本語**
 
@@ -1077,8 +1079,9 @@ pull request として扱われる。
 
 これらの翻訳を実態から離れさせないための規則は、一箇所にだけ置いてある:
 [`README.md` の「Translations」](README.md#translations)。要点は、英語が出どころ
-であり、翻訳はそれに従うのであって先行しないこと。各翻訳ファイルは、その英語版が
-どのコミットの状態だったかを冒頭に記していること（README の翻訳では HTML コメント
+であり、翻訳はそれに従うのであって先行しないこと。各翻訳ファイルは、その英語版の
+内容名（git の blob 名であって、コミットではない）を `TRANSLATED-FROM` 行として
+冒頭に記していること（README の翻訳では HTML コメント
 として、`doc/` の二つのガイドでは見えるかたちで）。そして英語を編集したら、同じ
 コミットの中で翻訳を更新するか、`STALE` と印を付けるかのどちらかが要ること。
 コードブロック、プログラムの出力、技術記録は翻訳しない。

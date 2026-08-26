@@ -3,10 +3,11 @@
 <!-- TRANSLATIONS — read this before you edit the text below.
      README.ru.md and README.ja.md make the same claims as this file. Change
      anything here beyond a typo and both are stale. In the same commit either
-     update them, or set the "Translated from" line at the top of each to
-     STALE — marking is cheap and honest, a silent lag is neither.
-     The rule in full, and why there is no CI check for it: "Translations",
-     under Development workflow, at the end of this file. -->
+     update them and bump the blob name on their TRANSLATED-FROM line, or set
+     that line's last word to STALE — marking is cheap and honest, a silent lag
+     is neither.
+     The rule in full, what the marker names and why it is not a commit:
+     "Translations", under Development workflow, at the end of this file. -->
 
 # shelfscan
 
@@ -1081,23 +1082,58 @@ exists in only one language is a bug in the translation.
 
 A translation that has quietly fallen behind is worse than no translation at
 all, because a reader trusts it and has no way to tell. So each translated file
-records, at the top of the file, the commit its English original stood at when
-it was written — an HTML comment in `README.ru.md` and `README.ja.md`, a visible
-line in the two guides — and one command answers whether that is still true:
+carries one marker line at its top — inside an HTML comment in `README.ru.md`
+and `README.ja.md`, visible in the two guides — in one fixed form:
 
 ```
-git log --oneline <that commit>..HEAD -- README.md
+TRANSLATED-FROM: README.md blob <40 hex characters> CURRENT
 ```
 
-No output means the translation is current. Any output is the list of English
-changes it has not caught up with, and the reader can decide what that costs
-them.
+The 40 characters are **the name git gives that file's content**, not a commit.
+The last word is the file's own claim about itself. One command prints what the
+name is now:
+
+```
+git rev-parse HEAD:README.md
+```
+
+Equal to the marker means the English has not moved since this translation was
+written. Different means it has, and `git diff <the name in the marker>
+HEAD:README.md` shows what changed — a convenience rather than the verdict, and
+the half that can stop working.
+
+**Naming content instead of history is the whole of the scheme, and it was
+paid for.** A commit hash is the obvious thing to record, was recorded here
+until T-0406, and answers wrongly in two separate ways. Merge two branches that
+each translated from the same base, and neither branch's hash has the other's
+work in its ancestry: each marker then reports the other branch's commits as
+English it has not caught up with. Rewrite the history — this repository has
+done it twice — and every recorded hash names an object no clone holds, so the
+check answers `fatal: bad revision` and cannot be run at all. A blob name
+survives both, because neither a merge nor a rewrite changes what a file says.
+Measured: `README.md` at one commit hashed to
+`905149e2634f446c4821e92eb2893282c65e4f2c` before the identity rewrite of
+2026-08-25 and to the same 40 characters after it, while the commit that named
+it is no longer on `main` at all.
+
+**Which direction it fails in.** Any edit to the English changes its blob name,
+so a typo fix reports every translation behind. That is over-reporting, and it
+is the safe direction: this marker can call a current translation stale, and it
+cannot call a stale one current — nothing short of an exact revert of the
+English brings a blob name back. What it gives up is the *list* of English
+commits, which a rewrite had already taken away.
 
 **Editing the English obliges one of two things in the same commit:** update
-the translation, or replace its `Translated from` line with `STALE`, naming the
-commit the English moved to. Marking is the cheap option and it is the right
-one when you do not read the language — nobody is asked to fake a translation,
-only to stop the file claiming a currency it lost.
+the translation, or set its marker's last word to `STALE`. Marking is the cheap
+option and it is the right one when you do not read the language — nobody is
+asked to fake a translation, only to stop the file claiming a currency it lost.
+The blob name always says what the translation was made *from*: bump it when
+you translate, leave it standing when you mark. Read the new one out of the
+file you have just edited:
+
+```
+git hash-object README.md
+```
 
 **Marking is not enough when the edit *removed* something.** The marker is an
 HTML comment, so on GitHub the deleted thing renders and the warning about it
@@ -1139,10 +1175,11 @@ and say in the report that the others did not. Delete what it names, or paste
 the English's replacement over it. The translation is then behind by an
 **addition** again, which is the case the marker already handles.
 
-**Two commits, not one, when you translate rather than only mark.** A marker
-naming the commit the English moved to cannot be part of that commit. Put the
-content in one and bump the markers in the next — `2866320` then `f4574b7` is
-the worked example.
+**One commit, not two.** This rule said two until T-0406, because a marker
+naming *the commit the English moved to* cannot be inside that commit. A blob
+name has no such shape: `git hash-object` reads the working tree, so the name
+of the English you have just written exists before any commit does, and the
+content and the markers go in together.
 
 **The hole gets no note.** A line saying "this step was removed, read the
 English" has to be written in Russian and in Japanese, and a rule whose last
@@ -1164,14 +1201,39 @@ sees, and the **engineering records** — `ARCHITECTURE.md`, `doc/decisions/`,
 `doc/measurements.md` and the build diagnoses in `doc/android-build.md`. Those
 are English only, along with code comments and commit messages.
 
-**A CI check was considered and not built.** It is buildable — the workflow
-already runs on every push — but the only check worth having is "the English
-changed and the translation did not", and it fires on a typo fix at a
-contributor with two exits: translate a language they may not read, or bump the
-marker without translating, which converts the marker into a lie. Four files do
-not earn that. The marker costs one line per file, anyone can check it in one
-command, and when it is wrong it is wrong in the safe direction — it says
-stale when the change was cosmetic, never current when the change was real.
+**What a history rewrite does to a marker: nothing, and that is the change.** A
+rewrite replaces commit objects; it does not change what a file says, so every
+blob name still names the same content and every marker still answers. Two
+things do move and both are bounded. If the rewrite edits an English file
+itself — scrubbing a string out of every version of it, say — that file's blob
+name at `HEAD` changes, every `CURRENT` marker on it stops matching, and
+whoever ran the rewrite owes the same choice as any other English edit:
+translate, or mark. And the *older* blob a marker names may stop being
+reachable, so `git diff <that name> HEAD:README.md` can answer `fatal: bad
+object` where it used to print a diff. The verdict never needs that object — it
+is a comparison between two strings — which is exactly the property the
+commit-hash marker did not have, and there the unreachable object *was* the
+verdict.
+
+**What is checked, and what is not.**
+`packages/shelfscan_core/test/translation_marker_test.dart` reads the four
+markers and fails when one claims `CURRENT` while its English source has a
+different blob name at `HEAD`. It asks nobody to translate: the last word of
+one line is the whole fix, in a language you need not read. That is the
+difference from the CI check this section carried as considered-and-rejected
+until T-0406 — that one fired on "the English changed and the translation did
+not" and left a contributor two exits, translate a language they may not read
+or bump the marker without translating, the second of which converts the marker
+into a lie. Separating the claim (`CURRENT` or `STALE`) from the reference (the
+blob name) removes the lie, because `STALE` is an honest answer and it is the
+one the test asks for.
+
+Three things are still unchecked and cannot be checked here: whether a file
+marked `STALE` is stale, whether a `CURRENT` one is *complete* — the marker
+answers whether the English moved, not whether all of it was carried over, and
+a file with a known gap says so in prose beside its marker — and whether a
+marker was bumped without the translation being touched. The last is forgery,
+and no marker scheme detects it.
 
 ## Disclaimer
 

@@ -13,8 +13,8 @@
 /// ## The rule, and why it is not "this script may not appear"
 ///
 /// A naive version is red at once. The translations quote English constantly
-/// -- command names, paths, task ids, the invented fixture family, the marker
-/// line naming a commit -- and Japanese prose carries Latin words as prose,
+/// -- command names, paths, task ids, the invented fixture family, the
+/// TRANSLATED-FROM line -- and Japanese prose carries Latin words as prose,
 /// not as quotation. So the rule is **a script may not appear where another
 /// script is the prose**, and it is made precise in two halves.
 ///
