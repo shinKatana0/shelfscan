@@ -246,8 +246,10 @@ ChangelogVerdict judgeChangelog({
       'decision 0014: the release order is both pubspecs, then '
           '$changelogFile, then the tag. A tag exists, so the middle step was '
           'owed and was not taken -- the changelog that shipped under that '
-          'tag describes it as unreleased. Add the heading and re-cut the '
-          'tag; it is only published once it is pushed.',
+          'tag describes it as unreleased. Write the heading, then re-cut the '
+          'tag if it has not been pushed. If it has, this is a report rather '
+          'than a remedy: fixing the tree does not fix what went out, and '
+          'moving a published tag is a decision rather than a fix.',
     ]);
   }
 

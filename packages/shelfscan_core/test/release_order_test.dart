@@ -22,6 +22,10 @@
 /// deliberately as the refusal cases assert exit 1.
 ///
 /// Every fixture is invented -- tag names, versions and package names alike.
+/// One deliberate exception, and it is this project's own numbers rather than
+/// anyone's data: the two quiet cases are planted at `0.2.0+2` against a
+/// `v0.1.0` publishing `0.1.0`, because the state the check must not refuse
+/// is the state this repository is actually in.
 library;
 
 import 'dart:io';
