@@ -97,6 +97,115 @@ rediscovered:
 Neither is needed to run the suites, review a change, or work on
 `shelfscan_core`.
 
+## Cutting a release
+
+Deciding the version and cutting the tag are a person's acts, and this
+project means that. Nothing below fires on its own: CI runs the two suites on
+a push to `main` and on a pull request, never on a tag, and git offers no hook
+that fires when a tag is cut without also firing on ordinary work. What
+follows is the order from
+[`doc/decisions/0014`](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md),
+with the command that checks each step and what its answers mean.
+
+The order is **both `pubspec.yaml` files, then `CHANGELOG.md`, then the tag.**
+
+**1 — the version.** Pick it against decision 0014's definitions of MAJOR,
+MINOR, PATCH and BUILD; the gate keeping this project in `0.x` is there too.
+BUILD is a monotonic integer, incremented for every artefact handed to
+anyone, never reset and never reused. There is no check for the choice
+itself, and there should not be.
+
+Write it into three places — `app/pubspec.yaml`,
+`packages/shelfscan_core/pubspec.yaml` and `app/lib/app_version.dart` — as
+`MAJOR.MINOR.PATCH+BUILD`. `app/test/app_version_test.dart` holds all three
+to each other and requires the `+BUILD` half to be present, so this is the
+one step you cannot forget: it runs in the app suite whether or not you think
+about it. Its limit is that a suite sees only the working tree. It is exactly
+as green on a second artefact built at `+2` as on the first.
+
+**2 — the changelog.** Give the release its own `## [VERSION]` heading in
+`CHANGELOG.md`, above the entries it covers.
+
+**3 — the checks, before the tag exists.**
+
+```
+dart run tool/check-release-order.dart ; echo "EXIT=$?"
+```
+
+It answers in two voices, one per question, and prints both every time.
+
+The release order:
+
+- `RELEASE ORDER: OK` — this tree's build number is ahead of every number any
+  tag ever published.
+- `RELEASE ORDER: REFUSED` (exit 1) — the two pubspecs disagree, or the tree
+  declares no build number, or the number it declares has been published
+  before. The message names which.
+- `RELEASE ORDER: NOTHING TO COMPARE` (exit 0) — no tag here, so nothing can
+  have been reused. A clone fetched with `--no-tags` looks exactly like this
+  and it is not a failure.
+- `RELEASE ORDER: NOT CHECKED` (exit 2) — a pubspec was missing, no tag
+  carried a readable one, or `git` could not be run. Nothing was compared,
+  which is not the same as nothing being wrong.
+
+The changelog step, and this is the answer to read carefully:
+
+- `CHANGELOG: OK` — the file carries `## [VERSION]` for the version this tree
+  declares. Step 2 is done.
+- `CHANGELOG: NOTE` — it does not, **and the exit code is still 0.** That is
+  deliberate and it is the one place this check will not decide for you. A
+  tree ahead of the last tag with an open `[Unreleased]` section is this
+  repository on an ordinary day, and it is the *same git state* as the minute
+  before a release is cut — the tag does not exist yet in either. Nothing in
+  the repository can tell them apart, so nothing here refuses on it; a check
+  that refused on a Tuesday is a check people stop running. **So when you are
+  cutting a release, read the word and not the exit code.** `NOTE` at that
+  moment means step 2 is owed.
+- `CHANGELOG: REFUSED` (exit 1) — some tag published a tree whose own
+  `CHANGELOG.md` named no release for it. If that tag is still local, write
+  the heading and re-cut it. If it is pushed, this is a report and not a
+  remedy: fixing the tree does not fix what went out.
+- `CHANGELOG: NOT CHECKED` (exit 2) — there is no `CHANGELOG.md` here.
+
+**Run it before you cut the tag, and understand why it cannot be run after.**
+The comparison is against everything already published, and once the tag
+exists this tree *is* something already published. Measured on a synthetic
+repository declaring `1.0.0+7`: it passes at exit 0 one second before
+`git tag`, and one second after — with nothing else changed — answers
+`REFUSED — build number 7 was already published by v1.0.0`. That is the check
+working correctly, and it is why the trigger is a person following this page
+rather than a hook. It is also why the tag is last.
+
+**4 — the artefacts.** Build what you are shipping (*Building the app*,
+above), then:
+
+```
+dart run tool/check-bundle-assets.dart ; echo "EXIT=$?"
+```
+
+It asserts that every asset key `AssetManifest.bin` names is a file inside
+the bundle carrying it — the failure it exists for is a key beginning `../`,
+which is written outside the bundle and reaches no packaged app. Exit 0 every
+key present, 1 a key has no file or the bundle predates the declaration it is
+judged against, 2 nothing was checked.
+
+**Read the bundles it names, not only the last line.** With no argument it
+checks every known build output under `app/build/` that exists, and a
+checkout where only the suites have been run has exactly one: the unit-test
+bundle, which is the single bundle that *cannot* answer this question — a
+`../` key resolved from there lands somewhere that exists, so it passes.
+That run prints `1 bundle(s)`, `OK`, exit 0, and proves nothing about what
+you are about to ship. Check the runner directory or the `.apk` you built is
+in the list. The output carries absolute paths of the machine that ran it, so
+it is a scratch reading rather than something to paste anywhere.
+
+**5 — both suites, through the script.** `sh tool/check-suites.sh` rather
+than the runners directly, for the reason in *Running the suites* above:
+neither runner can be trusted to say what happened to itself.
+
+**6 — cut the tag.** A person's act, and the only step of the release order
+git records.
+
 ## What a change must not break
 
 - **The platform boundary.** Photos travel as bytes (`PhotoInput`), never
