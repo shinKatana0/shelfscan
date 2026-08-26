@@ -3,7 +3,11 @@
 /// Platform policy (product decision, not a technical constraint):
 ///   - Windows: user chooses local (Ollama) or a cloud endpoint.
 ///     Default: LOCAL -- a desktop next to the shelf can run its own model.
-///   - Android: local is OFFERED and is never the default (T-0361). The
+///   - Android: local is OFFERED and is never the default (T-0361);
+///     [VisionBackend.cloud] is, by elimination rather than by preference --
+///     a default that cannot work until an address is typed would be a
+///     broken first launch, and an endpoint the user names is never a
+///     default anywhere, so the cloud backend is what is left. The
 ///     phone runs no model of its own -- "on-device models are too weak for
 ///     spine OCR" is a measurement taken ON the phone, it stands unchanged,
 ///     and nothing here overturns it. What local means on this platform is
