@@ -363,11 +363,13 @@ WARNING: Your app uses the following plugins that apply Kotlin Gradle Plugin (KG
 Future versions of Flutter will fail to build if your app uses plugins that apply KGP.
 ```
 
-**What it means, and Built-in Kotlin is still coming.** Flutter is moving to
-it: the Flutter Gradle plugin supplies Kotlin itself, and a plugin that applies
-KGP in its own Gradle file stops building. This tree is past that for the
-plugins it has today, and a plugin added tomorrow can put the warning back —
-the two guides are worth keeping to hand for when it does.
+**What it means, and Built-in Kotlin has since arrived.** Flutter is moving to
+it: AGP supplies Kotlin itself, and a plugin that applies KGP in its own Gradle
+file stops building. This tree is past that for the plugins it has today, and a
+plugin added tomorrow can put the warning back — the two guides are worth
+keeping to hand for when it does. **This app is now on built-in Kotlin itself**
+(T-0399) — see *Built-in Kotlin is taken; the new DSL is blocked upstream*
+below, which is where the flags that decide it are written down.
 [For app developers](https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers)
 and [for plugin authors](https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors).
 
@@ -548,6 +550,136 @@ note and needs a build to prove it. `flutter_secure_storage` 11.0.0 also raises
 its own `minSdk` to 24 while `app/android/app/build.gradle.kts` takes `minSdk`
 from `flutter.minSdkVersion`; whether the app's floor is now set by the plugin
 rather than by Flutter has not been checked either.
+
+## Built-in Kotlin is taken; the new DSL is blocked upstream
+
+**Two flags in `app/android/gradle.properties` decide this, the Flutter
+template wrote both, and AGP 9 defaults both the other way.** AGP 9.1.0
+deprecates setting either to `false`, says so on every configuration, and
+removes both in AGP 10. T-0399 took one of them and could not take the other.
+The end state, which is also exactly what Flutter's own migration guide
+prescribes:
+
+```
+android.newDsl=false
+android.builtInKotlin=true
+```
+
+**Read the flags, not AGP's remedy.** AGP prints *"Remove both
+`android.builtInKotlin=true` and `android.newDsl=false` from
+`gradle.properties`"* while the file says `builtInKotlin=false`. The
+instruction names a value the file does not hold, and following it literally
+gets you nowhere.
+
+### `android.builtInKotlin=true` — taken, and it removes nine warnings
+
+AGP supplies Kotlin, so the standalone `org.jetbrains.kotlin.android` plugin is
+no longer applied to anything. Measured across one configuration run, before
+and after: **nine** `w: Deprecated 'org.jetbrains.kotlin.android' plugin usage`
+warnings — `:app` and eight plugin subprojects — went to **zero**. The plugin
+subprojects are not ours and were not touched; the flag is the app's and it
+clears them all, because it is the Flutter Gradle Plugin that was applying KGP
+to each of them.
+
+The app's own Kotlin is compiled by AGP after this, which is visible in the
+output path (`intermediates/built_in_kotlinc/...`) rather than in any message.
+
+**The `kotlin { compilerOptions { jvmTarget } }` block at the foot of
+`app/android/app/build.gradle.kts` stays, and it is still live.** That is the
+built-in-Kotlin form already, so nothing about it changed. It was proved live
+rather than assumed: setting it to `JVM_11` fails the build with
+
+```
+Inconsistent JVM targets between Java and Kotlin compile tasks: 17 and 11.
+```
+
+which is worth more than the block being obeyed — **built-in Kotlin now
+enforces the agreement between `compileOptions` and the Kotlin target that used
+to rest on somebody noticing.** Change one and the build tells you.
+
+### The KGP declaration in `settings.gradle.kts` is NOT dead weight
+
+The obvious follow-up — the plugin is "no longer required", so delete
+`id("org.jetbrains.kotlin.android") version "2.4.0" apply false` — **breaks the
+build**, and the message is about neither Kotlin plugins nor the flag:
+
+```
+Error: Your project's Kotlin version (2.2.10) is lower than Flutter's minimum
+supported version of 2.2.20. Please upgrade your Kotlin version.
+```
+
+Nothing applies that plugin any more, but **it is where built-in Kotlin reads
+its Kotlin version from**. Remove the line and AGP falls back to the version it
+bundles, 2.2.10, which Flutter then refuses. So the declaration stays, and it
+now has a comment saying so — the line looks like leftovers and reads like
+leftovers, and deleting it is the natural next tidy-up.
+
+### `android.newDsl=true` — cannot be flipped, and nothing in this tree is at fault
+
+**It fails before any of our own build file is reached**, with the same error
+whether `builtInKotlin` is true or false:
+
+```
+* What went wrong:
+An exception occurred applying plugin request [id: 'dev.flutter.flutter-gradle-plugin']
+> Failed to apply plugin 'dev.flutter.flutter-gradle-plugin'.
+   > class com.android.build.gradle.internal.dsl.ApplicationExtensionImpl$AgpDecorated_Decorated
+     cannot be cast to class com.android.build.gradle.AbstractAppExtension
+```
+
+The Flutter Gradle Plugin casts the project's `android` extension to
+`AbstractAppExtension`; with the new DSL on, AGP hands it an
+`ApplicationExtension` instead. Everything named is upstream — Flutter 3.47.0
+against AGP 9.1.0 — and no edit to `app/android/` moves it. Flutter's own
+migration guide agrees, prescribing `android.newDsl=false` alongside built-in
+Kotlin, so this is the documented state and not a hole somebody forgot.
+
+**What that leaves standing**, and it is deliberate: the `android { }` accessor
+in `app/android/app/build.gradle.kts` is still the deprecated
+`fun Project.android(configure: Action<BaseAppModuleExtension>)`, and the
+`android.newDsl=false` option warning still prints once per configuration.
+Both are pinned by the flag above. A comment at the accessor says so, so that a
+reader who meets the warning at that line does not go looking.
+
+**When Flutter fixes it, this is a one-line change plus a build.** Flip the
+flag and see whether `dev.flutter.flutter-gradle-plugin` applies. If it does,
+the two remaining warnings go with it and the release-signing refusal is the
+thing to re-prove — see below.
+
+### The warning ledger, and one zero that means nothing
+
+| warning | before | after |
+| --- | --- | --- |
+| `org.jetbrains.kotlin.android` no longer required | 9 | 0 |
+| `The option setting '…' is deprecated` | 2 | 1 (`newDsl`) |
+| `fun Project.android(…)` is deprecated | see below | 1 ours, 4 plugins' |
+
+**The last row is why this table has a footnote instead of a number.** That
+warning comes from the Kotlin compiler compiling a Gradle build script, so it
+prints only when the script is actually recompiled — a run that finds every
+script cached reports **zero**, and a baseline run did exactly that. It is
+`doc/conventions.md` §4a's fifth shape wearing a build tool: a confident zero
+from a sweep that never looked. Change a flag (which invalidates every script)
+and the true count appears — one for `app/android/app/build.gradle.kts` and
+four for plugin build files inside `file_selector_android`,
+`integration_test`, `share_plus` and `shared_preferences_android`. Those four
+are the plugins' own `android { }` accessors in their own Gradle files, they
+are pinned by the same flag, and they are nobody's to fix here.
+
+### Two things this did not cost
+
+- **No `flutter clean` was needed.** The Kotlin pipeline for `:app` and eight
+  plugin subprojects changed underneath an existing build directory — which is
+  the exact shape that bit `share_plus` above — and the debug build over that
+  directory succeeded anyway. Worth stating because the earlier note makes the
+  opposite outcome look likely.
+- **The release-signing refusal (T-0398) still fires.** The concern was real:
+  the refusal is bound to `gradle.taskGraph.whenReady`, and a DSL change can
+  move what `this` is in that position. Proved rather than reasoned about, with
+  `key.properties` moved aside — the release build failed in 4.9 s with the
+  full refusal text, unchanged and untruncated. The flag that could have
+  affected it is the one that did not move; re-prove this if `newDsl` is ever
+  taken.
 
 ## Unresolved: `flutter doctor` reports the licence status unknown
 
