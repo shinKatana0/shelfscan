@@ -13,6 +13,12 @@
 /// itself asserts nothing about the requirement, and the cost of the sentence
 /// existing twice in this package is the point of it.
 ///
+/// Since T-0400 the published files are held to the same standard from here:
+/// `NOTICE` carves the mark out of the MIT grant and restates the sentence,
+/// and the three READMEs were checked by hand until now. Nothing watched
+/// either, which is the `.env.example` shape `documented_lists_test.dart`
+/// exists for.
+///
 /// **Whole sentence, never a fragment.** The wording T-0383 replaced
 /// contained the fragments anyone would grep for and was still a paraphrase,
 /// and T-0383's own first edit ate the full stop while every fragment
@@ -38,6 +44,22 @@ const _required = 'This application uses TMDB and the TMDB APIs but is not '
 /// An invented token shape. Nothing here reaches TMDB: no row in the fixture
 /// is a film, so no search is ever made.
 const _token = 'tmdb-not-a-token';
+
+/// The one file `NOTICE` carves out of the MIT grant (T-0400).
+const _asset = 'app/assets/tmdb/blue_long_1.svg';
+
+/// Walks up to the directory holding `LICENSE`, the same shape
+/// `documented_lists_test.dart` uses to reach `.env.example`.
+String _readRepoFile(String name) {
+  for (var dir = Directory.current.absolute;; dir = dir.parent) {
+    if (File(_join(dir.path, 'LICENSE')).existsSync()) {
+      return File(_join(dir.path, name)).readAsStringSync();
+    }
+    if (dir.path == dir.parent.path) {
+      fail('no LICENSE at or above ${Directory.current.path}');
+    }
+  }
+}
 
 /// Runs of whitespace collapsed to one space, so a wrap is not a difference.
 final _whitespace = RegExp(r'\s+');
@@ -129,6 +151,35 @@ void main() {
       // No fragment of it either, so a future half-edit cannot leave the
       // notice standing here in pieces.
       expect(result.stdout, isNot(contains('TMDB and the TMDB APIs')));
+    });
+  });
+
+  group('the published files carry it too (T-0400)', () {
+    for (final name in const [
+      'NOTICE',
+      'README.md',
+      'README.ru.md',
+      'README.ja.md',
+    ]) {
+      test('$name states it whole', () {
+        expect(_flat(_readRepoFile(name)), contains(_required));
+      });
+    }
+
+    test('NOTICE names the carved-out file by its repository path', () {
+      expect(_readRepoFile('NOTICE'), contains(_asset));
+    });
+
+    test('NOTICE points at the licence it is carving out of', () {
+      expect(_readRepoFile('NOTICE'), contains('LICENSE'));
+    });
+
+    // T-0400's binding decision: the carve-out went to NOTICE precisely so
+    // LICENSE keeps matching MIT, which is what GitHub's sidebar detects.
+    // Appending the carve-out here instead is the one edit that silently
+    // undoes it, and it would name TMDB.
+    test('LICENSE stays bare MIT and says nothing of TMDB', () {
+      expect(_readRepoFile('LICENSE'), isNot(contains('TMDB')));
     });
   });
 }

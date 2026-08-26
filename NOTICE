@@ -1,0 +1,21 @@
+shelfscan
+Copyright (c) 2026 shinKatana0
+
+This project is distributed under the MIT License; the full terms are in
+LICENSE. Those terms cover the whole of this distribution except as stated
+below.
+
+
+TMDB mark
+---------
+
+The file app/assets/tmdb/blue_long_1.svg is a registered mark of The Movie
+Database (TMDB). It was obtained from TMDB's published attribution page and
+is distributed here unaltered, for attribution.
+
+That file is not covered by the MIT grant in LICENSE. This project holds no
+rights in the mark and grants none over it -- in particular, no right to
+modify, sublicense or sell it. Rights in it are held by TMDB.
+
+This application uses TMDB and the TMDB APIs but is not endorsed, certified,
+or otherwise approved by TMDB.

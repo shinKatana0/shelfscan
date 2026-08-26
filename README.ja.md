@@ -1,4 +1,4 @@
-<!-- Translated from c3d52f7 (2026-08-26). The rule, and how to check
+<!-- Translated from 4836b86 (2026-08-26). The rule, and how to check
      whether this is still true: README.md, "Translations".
      One thing this file does not carry: the "Translations" section's own rule
      text, which 2648d3e refined after the summary below it was written. The
@@ -1100,3 +1100,12 @@ or otherwise approved by TMDB.
 TMDB のトークンがあるときにだけ行われる。
 
 <img src="app/assets/tmdb/blue_long_1.svg" alt="TMDB" width="180">
+
+## ライセンス
+
+shelfscan は MIT ライセンスで配布している: [`LICENSE`](LICENSE)。
+
+ただし一つのファイルはこの許諾の対象外である。`app/assets/tmdb/blue_long_1.svg`
+は TMDB の商標であり、帰属表示のために無改変で同梱している。本プロジェクトは
+これについていかなる権利も許諾しない。改変も、サブライセンスも、販売もできない。
+この除外は [`NOTICE`](NOTICE) に記している。
