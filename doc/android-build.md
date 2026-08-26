@@ -644,7 +644,77 @@ reader who meets the warning at that line does not go looking.
 **When Flutter fixes it, this is a one-line change plus a build.** Flip the
 flag and see whether `dev.flutter.flutter-gradle-plugin` applies. If it does,
 the two remaining warnings go with it and the release-signing refusal is the
-thing to re-prove — see below.
+thing to re-prove — see below. Upstream's status and the test that now makes
+somebody do this are the two subsections that follow.
+
+### Upstream knows, it is open, and the only version named is Flutter 3.50
+
+Searched 2026-08-26 (T-0407): the `flutter/flutter` issue tracker, Flutter's
+AGP 9 and built-in-Kotlin migration guides, and AGP 9's own release notes.
+
+- **flutter/flutter#181557** — *"☔ Flutter Fully Supports AGP 9"*, **open**,
+  P1, last updated 2026-08-24. It is the parent, and its `newDsl` checklist
+  under *opted into breaking changes* is the part still unticked.
+- **flutter/flutter#180137** — *"☂ Migrate Flutter Android Gradle Plugin to
+  the AGP newDsl"*, **open**, P1, assigned. **4 of 154 subtasks done.** This
+  is the work that ends the cast, and that ratio is the honest estimate of how
+  near it is.
+- **flutter/flutter#189236** — *"Use Migrator Tool to Automatically Opt-in to
+  newDsl in 3.50"*, **open**, P2. The only release anybody upstream has named,
+  and it is conditional on the one above: *"We can set that to true as soon as
+  we are done with work on our end."*
+- **flutter/flutter#184838** — *"[AGP 9] Disable new AGP DSL by Default"*,
+  **closed**. `newDsl=false` is Flutter's shipped default deliberately, which
+  is why the migration guide prescribes it and why nothing here is
+  misconfigured.
+- **flutter/flutter#175688** — the pre-release AGP 9 audit that chose the
+  opt-out in the first place, **closed**.
+
+**No released Flutter fixes it.** 3.47 is the current stable and is what this
+tree runs, so there is no upgrade available that would change the answer.
+
+**The symptom itself is not filed anywhere.** A tracker search for
+`AbstractAppExtension` across `flutter/flutter` returns two unrelated issues
+and nothing about this cast, so somebody who meets the error text and searches
+for it will find no explanation — only the cause, under #180137, which never
+quotes the message. That is why the error is quoted in full above.
+
+### The retry fires by itself now
+
+`app/test/android_toolchain_pin_test.dart` asserts the property that is
+actually load-bearing. Not *the flag is false*, which is true and useless, but
+**the flag is false AND the toolchain is still the one under which false was
+the right answer.** It goes red when the running Flutter leaves 3.47, or when
+AGP leaves major 9, and its failure message carries the recipe rather than a
+diagnosis: the flag, the file, the one command, and this section.
+
+Which versions are pinned, and why the others are not:
+
+- **Flutter, major and minor.** The cast is Flutter-side, so a Flutter release
+  is the only event that can have fixed it. Hotfixes are excluded on purpose:
+  upstream's own target is 3.50, and newDsl support will not arrive in a
+  3.47.x.
+- **AGP, major only.** Not because a point release could fix a Flutter-side
+  cast — it cannot — but because AGP 10 removes the flag, and then the
+  line in `gradle.properties` stops being a choice. Pinning AGP's full
+  version would go red on 9.1 → 9.2, which is red for the wrong reason,
+  and a test that does that gets deleted.
+- **Kotlin, not pinned at all.** Its version belongs to `builtInKotlin`, which
+  is settled, and T-0399 measured the two flags independent.
+
+The running framework version is read from
+`bin/cache/flutter.version.json` under the SDK root that `flutter test`
+exports, with a walk up from the test binary as the fallback. If neither
+works the file fails rather than passes: a check that cannot see its subject
+has proved nothing (`doc/conventions.md` §4a), which is the same reason
+`tool/check-bundle-assets.dart` exits 2 on finding no bundle.
+
+**`flutter build apk --config-only` does not answer this question**, measured
+2026-08-26. It generates the build files — it is what writes `gradlew` into a
+fresh checkout, which is not committed — and runs no Gradle configuration at
+all: exit 0, no output, no `.gradle` directory. Since the plugin fails while
+being *applied*, only a real configuration reaches it. The retry command is
+`cd app && flutter build apk --debug`.
 
 ### The warning ledger, and one zero that means nothing
 
