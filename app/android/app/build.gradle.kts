@@ -41,6 +41,10 @@ val signingProblem: String? =
         else -> null
     }
 
+// The `android { }` accessor below is deprecated and AGP 10 removes it. It
+// stays because the replacement needs android.newDsl=true, which the Flutter
+// Gradle Plugin cannot be applied under -- gradle.properties says what fails
+// (T-0399).
 android {
     namespace = "io.github.shinkatana0.shelfscan"
     // Not flutter.compileSdkVersion: flutter_plugin_android_lifecycle, which
