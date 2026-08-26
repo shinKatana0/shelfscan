@@ -110,6 +110,13 @@ package built before it already declares.
   saying `CURRENT` must name what its English source says now, and marking it
   `STALE` — one word, in a language the person marking need not read — is the
   other way to satisfy it.
+- **`CONTRIBUTING.md` carries the release procedure**, which nothing in the
+  repository had. It gives decision 0014's order — both `pubspec.yaml` files,
+  then `CHANGELOG.md`, then the tag — with the command that checks each step
+  and what each answer means, including why a missing changelog heading is a
+  note at exit 0 rather than a refusal: the git state of a tree about to be
+  released and the git state of an ordinary day are the same one. Deciding the
+  version and cutting the tag stay a person's acts.
 
 ### Changed
 - **A translation marker names the content of the English file — its git
@@ -139,6 +146,15 @@ package built before it already declares.
   versions will fail on it.
 
 ### Fixed
+- **`SECURITY.md`'s account of what leaves your machine named one
+  catalogue.** Its "Your photographs" list is what a security-minded reader
+  opens on purpose, and since films got their own catalogue the resolve stage
+  also sends title strings to TMDB — so the list was a destination short, on
+  the page whose premise is that it is complete. It now names both catalogues
+  and which rows go to each, keeps the distinction that is the reassuring half
+  — neither catalogue is ever sent an image — and says which credential goes
+  where. Its "without those credentials the stage is skipped" is now which
+  rows go unmatched. The wording is the one the READMEs already use.
 - **README's "Nothing is telemetered" enumerated what leaves the machine and
   named one catalogue.** It is a completeness claim — *the only things ever
   sent anywhere* — and since films got their own catalogue the resolve stage
