@@ -7,9 +7,12 @@
 /// read correctly on its own. T-0162 widened the `scan-installs` contract in
 /// the guides and left the banner alone -- correctly, since changing one
 /// without the other publishes two statements that disagree -- and the pair
-/// then sat inconsistent until somebody noticed. `79fb89d` fixed it by running
-/// the command over a synthetic folder and comparing the output to all three
-/// guides by hand. That check is what this file automates.
+/// then sat inconsistent until somebody noticed. The fix was a hand run of the
+/// command over a synthetic folder, compared against all three guides by eye;
+/// that check is what this file automates. It cited the commit that made it
+/// until T-0406, which the identity rewrite of 2026-08-25 turned into a name no
+/// clone can resolve -- the same defect the translation markers had, and the
+/// reason nothing published here names a commit.
 ///
 /// ## How a block is known to be program output
 ///

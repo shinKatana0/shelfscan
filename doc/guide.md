@@ -3,9 +3,9 @@
 <!-- TRANSLATIONS — read this before you edit the text below.
      guide.ru.md and guide.ja.md make the same claims as this file. Change
      anything here beyond a typo and both are stale. In the same commit either
-     update them, or set the "Translated from" line at the top of each to
-     STALE. The rule in full, and why there is no CI check for it, is one
-     place only: ../README.md, "Translations". -->
+     update them and bump the blob name on their TRANSLATED-FROM line, or set
+     that line's last word to STALE. The rule in full, and what the marker
+     names, is one place only: ../README.md, "Translations". -->
 
 <!-- TRANSCRIPTS. Some blocks below are program output and are pinned, byte
      for byte, against a real run of the command: they carry a marker of the

@@ -1,10 +1,12 @@
-<!-- Translated from c524e81 (2026-08-26). The rule, and how to check
-     whether this is still true: README.md, "Translations".
+<!-- TRANSLATED-FROM: README.md blob 10e94ef0f7b932c691dd87860c4e2140a4676da6 CURRENT
+     Translated 2026-08-26. What that line names, and how to check it:
+     README.md, "Translations". It names content rather than a commit, so it
+     survives a merge and a history rewrite; the commit hash it replaced
+     survived neither (T-0406).
      One thing this file does not carry: the "Translations" section's own rule
-     text, which 2648d3e refined after the summary below it was written. The
-     summary still says a replaced command goes into all four translated files
-     in one commit; English now says wherever they carry it, and two commits
-     when you translate rather than only mark. -->
+     text, which is English-only and which T-0300 refined after the summary
+     below it was written. That summary still says a replaced command goes
+     into all four translated files; English says wherever they carry it. -->
 
 [English](README.md) · **Русский** · [日本語](README.ja.md)
 
@@ -1109,10 +1111,11 @@ app/                       # Flutter shell: Windows (built and run), Android (ne
 Правило, по которому эти переводы держатся в строю, живёт в одном месте:
 [`README.md`, «Translations»](README.md#translations). Коротко: английский —
 источник; перевод следует за ним и никогда не идёт впереди; каждый переведённый
-файл записывает в самом начале коммит, на котором стоял его английский оригинал
-(в переводах README — HTML-комментарием, в двух руководствах в `doc/` — видимой
-строкой), и правка английского обязывает тем же коммитом либо обновить перевод,
-либо пометить его `STALE`. Блоки кода, вывод программы и инженерные записи не
+файл записывает в самом начале строку `TRANSLATED-FROM` с именем содержимого
+(git blob) своего английского оригинала — не с коммитом (в переводах README —
+HTML-комментарием, в двух руководствах в `doc/` — видимой строкой), и правка
+английского обязывает тем же коммитом либо обновить перевод, либо пометить его
+`STALE`. Блоки кода, вывод программы и инженерные записи не
 переводятся.
 
 Из этого следует оговорка к пометке: если правка английского
