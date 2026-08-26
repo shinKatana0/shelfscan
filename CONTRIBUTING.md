@@ -170,11 +170,11 @@ The changelog step, and this is the answer to read carefully:
 **Run it before you cut the tag, and understand why it cannot be run after.**
 The comparison is against everything already published, and once the tag
 exists this tree *is* something already published. Measured on a synthetic
-repository: a tree that answers `RELEASE ORDER: OK` one second before
-`git tag` answers `REFUSED — build number 7 was already published by v1.0.0`
-one second after, with nothing changed in between. That is the check working
-correctly, and it is why the trigger is a person following this page rather
-than a hook. It is also why the tag is last.
+repository declaring `1.0.0+7`: it passes at exit 0 one second before
+`git tag`, and one second after — with nothing else changed — answers
+`REFUSED — build number 7 was already published by v1.0.0`. That is the check
+working correctly, and it is why the trigger is a person following this page
+rather than a hook. It is also why the tag is last.
 
 **4 — the artefacts.** Build what you are shipping (*Building the app*,
 above), then:
