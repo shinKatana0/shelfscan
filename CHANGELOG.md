@@ -106,8 +106,17 @@ package built before it already declares.
   not extend to it. `LICENSE` itself is unchanged, so it still matches MIT and
   the sidebar still shows it. None of the three READMEs had a licence heading
   before; each now links both files.
+- **A test holds the four translation markers to their own claim.** A marker
+  saying `CURRENT` must name what its English source says now, and marking it
+  `STALE` — one word, in a language the person marking need not read — is the
+  other way to satisfy it.
 
 ### Changed
+- **A translation marker names the content of the English file — its git
+  blob — rather than a commit**, so the check it documents survives a merge
+  and a history rewrite. A commit hash survived neither: after this project's
+  identity rewrite the documented command answered `fatal: bad revision` from
+  a clone. The two guides stay marked stale; only the mechanism moved.
 - **The CSV's id column is `external_id`, and it names which catalogue
   answered** — `igdb:1234`, `tmdb:1234` — where it was `igdb_id` carrying a
   bare number. A row is identified by the catalogue that answered it
@@ -130,6 +139,19 @@ package built before it already declares.
   versions will fail on it.
 
 ### Fixed
+- **README's "Nothing is telemetered" enumerated what leaves the machine and
+  named one catalogue.** It is a completeness claim — *the only things ever
+  sent anywhere* — and since films got their own catalogue the resolve stage
+  also sends title strings to TMDB, so the list was a destination short. It
+  now names both catalogues, keeps the distinction that is the reassuring
+  half — neither catalogue is ever sent an image — and says which credential
+  goes where. The section it delegates the full answer to, "Where your photos
+  go", had an IGDB bullet and no TMDB one, so that was fixed too rather than
+  left as an incomplete page a complete claim points at; its "the stage is
+  skipped without those credentials" is now which rows go unmatched, the
+  stage being keyed on catalogues rather than on one credential. "What it
+  costs" gains a film and anime row, and the Path A/B comparison says what
+  Path B actually asks for now. In all three READMEs.
 - **README's "Path B — bring your own keys" named two credentials and the
   tool reads three.** Its "Where the keys go" table gave 11 of the 12
   environment variables the CLI reads, and the missing one was the film and
@@ -152,7 +174,10 @@ package built before it already declares.
   that number has been used before — it is as green on a second package built
   at `+2` as on the first. `tool/check-release-order.dart` is what answers
   that: run before cutting a tag, it reads the version out of every tag's tree
-  and refuses when this tree's build number is not ahead of all of them.
+  and refuses when this tree's build number is not ahead of all of them. It
+  answers for the changelog step as well: a tag whose own tree names no
+  heading for the version that tree declared is a release that went out
+  describing itself as unreleased.
 - **An asset declared by a `../` path never reached a built app**, on Windows
   or Android, and no test could have caught it: `flutter test` builds its
   bundle beside the files such a key escapes to, so the broken path resolves
