@@ -13,8 +13,9 @@ maintainer.
 Expect a first response within a week. This is a one-maintainer hobby
 project: there is no on-call rotation and no bounty.
 
-Only the latest commit on `main` is supported. There is no released version
-yet, so there are no back-ports.
+Only the latest commit on `main` is supported. `v0.1.0` is tagged and the
+tree has moved on from it, but a tag is not separately supported: a fix goes
+out on `main`, never backwards into a release already made.
 
 ## Credentials
 
@@ -46,10 +47,18 @@ cropped, sampled, cached or retained by this project.
   Ollama server you point it at. **Keyless is not the same as offline** —
   that address is user-settable, and aimed at a machine on your LAN it
   ships the photographs there over plain HTTP.
-- **A cloud backend is never a default and always an explicit choice.**
-  Anthropic, or any OpenAI-compatible endpoint you name. The app shows a
-  warning at the point of selection, before the first such run, because
-  free tiers are commonly funded by training on what is submitted to them.
+- **A cloud backend: Anthropic, or any OpenAI-compatible endpoint you
+  name.** An endpoint you name is never a default anywhere. Anthropic is not
+  the default on the desktop, where a local model can run — but it **is** the
+  Android default, because the phone runs no model of its own and Local there
+  means a server on your own network that cannot work until you have typed
+  its address. **No photo is uploaded before you have supplied your own
+  key:** a cloud backend without one is refused at the tap, naming the
+  credential it wants, and the run makes no call. The app warns where the
+  backend is chosen, and the two warnings differ on purpose — Anthropic's
+  says every photo is uploaded to Anthropic in full; a named endpoint's adds
+  that free tiers are commonly funded by training on what is submitted to
+  them, which is not a claim about a paid Anthropic account.
 - **`--fallback` doubles it.** A second reader re-reads *every* photo, so a
   cloud second reader uploads every photo even on a run whose primary was
   local. It can only be turned on from the command line; no environment
