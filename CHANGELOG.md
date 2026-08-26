@@ -98,6 +98,14 @@ package built before it already declares.
 - **The app says which build it is.** The licence page carries the version,
   so two hand-installed packages can be told apart from inside the one you
   are holding, which until now they could not be — from inside or out.
+- **A `NOTICE` file, and a licence section in all three READMEs.** The MIT
+  terms in `LICENSE` grant the right to modify, sublicense and sell "the
+  Software", and the Software includes TMDB's mark — which this project
+  cannot license. `NOTICE` names `app/assets/tmdb/blue_long_1.svg`, records
+  that it ships unaltered for attribution, and states that the MIT grant does
+  not extend to it. `LICENSE` itself is unchanged, so it still matches MIT and
+  the sidebar still shows it. None of the three READMEs had a licence heading
+  before; each now links both files.
 
 ### Changed
 - **The CSV's id column is `external_id`, and it names which catalogue
@@ -122,6 +130,15 @@ package built before it already declares.
   versions will fail on it.
 
 ### Fixed
+- **README's "Path B — bring your own keys" named two credentials and the
+  tool reads three.** Its "Where the keys go" table gave 11 of the 12
+  environment variables the CLI reads, and the missing one was the film and
+  anime credential that the section one heading away already describes as a
+  CLI environment variable. The section now names three and the table has a
+  row for `SHELFSCAN_TMDB_TOKEN`. The IGDB row said the resolve stage is
+  skipped without those two, which stopped being true when the stage became
+  keyed on catalogues rather than on one credential; both rows now say which
+  rows go unmatched instead. In all three READMEs.
 - **Every Android package this project had ever built declared the same
   version**, so none of them was an upgrade of any other as far as Android is
   concerned: the system decides what is an update by that integer alone, and
@@ -130,7 +147,12 @@ package built before it already declares.
   behind the version in `pubspec.yaml`, Flutter substitutes `1` and warns
   nobody, so the apks came out carrying `versionCode='1'` whatever was in
   them. The version now carries one, and a test fails if it ever stops —
-  the absence is silent and nothing else in the tree would have said so.
+  the absence is silent and nothing else in the tree would have said so. A
+  test can only see the working tree, though, so it says nothing about whether
+  that number has been used before — it is as green on a second package built
+  at `+2` as on the first. `tool/check-release-order.dart` is what answers
+  that: run before cutting a tag, it reads the version out of every tag's tree
+  and refuses when this tree's build number is not ahead of all of them.
 - **An asset declared by a `../` path never reached a built app**, on Windows
   or Android, and no test could have caught it: `flutter test` builds its
   bundle beside the files such a key escapes to, so the broken path resolves
