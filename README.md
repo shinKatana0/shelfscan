@@ -215,6 +215,7 @@ disk instead of a photo — is [Setup](#setup) and [Commands](#commands).
 | Photos, cloud model | **your own key, your own bill.** Measured with `gpt-5.5` at the vendor's listed rates on 2026-08-16: a three-photo 4000×3000 shelf scan costs about **$0.45** ($0.38–$0.46; a two-photo 1200×900 scan is $0.20–$0.27). |
 | Installed games, GOG Galaxy library | **$0.** No model and no key; Galaxy's library is read from a file on your own machine, and nothing is fetched from any store. |
 | IGDB ids (and with them `.xcoll`) | **$0**, but it needs a free Twitch application you register yourself ([Path B](#path-b--bring-your-own-keys)). |
+| Film and anime ids (and with them their `.xcoll` rows) | **$0**, but it needs a free TMDB account you register yourself ([Path B](#path-b--bring-your-own-keys)). |
 
 **Bring your own keys.** This project ships no credentials and runs no proxy;
 there is no shared key hidden in the binary and nothing to sign up for to use
@@ -224,7 +225,11 @@ a file inside the repository.
 **Nothing is telemetered.** No analytics, no crash reporting, no server of this
 project's own, no cache. The only things ever sent anywhere are the photographs
 you scan — to the vision model *you* configured, and to nothing else — and the
-title strings the resolve stage sends to IGDB, which is never an image. Exactly
+title strings the resolve stage sends to a catalogue: to IGDB for game rows, to
+TMDB for film and anime rows. Neither catalogue is ever sent an image. What else
+leaves is the credential each one takes — your Twitch client id and secret to
+`id.twitch.tv` for an access token, your TMDB token to TMDB with every search —
+and a catalogue you hold no credential for is not contacted at all. Exactly
 what goes where is [Where your photos go](#where-your-photos-go), and it is
 worth reading before you pick a cloud endpoint.
 
@@ -367,10 +372,11 @@ yourself. Which one you want:
 | | Path A — keyless | Path B — your own keys |
 |---|---|---|
 | Vision | local Ollama, on your machine | local Ollama, or a cloud model with your key |
-| IGDB ids | no | yes |
+| IGDB ids (game rows) | no | yes |
+| TMDB ids (film and anime rows) | no | yes |
 | CSV export | yes | yes |
-| `.xcoll` export | no (needs IGDB ids) | yes |
-| Registration | none | Twitch application (free) |
+| `.xcoll` export | no (needs catalogue ids) | yes |
+| Registration | none | a Twitch application for IGDB, a TMDB account for films and anime — both free, and each one on its own is enough for its own rows |
 | Photos leave the machine | no further than your own Ollama server | only if you pick a cloud model — or a cloud `--fallback`, which uploads all of them |
 
 ### Path A — keyless
@@ -983,10 +989,16 @@ directory, never next to your original.
   `SHELFSCAN_OLLAMA_FALLBACK_MODEL` selects a second *local* model and
   nothing else. The run says which one
   it got, and how many extra calls it is worth, before it starts.
-- **IGDB (the resolve stage):** receives the title strings the vision
-  model read, never an image, and your own Twitch client id and secret go
-  to `id.twitch.tv` for an access token. Without those credentials the
-  stage is skipped and neither service is contacted at all.
+- **IGDB (the resolve stage, game rows):** receives the title strings the
+  vision model read, never an image, and your own Twitch client id and
+  secret go to `id.twitch.tv` for an access token. Without those
+  credentials game rows go unmatched and neither service is contacted at
+  all.
+- **TMDB (the resolve stage, film and anime rows):** receives the title
+  strings those rows were read as — and the release year, when the file
+  name carried one — never an image, and your own API Read Access Token
+  goes to TMDB with every search. Without it those rows go unmatched and
+  TMDB is not contacted at all.
 
 ### What `--fallback` actually bought
 
