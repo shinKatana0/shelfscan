@@ -459,8 +459,8 @@ vision model read, with an empty `external_id` column.
 
 ### Path B — bring your own keys
 
-Both credentials are optional and independent — take either, both, or
-neither. Nothing here is required to run a scan.
+Every credential here is optional and independent — take any of them, all
+of them, or none. Nothing here is required to run a scan.
 
 **IGDB (game ids, and with them `.xcoll`).** IGDB is authenticated
 through Twitch, so the credentials come from a Twitch application:
@@ -472,6 +472,15 @@ through Twitch, so the credentials come from a Twitch application:
    client-credentials flow), so any valid value such as
    `http://localhost` is fine.
 3. Take the client id and generate a client secret.
+
+**TMDB (film and anime ids).** Film and anime rows are looked up in a film
+catalogue rather than in IGDB, and that takes a credential of its own: the
+API Read Access Token from https://www.themoviedb.org/settings/api — not
+the v3 *API Key*, which TMDB accepts only as a query parameter and would
+therefore sit in every URL an error or a log quotes. Without it those rows
+are keyless exactly as a game row is without the IGDB pair, and games are
+unaffected either way. How far that path has actually been run is in
+[Films are read as films](#films-are-read-as-films-and-how-far-that-goes).
 
 **Cloud vision (optional, for harder photos).** Either your own Anthropic
 API key from https://console.anthropic.com, or your own key for any
@@ -485,7 +494,8 @@ is read:
 
 | Variable | Used for |
 |---|---|
-| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | the resolve stage (skipped without them) |
+| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | the resolve stage for game rows (unmatched without them) |
+| `SHELFSCAN_TMDB_TOKEN` | the resolve stage for film and anime rows (unmatched without it) |
 | `ANTHROPIC_API_KEY` | `--provider anthropic` or `--fallback anthropic` |
 | `SHELFSCAN_ANTHROPIC_MODEL` | optional; blank uses the built-in default. Naming a model also stops shelfscan stating a temperature, since the newer Claude families reject one — so record which model any numbers came from |
 | `SHELFSCAN_OPENAI_BASE_URL`, `SHELFSCAN_OPENAI_MODEL`, `SHELFSCAN_OPENAI_API_KEY` | `--provider openai` or `--fallback openai`; all three are required, nothing is defaulted |

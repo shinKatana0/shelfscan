@@ -1,4 +1,4 @@
-<!-- Translated from cf0fd40 (2026-08-25). The rule, and how to check
+<!-- Translated from c3d52f7 (2026-08-26). The rule, and how to check
      whether this is still true: README.md, "Translations".
      One thing this file does not carry: the "Translations" section's own rule
      text, which 2648d3e refined after the summary below it was written. The
@@ -483,8 +483,9 @@ vision-моделью, с пустой колонкой `external_id`.
 
 ### Путь B — со своими ключами
 
-Оба доступа опциональны и независимы — берите любой, оба или ни одного. Ничто
-здесь не обязательно для того, чтобы запустить сканирование.
+Все доступы здесь опциональны и независимы — берите любой из них, все сразу
+или ни одного. Ничто здесь не обязательно для того, чтобы запустить
+сканирование.
 
 **IGDB (идентификаторы игр, а с ними `.xcoll`).** IGDB аутентифицируется через
 Twitch, поэтому учётные данные берутся из приложения Twitch:
@@ -495,6 +496,16 @@ Twitch, поэтому учётные данные берутся из прил�
 2. Redirect URL этим проектом не используется (он ходит по client-credentials),
    так что подойдёт любое корректное значение, например `http://localhost`.
 3. Возьмите client id и сгенерируйте client secret.
+
+**TMDB (идентификаторы фильмов и аниме).** Строки-фильмы и строки-аниме
+сверяются с каталогом фильмов, а не с IGDB, и для этого нужен отдельный
+доступ: API Read Access Token с https://www.themoviedb.org/settings/api — не
+«API Key» третьей версии, который TMDB принимает только как параметр
+запроса и который поэтому оказывался бы в каждом URL, попадающем в
+ошибку или в лог. Без него такие строки остаются без ключа ровно так
+же, как строка-игра без пары IGDB, и на игры это никак не влияет. Докуда
+этот путь действительно доведён — в разделе
+[Фильмы читаются как фильмы](#films-are-read-as-films-and-how-far-that-goes).
 
 **Облачное зрение (опционально, для трудных фотографий).** Либо ваш собственный
 ключ Anthropic с https://console.anthropic.com, либо ваш ключ к любой точке
@@ -508,7 +519,8 @@ OpenRouter, Mistral, GitHub Models, Cerebras, совместимая точка 
 
 | Переменная | Для чего |
 |---|---|
-| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | стадия сопоставления (без них пропускается) |
+| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | стадия сопоставления для строк-игр (без них они остаются несопоставленными) |
+| `SHELFSCAN_TMDB_TOKEN` | стадия сопоставления для строк-фильмов и строк-аниме (без него они остаются несопоставленными) |
 | `ANTHROPIC_API_KEY` | `--provider anthropic` или `--fallback anthropic` |
 | `SHELFSCAN_ANTHROPIC_MODEL` | опционально; пустое значение — встроенная модель по умолчанию. Указание модели также заставляет shelfscan не задавать температуру, поскольку новые семейства Claude её отвергают, — так что записывайте, из какой модели взяты любые ваши числа |
 | `SHELFSCAN_OPENAI_BASE_URL`, `SHELFSCAN_OPENAI_MODEL`, `SHELFSCAN_OPENAI_API_KEY` | `--provider openai` или `--fallback openai`; нужны все три, ничего не подставляется по умолчанию |

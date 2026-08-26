@@ -1,4 +1,4 @@
-<!-- Translated from cf0fd40 (2026-08-25). The rule, and how to check
+<!-- Translated from c3d52f7 (2026-08-26). The rule, and how to check
      whether this is still true: README.md, "Translations".
      One thing this file does not carry: the "Translations" section's own rule
      text, which 2648d3e refined after the summary below it was written. The
@@ -462,8 +462,8 @@ CSV にはその要件がない。ビジョンモデルが読んだタイトル�
 
 ### 経路 B — 自分の鍵を使う
 
-二つの資格情報はどちらも任意で、互いに独立している。片方でも、両方でも、どちらも
-なしでもよい。スキャンを実行するのに必須のものはここには何もない。
+ここにある資格情報はどれも任意で、互いに独立している。どれか一つでも、いくつでも、
+一つもなしでもよい。スキャンを実行するのに必須のものはここには何もない。
 
 **IGDB（ゲームの ID、およびそれに伴う `.xcoll`）。** IGDB の認証は Twitch 経由
 なので、資格情報は Twitch のアプリケーションから得る:
@@ -473,6 +473,16 @@ CSV にはその要件がない。ビジョンモデルが読んだタイトル�
 2. リダイレクト URL はこのプロジェクトでは使わない（client credentials フローを
    使う）ので、`http://localhost` のような妥当な値なら何でもよい。
 3. client id を控え、client secret を生成する。
+
+**TMDB（映画とアニメの ID）。** 映画とアニメの行は IGDB ではなく映画の
+カタログで照会するので、そのための資格情報が別に要る。
+https://www.themoviedb.org/settings/api の API Read Access Token であって、
+v3 の「API Key」ではない——後者は TMDB がクエリパラメータとしてしか
+受け付けないため、エラーやログが引用する URL のすべてに載ってしまう。
+これが無ければ、それらの行は IGDB の対が無いときのゲームの行とまったく
+同じく鍵なしになり、ゲームの行はどちらにしても影響を受けない。この経路が
+どこまで実際に動かされたかは
+[映画は映画として読まれる](#films-are-read-as-films-and-how-far-that-goes)にある。
 
 **クラウドの画像認識（任意、難しい写真向け）。**
 https://console.anthropic.com で取得した自分の Anthropic API キーか、OpenAI の
@@ -485,7 +495,8 @@ GitHub Models、Cerebras、Gemini の互換エンドポイント）向けの自�
 
 | 変数 | 用途 |
 |---|---|
-| `IGDB_CLIENT_ID`、`IGDB_CLIENT_SECRET` | 解決段階（なければその段階を飛ばす） |
+| `IGDB_CLIENT_ID`、`IGDB_CLIENT_SECRET` | ゲームの行の解決段階（なければ照合されないまま残る） |
+| `SHELFSCAN_TMDB_TOKEN` | 映画とアニメの行の解決段階（なければ照合されないまま残る） |
 | `ANTHROPIC_API_KEY` | `--provider anthropic` または `--fallback anthropic` |
 | `SHELFSCAN_ANTHROPIC_MODEL` | 任意。空なら組み込みの既定を使う。モデルを指定すると shelfscan は temperature を指定しなくなる（新しい Claude 系はそれを拒むため）ので、数値を取ったときはどのモデルだったかを記録すること |
 | `SHELFSCAN_OPENAI_BASE_URL`、`SHELFSCAN_OPENAI_MODEL`、`SHELFSCAN_OPENAI_API_KEY` | `--provider openai` または `--fallback openai`。三つとも必須で、既定値は一つもない |
