@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob 578d984a8d6d5c03fce06c6c538560431e3e9666 CURRENT
+<!-- TRANSLATED-FROM: README.md blob 16e61a4817c244f813c65dedd505773bf1597204 CURRENT
      Translated 2026-08-27. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
@@ -549,14 +549,14 @@ export IGDB_CLIENT_SECRET=...
 どちらのターゲットもこのリポジトリからビルドしている。ただし
 `flutter doctor` が緑でもどちらも通らない。それぞれに足りない前提は、後から
 調べ直さずに済むよう書き出してある。**Windows** は
-[`CONTRIBUTING.md`](CONTRIBUTING.md#building-the-app)（英語）に、**Android** は
+[`doc/build.md`](doc/build.md)（英語）に、**Android** は
 [`doc/android-build.md`](doc/android-build.md)（英語）に、ツールチェーンと四つの
 つまずき — うち三つは足りない手順とは別のものを名指しし、一つはビルドを落とし
 さえしない — がある。どちらにも Android Studio は要らない。
 
 プラットフォーム用フォルダはリポジトリに入っているので、クローンした時点で
 すでにある。それらを編集する場合に何を意味するかは
-[`CONTRIBUTING.md`](CONTRIBUTING.md#building-the-app)（英語）にある。
+[`doc/build.md`](doc/build.md)（英語）にある。
 セットアップはこれだけである:
 
 ```

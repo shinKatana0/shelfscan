@@ -172,8 +172,8 @@ repository declaring `1.0.0+7`: it passes at exit 0 one second before
 working correctly, and it is why the trigger is a person following this page
 rather than a hook. It is also why the tag is last.
 
-**4 — the artefacts.** Build what you are shipping (*Building the app*,
-above), then:
+**4 — the artefacts.** Build what you are shipping
+([`doc/build.md`](doc/build.md)), then:
 
 ```
 dart run tool/check-bundle-assets.dart ; echo "EXIT=$?"

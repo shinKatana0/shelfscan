@@ -545,15 +545,14 @@ keychain, never in a file inside the repository.
 Both targets have been built from this tree. Neither builds on a
 `flutter doctor` that prints green, and the prerequisites each one is missing
 are written down rather than left to be rediscovered: **Windows** in
-[`CONTRIBUTING.md`](CONTRIBUTING.md#building-the-app), **Android** in
+[`doc/build.md`](doc/build.md), **Android** in
 [`doc/android-build.md`](doc/android-build.md) — the toolchain, and four
 failures, three of which name something other than the missing step and one of
 which does not fail the build at all. Android Studio is not required for
 either.
 
 The platform folders are committed, so a clone already has them — what that
-means if you edit them is in
-[`CONTRIBUTING.md`](CONTRIBUTING.md#building-the-app). Setup is:
+means if you edit them is in [`doc/build.md`](doc/build.md). Setup is:
 
 ```
 cd app

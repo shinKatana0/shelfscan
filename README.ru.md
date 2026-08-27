@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob 578d984a8d6d5c03fce06c6c538560431e3e9666 CURRENT
+<!-- TRANSLATED-FROM: README.md blob 16e61a4817c244f813c65dedd505773bf1597204 CURRENT
      Translated 2026-08-27. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
@@ -575,7 +575,7 @@ export IGDB_CLIENT_SECRET=...
 Обе платформы собирали из этого дерева. Ни одна не собирается по
 зелёному `flutter doctor`, и то, чего каждой не хватает, записано — чтобы не
 выяснять это заново: **Windows** — в
-[`CONTRIBUTING.md`](CONTRIBUTING.md#building-the-app) (англ.), **Android** — в
+[`doc/build.md`](doc/build.md) (англ.), **Android** — в
 [`doc/android-build.md`](doc/android-build.md) (англ.): инструментарий и четыре
 сбоя, три из которых указывают куда угодно, только не на пропущенный шаг, а
 один вообще не роняет сборку. Android Studio не нужна ни для той, ни для
@@ -583,7 +583,7 @@ export IGDB_CLIENT_SECRET=...
 
 Папки платформ хранятся в репозитории, так что в клоне они уже есть; что это
 значит, если вы их правите, — в
-[`CONTRIBUTING.md`](CONTRIBUTING.md#building-the-app) (англ.). Вся установка —
+[`doc/build.md`](doc/build.md) (англ.). Вся установка —
 это:
 
 ```
