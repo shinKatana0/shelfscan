@@ -37,6 +37,12 @@ is the authority behind it.
   because the model id is not what to change.
 
 ### Changed
+- **The READMEs say where Android stands.** It builds from this tree and it
+  is not finished; it is not the priority at present, nothing about it is
+  promised, and it has not been abandoned. Every Android sentence in those
+  files describes what the code does rather than what has been observed on a
+  phone — one paragraph says so, once, rather than a hedge beside each of
+  them. Nothing the app does changed.
 - **The app says that media folders accumulate, before you have to guess it.**
   *Add media folder* has appended since the control existed, and the only
   thing that said so was the list of folders — which does not exist until you
