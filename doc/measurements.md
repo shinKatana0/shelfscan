@@ -1030,7 +1030,7 @@ the join costs **one** request where it answers, against one search plus up to
 four more on `shortenedQueries`' ladder; a row that does not join pays one
 request more than today and then resolves exactly as it does today.
 
-## The disk sources, run against real folders at last (orchestrator, 2026-08-16)
+## The disk sources, run against real folders at last (2026-08-16)
 
 Every figure above for the GoG paths was taken without a single real
 `goggame-*.info` to read: T-0157 cross-checked three files found
@@ -1363,7 +1363,7 @@ spine titles do not extend. It is evidence that a frame past the ceiling can
 fabricate rows that parse and look like reads, not a measurement of the rate on
 anything real. Filed as its own task rather than folded in here.
 
-## TMDB's `year` filters, and the first live film searches (orchestrator, 2026-08-23)
+## TMDB's `year` filters, and the first live film searches (2026-08-23)
 
 The first requests this project has ever made to TMDB. Eight searches settled
 two questions — what the `year` parameter does, and what a year left inside
