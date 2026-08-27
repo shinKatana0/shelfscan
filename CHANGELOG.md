@@ -55,6 +55,9 @@ is the authority behind it.
   because the model id is not what to change.
 
 ### Changed
+- **A 403 talks about the device you are on, not "this machine".** The
+  sentence reaches a phone as readily as a desktop, and the case it describes
+  is one that happens on a phone.
 - **A refused vision call carries a sanitised summary of what answered it**, on
   `VisionApiException.diagnostics`: the endpoint's own `error.type` and
   `error.code`, the response `content-type`, a classification of the body as
