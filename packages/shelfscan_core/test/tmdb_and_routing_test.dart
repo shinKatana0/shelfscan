@@ -16,8 +16,8 @@
 /// the measurement justifies: the retry without the year, and what a hit
 /// arriving through it is allowed to be worth.
 ///
-/// **Every title here is invented** (`doc/conventions.md` §3b), including the
-/// TMDB ids, which are small integers chosen to be obviously synthetic.
+/// **Every title here is invented**, including the TMDB ids, which are small
+/// integers chosen to be obviously synthetic.
 library;
 
 import 'dart:convert';

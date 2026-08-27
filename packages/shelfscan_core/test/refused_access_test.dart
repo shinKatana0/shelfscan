@@ -19,8 +19,8 @@
 /// [providerDetail] would have quoted, so the absence is this function's
 /// refusal rather than an empty body.
 ///
-/// Every fixture here is invented (`doc/conventions.md` §3b), including
-/// anything shaped like a credential.
+/// Every fixture here is invented, including anything shaped like a
+/// credential.
 library;
 
 import 'dart:convert';
@@ -38,7 +38,7 @@ const _model = 'vision-mini-typo';
 const _credential = 'sk-invented-9WQ2m4Kx7Ttz0Ab1Cd3Ef5Gh7Ij9Kl';
 
 /// Control characters by code point rather than by escape: a backslash in this
-/// file is one shell away from being eaten (`doc/conventions.md` §4a).
+/// file is one shell away from being eaten.
 final _lf = String.fromCharCode(0x0a);
 final _nul = String.fromCharCode(0x00);
 final _bell = String.fromCharCode(0x07);

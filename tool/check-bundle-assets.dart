@@ -18,7 +18,7 @@
 // exit: 0 every key present | 1 a key has no file | 2 nothing was checked
 //
 // Exit 2 matters as much as exit 1: a run that found no bundle has proved
-// nothing, and must not read as green (doc/conventions.md 4a).
+// nothing, and must not read as green.
 //
 // A missing key has two causes and only one of them is a defect (T-0389). An
 // artefact built before the declaration it is judged against carries the asset

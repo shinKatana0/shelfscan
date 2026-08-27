@@ -130,8 +130,8 @@ that same multiple two lines below it. A ratio is only a removal while its
 absolute is gone. Every one of the twelve now carries a ratio, a difference or
 a formula and no total. **The clause is true of this tree and was false of the
 tree it was written into**, which is the whole of why
-[`doc/conventions.md`](conventions.md) §6a says a claim of cleanliness written
-into the tree must be re-checked against it.
+a claim of cleanliness written into a tree must be re-checked against that
+tree rather than believed.
 
 **The call licence is still too wide, one qualification further (T-0267).** "A
 call that is not one per row" is a row count divided by whatever the call *is*

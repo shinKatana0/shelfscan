@@ -113,9 +113,9 @@ String? _versionIn(String flutterRoot) {
 
 void main() {
   group('the patterns this file judges by', () {
-    // Controls in both directions (doc/conventions.md 4a): a pattern that
-    // cannot fail proves nothing about what it passed, and each of these
-    // would otherwise pass on the prose beside the thing it reads.
+    // Controls in both directions: a pattern that cannot fail proves nothing
+    // about what it passed, and each of these would otherwise pass on the
+    // prose beside the thing it reads.
     test('the flag pattern reads a setting, not the comment above it', () {
       const properties = '# newDsl stays false because with it true the\n'
           '# Flutter Gradle Plugin fails to apply.\n'

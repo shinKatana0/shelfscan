@@ -61,9 +61,9 @@ void main() {
 
   group('the pattern this file judges versions by', () {
     // Controls on the matcher itself, kept because a pattern that cannot
-    // fail is a pattern that proves nothing about what it passed
-    // (doc/conventions.md 4a). The first two are the whole point of the
-    // file: a version with no build number must NOT match.
+    // fail is a pattern that proves nothing about what it passed. The first
+    // two are the whole point of the file: a version with no build number
+    // must NOT match.
     test('a version with no build number is rejected', () {
       expect(_version.hasMatch('0.2.0'), isFalse);
       expect(_version.hasMatch('0.2.0+'), isFalse);

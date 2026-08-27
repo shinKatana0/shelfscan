@@ -707,8 +707,8 @@ The running framework version is read from
 `bin/cache/flutter.version.json` under the SDK root that `flutter test`
 exports, with a walk up from the test binary as the fallback. If neither
 works the file fails rather than passes: a check that cannot see its subject
-has proved nothing (`doc/conventions.md` §4a), which is the same reason
-`tool/check-bundle-assets.dart` exits 2 on finding no bundle.
+has proved nothing, which is the same reason `tool/check-bundle-assets.dart`
+exits 2 on finding no bundle.
 
 **`flutter build apk --config-only` does not answer this question**, measured
 2026-08-26. It generates the build files — it is what writes `gradlew` into a
@@ -728,9 +728,9 @@ being *applied*, only a real configuration reaches it. The retry command is
 **The last row is why this table has a footnote instead of a number.** That
 warning comes from the Kotlin compiler compiling a Gradle build script, so it
 prints only when the script is actually recompiled — a run that finds every
-script cached reports **zero**, and a baseline run did exactly that. It is
-`doc/conventions.md` §4a's fifth shape wearing a build tool: a confident zero
-from a sweep that never looked. Change a flag (which invalidates every script)
+script cached reports **zero**, and a baseline run did exactly that. It is a
+sweep that could not see its own corpus wearing a build tool: a confident zero
+from a run that never looked. Change a flag (which invalidates every script)
 and the true count appears — one for `app/android/app/build.gradle.kts` and
 four for plugin build files inside `file_selector_android`,
 `integration_test`, `share_plus` and `shared_preferences_android`. Those four

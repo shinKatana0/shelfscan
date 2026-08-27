@@ -192,8 +192,8 @@ void main() {
     test('no cleartext permission is declared, at either grain', () {
       // The comment below names both attributes at length, so the markup has
       // to be judged without it -- and a strip that ate everything would make
-      // the two assertions below pass on nothing, which is the shape
-      // doc/conventions.md 4a says to control in both directions.
+      // the two assertions below pass on nothing, which is the shape a
+      // control in each direction exists to catch.
       final declarations =
           manifest.replaceAll(RegExp(r'<!--.*?-->', dotAll: true), '');
       expect(declarations, contains('<application'));
