@@ -21,6 +21,10 @@ machine, and it reads those with no model and no cost at all. A film in that
 folder is read as a film rather than as a game, and looked up in a film
 catalogue rather than the games one
 ([how far that goes](#films-are-read-as-films-and-how-far-that-goes)).
+**In the app it is folders rather than a folder:** press *Add media folder*
+once per folder and one scan reads all of them, so games in one, films in
+another and anime in a third go through a single dedupe instead of three
+review files nobody can reconcile.
 Everything from one run lands in a single review file you confirm by
 hand, and out of that comes `.xcoll` for Tonkatsu Box — which fetches covers
 and metadata itself from the ids in it — or generic CSV for CLZ Games and most

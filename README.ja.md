@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob ad6696930531e5985220faf8aa6fe5d470b88d0d CURRENT
+<!-- TRANSLATED-FROM: README.md blob afd6fc76b93c0cf11ae45900aa98a30a06fc8895 CURRENT
      Translated 2026-08-26. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
@@ -21,6 +21,10 @@
 ゲームではなく映画として読まれ、ゲームのカタログではなく映画のカタログで
 照会される
 （[どこまで来ているか](#films-are-read-as-films-and-how-far-that-goes)）。
+**アプリではフォルダは一つではなく複数だ。** *Add media folder* を
+フォルダごとに一度ずつ押せば、一度のスキャンがそのすべてを読む。ゲームが
+一つ目、映画が二つ目、アニメが三つ目のフォルダにあっても、一度のデデュープに
+まとまる。あとから突き合わせようのないレビューファイルが三つできることはない。
 一度の実行で得たものは
 すべて一つのレビューファイルに集まり、それを手で確認したうえで、Tonkatsu Box
 向けの `.xcoll`（中の ID からカバー画像とメタデータを Tonkatsu Box 自身が
