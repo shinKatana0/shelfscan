@@ -19,6 +19,16 @@ is the authority behind it.
 ## [Unreleased]
 
 ### Fixed
+- **Three links in the READMEs pointed at a heading that had been
+  renamed.** One in each language, all to the same dead anchor in
+  `CONTRIBUTING.md`. A fourth reference to it sat in an HTML comment, where
+  no link checker could reach it, and was found only by searching for the
+  words rather than the link. All 81 anchors across the three files now
+  resolve.
+- **Published pages cited `doc/conventions.md`, which no clone has.** Thirty
+  citations across tests, decision records and the build notes, one of them
+  a markdown link resolving to nothing. Each rule they invoked is now
+  stated where it was cited rather than pointed at.
 - **The READMEs said the app converts HEIC on Windows only.** It has carried a
   decoder on each platform since the Android one landed — the Windows Imaging
   Component on Windows, the system codec on Android — and two claims in each
@@ -54,6 +64,16 @@ is the authority behind it.
   because the model id is not what to change.
 
 ### Changed
+- **`SECURITY.md` promises no support, because none is owed.** This is a
+  free project with one maintainer. The undertaking to answer a report
+  within a week was written when nobody could read it, and a public
+  repository turns it into a commitment given to strangers; it is
+  withdrawn, along with the supported-versions policy, **and this entry
+  supersedes the one under [0.2.0] that still describes that policy in the
+  present tense.** Nothing is supported, nothing is backported, and a
+  report may not be acted on at all. Reporting privately is still the
+  documented route and still worth taking: it is the only one that does not
+  hand the flaw to everyone running the code before there is a fix.
 - **A 403 talks about the device you are on, not "this machine".** The
   sentence reaches a phone as readily as a desktop, and the case it describes
   is one that happens on a phone.
