@@ -56,12 +56,12 @@ report of a working app.
   and release apks build ([`doc/android-build.md`](doc/android-build.md)), and
   neither has ever been installed on anything: there is no device and no
   emulator on this machine, which is why nothing on the Android side is
-  reported here as working rather than as built. Two further things are
-  Windows-only by construction: HEIC photos from a phone are converted through
-  the Windows Imaging Component, and the GOG Galaxy library is read from
-  Galaxy's own database, and Galaxy is a Windows program. There is no
-  installer and no published binary — you build it from source
-  ([Setup](#setup)).
+  reported here as working rather than as built. One further thing is
+  Windows-only by construction: the GOG Galaxy library is read from Galaxy's
+  own database, and Galaxy is a Windows program. HEIC conversion is not — the
+  code carries a decoder on each platform, the Windows Imaging Component on
+  Windows and the system codec on Android. There is no installer and no
+  published binary — you build it from source ([Setup](#setup)).
 - **It is exactly as good as the vision model you supply, and the free one has
   a known ceiling.** The default local `qwen2.5vl:7b` reads a Latin-script
   spine well and does not read the printed *Switch 2* band at all — those
@@ -599,9 +599,10 @@ filter does not, which is why phone photos used to be not merely
 unreadable but invisible — and on Windows it converts each one in-process,
 340–610 ms per 4000×3000 photo, off the UI thread. Whatever it will not
 scan it names in a rejected-photos panel the moment you pick it, rather
-than minutes later at a provider call. **On Android it converts nothing:**
-the HEIC codec it uses is part of Windows, so a HEIC picked there is
-rejected with that reason and you convert it first.
+than minutes later at a provider call. **On Android it converts them
+through Android's own codec** rather than through WIC, so a HEIC picked
+there is not something you have to convert first; a phone whose Android is
+too old to decode HEIF says so in that same panel, one file at a time.
 
 ## Commands
 
