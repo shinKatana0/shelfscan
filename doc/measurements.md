@@ -1203,7 +1203,7 @@ half minutes of progress bar over 120 s and the same zero rows.
 one machine, one model, one server process, inside thirty-one minutes:
 generation ran **24.0 to 104.6 tokens/s**, median **102** over the thirteen
 uncontended ones. The four slow passes (24.0, 27.9, 46.9, 54.0) fall inside
-another agent's app-test-suite window; four later passes inside that same
+a competing app-test-suite window; four later passes inside that same
 window ran at full rate, so the contention was bursty and the window is where
 the slow block sits rather than a per-run tax that can be predicted. The
 spread is the finding either way: a 120 s bound admits ~3,000 output tokens or

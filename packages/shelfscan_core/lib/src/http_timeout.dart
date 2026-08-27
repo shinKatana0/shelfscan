@@ -88,7 +88,7 @@ import 'package:http/http.dart' as http;
 /// the densest frame that still answers honestly generates ~5,500 tokens, and
 /// generation of the same frames on one machine ranged 24.0 to 104.6
 /// tokens/s -- median 102 over the thirteen uncontended passes, 24.0 at the
-/// worst, inside another agent's test-suite window. So this bound admits
+/// worst, inside a competing test-suite window. So this bound admits
 /// ~3,000 tokens or ~12,000 depending on nothing but what else is running,
 /// which is a four-fold spread no single value tunes -- the argument for
 /// leaving it where it is and telling the user about the shelf instead.
