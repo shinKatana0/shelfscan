@@ -276,7 +276,7 @@ void main() {
   });
 
   group('header keys are matched whatever their case', () {
-    // Established rather than assumed, and it is not what the brief said.
+    // Established rather than assumed, and it is not what the premise said.
     // Measured on http 1.6.0, Dart 3.13.0: a Response built from the wire by
     // the IO client comes back with every key lower-cased, and a Response
     // built by the constructor keeps the keys it was handed, in a plain

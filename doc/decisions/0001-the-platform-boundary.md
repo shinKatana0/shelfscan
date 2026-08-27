@@ -61,7 +61,7 @@ apart, and both came out against the package:
   packages, and it bought nothing. The feature was reverted and core stayed
   `http`-only.
 - **SQLite (T-0177).** Reading the storefront's library database looked like it
-  required a SQLite package — the brief for that task asserted it outright.
+  required a SQLite package — the task was filed asserting it outright.
   It does not. `dart:ffi` is in the SDK, and Windows has shipped the SQLite
   engine itself since Windows 10 1803, so the shell opens the system library
   directly and binds ten functions. Not even an FFI helper package is needed,

@@ -20,8 +20,9 @@ Every quality claim in this project is a count taken from a specific set of
 photographs. Those photographs are of a private home. They are gitignored and
 they are staying that way.
 
-That left an awkward gap. Four separate briefs, and the project's own front page,
-quoted figures against "the control document" as though such a file existed.
+That left an awkward gap. Four separate documents, and the project's own front
+page, quoted figures against "the control document" as though such a file
+existed.
 The closest file on disk held a different number of rows and had been produced by
 a prompt three versions old. Two workers each paid for a live database run before
 discovering that. A measurement everyone cites and nobody can identify is not a
@@ -60,7 +61,7 @@ it is the same house rendered as a sorted, machine-readable inventory of dozens
 of possessions, filed under photo names that carry the minute someone walked
 around photographing them. The convenient format is the argument against
 committing it, not for. Against that, what committing it buys was checked
-against the project's own history: every brief that ever cited the document
+against the project's own history: every citation of that document ever written
 cited its *counts*, and counts are what the manifest carries. And it is
 unnecessary — T-0053 made the scan reproducible and T-0081 made it documented, so
 the control can be had again in under a minute by anyone holding the

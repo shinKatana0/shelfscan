@@ -58,7 +58,7 @@ key.properties
 *.jks
 *.keystore
 
-# briefboard (deployed locally via `npx briefboard init`, not part of this repo)
+# Tooling deployed locally on this machine, not part of this repo.
 server/
 tools/
 ui/
@@ -68,24 +68,23 @@ CLAUDE.md
 .claude/
 .githooks/
 
-# Working record of how this was built: task briefs, worker reports, the live
-# board and its archive. Kept on disk, never published -- they quote conversations
-# verbatim and run to ~25,000 lines against ~2,100 lines of distilled record.
+# The working record of how this was built. Kept on disk, never published --
+# it quotes conversations verbatim and is development rather than product.
 # What survives publication is the distillate and its evidence:
 #   ARCHITECTURE.md      how it is put together
 #   doc/decisions/       why it is put together that way
 #   doc/measurements.md  what that rests on
-# tools/task.mjs reads doc/backlog.md from disk, not from git, so untracking it
-# costs the briefboard nothing.
+# The local tooling reads these paths from disk rather than from git, so
+# untracking them costs it nothing.
 doc/brief/
 doc/reports/
 doc/archive/
 doc/backlog.md
 
-# The agent working rules and the internal state document go with them, and
-# for the same reason rather than a different one: 49 lines of conventions.md
-# and most of PROJECT.md's process half describe the board above. A document
-# explaining how to work a board nobody can see is worse than its absence.
+# The local working rules and the internal state document go with them, and
+# for the same reason rather than a different one: much of each is about the
+# unpublished record above. A document explaining how to keep a record nobody
+# can see is worse than its absence.
 # Their durable content is already published -- the decisions in doc/decisions/,
 # the numbers in doc/measurements.md, the shape in ARCHITECTURE.md, and what a
 # human contributor needs in CONTRIBUTING.md.

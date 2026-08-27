@@ -883,7 +883,7 @@ class _RefusingClient extends http.BaseClient {
 /// loudly rather than resolving a film against IGDB. Widening the
 /// orchestrator's field to `Worker<Detection, ResolvedGame>` would remove the
 /// inheritance entirely and is the tidier shape; it was left alone because
-/// `orchestrator.dart` is outside this task's brief.
+/// `orchestrator.dart` was outside the scope of the change that added it.
 class CatalogueRouter extends ResolverWorker {
   CatalogueRouter({required this.catalogues, required this.fallback})
       : super(IgdbClient(

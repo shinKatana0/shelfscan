@@ -4,7 +4,7 @@
 #
 #   origin  group  container  name  expected  year  hint
 #
-#   origin    synthetic -- written here, from the conventions the brief names
+#   origin    synthetic -- written here, from the naming conventions specified
 #             synthetic-stem -- such a name with its outer `.torrent` removed:
 #                          the file the descriptor is for, as it would be named
 #   container the directory the entry was found in, `-` for none
@@ -244,7 +244,7 @@ synthetic	nameable	consoles	Sample Game Q [3DS]	Sample Game Q	-	3DS
 # 3. SYNTHETIC, GoG's own installer convention:
 #    setup_<slug>_<version>_(<arch>)_(<build id>).exe. Not one real GoG
 #    installer was available to read, so every row here is written from the
-#    shape the brief names.
+#    specified shape.
 #    Every version here is the shape T-0156 measured as fatal to the match.
 # ---------------------------------------------------------------------------
 synthetic	gog	-	setup_marlows_gate_3_2.0.0.7_(64bit)_(38584).exe	marlows gate 3	-	PC

@@ -13,7 +13,7 @@ wearing a decision's clothes.
 ## What is not here
 
 Around two hundred tasks have closed in this repository. Most were fixes, and a
-registry of everything would be the backlog again. Specifically excluded:
+registry of everything would be the commit history again. Specifically excluded:
 
 - **Bug fixes**, however involved. The line drawn: a fix restores behaviour the
   code already claimed; a decision changes what the code claims. Several fixes
@@ -35,10 +35,9 @@ registry of everything would be the backlog again. Specifically excluded:
 Every record opens with the task ids it came from, under **Tasks** and
 **Reports**. Those are bare ids and not links on purpose: a task id such as
 `T-0086` names an entry in the working record this repository keeps but does
-not publish — the briefs, the worker reports and the board are development
-artefacts, not product, and they quote conversations verbatim. What survives here
-is what they produced: this registry for the reasoning,
-[`doc/measurements.md`](../measurements.md) for the figures, and
+not publish — development rather than product, and quoting conversations
+verbatim. What survives here is what it produced: this registry for the
+reasoning, [`doc/measurements.md`](../measurements.md) for the figures, and
 [`ARCHITECTURE.md`](../../ARCHITECTURE.md) for the shape. **Nothing on this
 page depends on looking one up.** The ids are kept because they are stable
 names for a decision, and because a claim that names its origin is checkable by
@@ -65,8 +64,8 @@ anyone who ever does hold that record.
 | [0016](0016-a-row-is-identified-by-the-catalogue-that-answered.md) | A row is identified by the catalogue that answered and that catalogue's id | Two of the three fields in this tree that hold an external id already say which service issued it; the third is named after one catalogue and now carries another's. |
 
 **0013 is not missing.** It records how this project's own working record is
-organised, which is development rather than product, so it stays with the board
-and the briefs on a private disk. Numbers are never reused.
+organised, which is development rather than product, so it stays on the private
+disk with the record it describes. Numbers are never reused.
 
 ## Adding one
 

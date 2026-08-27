@@ -405,35 +405,24 @@ only** — a number from a real run, or a choice a reader could not infer
 from the code. Never restate the code in prose. When you touch a file for
 any reason, trim the comments already in it.
 
-## How this repository is developed
+## What is published, and what is not
 
-Most of what is here was written by an orchestrator/worker agent workflow
-against a task board. That board, its briefs and its worker reports stay on a
-private disk and are not published: they are development artefacts rather than
-product, and they quote conversations verbatim. **Nothing you need is in them.**
-What they produced is published — [`doc/decisions/`](doc/decisions/) for the
-reasoning, [`doc/measurements.md`](doc/measurements.md) for the figures,
-[`ARCHITECTURE.md`](ARCHITECTURE.md) for the shape, and this page for the
-rules a change is held to.
-
-Almost every line here was written by an orchestrator/worker agent workflow
-powered by [briefboard](https://github.com/shinKatana0/briefboard) — a task
-board with a mandatory written brief before implementation and a review before
-merge. Each task's brief, its worker's report and the board itself stay on a
-private disk and **are not published** — they are development artefacts rather
-than product, they quote conversations verbatim, and there are roughly 25,000 lines
-of them against the ~2,100 lines of distilled record that replaced them here:
-[ARCHITECTURE.md](ARCHITECTURE.md) for how it is put together,
-[doc/decisions/](doc/decisions/) for why, and
-[doc/measurements.md](doc/measurements.md) for what that rests on.
+The working record this project was built against — the notes, the arguments
+and the day-to-day decisions behind each change — stays on a private disk and
+is not published. It quotes conversations verbatim, it is development rather
+than product, and **nothing you need is in it.** What it produced is here:
+[`ARCHITECTURE.md`](ARCHITECTURE.md) for the shape,
+[`doc/decisions/`](doc/decisions/) for why that shape and not another,
+[`doc/measurements.md`](doc/measurements.md) for the figures those choices
+rest on, and this page for the rules a change is held to.
 
 **So a task id is not a link.** Pages here cite ids like `T-0086` because an id
 is a stable name for a decision, and a claim that names its origin can be
 checked by whoever holds that record. Nothing published depends on looking one
 up.
 
-The board is not something a contributor installs, either. It is one person's
-working tool; a pull request is reviewed as a pull request.
+None of it is something a contributor installs or registers for. A pull
+request is reviewed as a pull request.
 
 ### Translations
 

@@ -1,8 +1,8 @@
 /// The filename parser, measured against `test/corpus/installer_names.tsv`
 /// (T-0158).
 ///
-/// The corpus is a file and not a list in this test on purpose: the brief asks
-/// for a measurement rather than a regex somebody believes in, and a
+/// The corpus is a file and not a list in this test on purpose: the
+/// requirement is a measurement rather than a regex somebody believes in, and a
 /// measurement whose input lives inside the assertions that read it cannot be
 /// re-run by anyone who did not write it. Replaying it costs nothing -- no
 /// call, no key, no photo -- which is the one way this reader is easier than
@@ -170,7 +170,7 @@ void main() {
       // The four groups this source is actually for. Every one of their
       // declines is a support file, a save, a document or an installer with no
       // title anywhere near it. Nothing here is a wrong title, which is the
-      // number the brief asked for.
+      // number the requirement asked for.
       final forThisSource = ['gog', 'scene', 'inside', 'archive'];
       final wanted = corpus.where((r) => forThisSource.contains(r.group));
       expect(wanted.where((r) => r.declines).length, 10);
@@ -461,10 +461,10 @@ void main() {
 
     for (final table in tables.entries) {
       test('${table.key} emits nothing platformIds cannot map', () {
-        // The bar the brief set: the id set has to be right, not a row has to
-        // appear. A key whose value is null is a container this reader can
-        // recognise and cannot name -- it declines, and the null is what says
-        // so; a value that is not a key here would be the T-0156 failure
+        // The bar the requirement set: the id set has to be right, not a row
+        // has to appear. A key whose value is null is a container this reader
+        // can recognise and cannot name -- it declines, and the null is what
+        // says so; a value that is not a key here would be the T-0156 failure
         // shipped as a feature.
         for (final entry in table.value.entries) {
           if (entry.value == null) continue;

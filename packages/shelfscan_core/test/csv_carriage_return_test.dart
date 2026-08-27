@@ -43,7 +43,7 @@ List<List<String>> _export(List<ResolvedGame> games) =>
 void main() {
   group('the parser can see the defect', () {
     // Without this the tests below would pass against a reader that ignores
-    // CR, which is the failure mode the brief names.
+    // CR, which is the failure mode under test.
     test('an unquoted CR splits a record in two', () {
       expect(_records('a,b\rc,d\r\n'), [
         ['a', 'b'],

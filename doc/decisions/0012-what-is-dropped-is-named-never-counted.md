@@ -70,8 +70,8 @@ and found it intact — the field existed, was populated and was written wheneve
 non-empty. There had been no decline. What had happened is that the summary line
 reported one number of entries read and another of games found, **a count
 invited a subtraction, the subtraction was performed, and it produced a decline
-that had never happened** — in the brief, in the backlog entry, and in the
-acceptance criterion asking for a test of it. The two folders concerned had the
+that had never happened** — in the task as filed, and in the acceptance
+criterion asking for a test of it. The two folders concerned had the
 same locale-generated default name, parsed to the same title, and were merged.
 
 The fix is the decision generalised: **state every count instead of implying

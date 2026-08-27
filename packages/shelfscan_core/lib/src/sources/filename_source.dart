@@ -317,7 +317,7 @@ FileNameParse parseMediaFileName(String name, {String? container}) {
 ///   `Harbour Lantern/hbl2.exe` yielding `Harbour Lantern` instead of `hbl2`: a
 ///   game's own launcher carries neither mark, and so does `Sundrop Hollow.exe`
 ///   in a folder called `Trellis`. Without it the rule is the plain reversal
-///   the brief forbids.
+///   the requirement forbids.
 /// - **The two titles must share no word**, folded through [titleKey]. A real
 ///   GoG download is a folder named `<title>_<version>_
 ///   (<build>)_win_gog` holding `setup_<title>_build_<n>change_<n>_0_(64bit)_
@@ -874,9 +874,9 @@ FileNameParse _parseVideoName(String raw) {
 /// review as one row through machinery that was already there. Nothing here
 /// counts episodes or records which ones are present.
 ///
-/// **Why this is NOT [ResolvedGame.parts], which is the shape the brief for
-/// this task asked to be checked rather than assumed.** The two relations run
-/// in opposite directions. A box is one row that a catalogue answered with
+/// **Why this is NOT [ResolvedGame.parts], which is the shape this was
+/// required to check rather than assume.** The two relations run in opposite
+/// directions. A box is one row that a catalogue answered with
 /// several entries, and `expandParts` turns it into N rows because the person
 /// owns N separately-catalogued things. A series is N files that are readings
 /// of ONE work, folded into one row at stage 2 -- and there is nothing to

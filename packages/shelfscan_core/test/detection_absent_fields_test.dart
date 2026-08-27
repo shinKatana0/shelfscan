@@ -53,7 +53,8 @@ Detection _parse({Object? platformHint, Object? notes}) =>
 
 void main() {
   group('Detection.fromJson treats textual placeholders as absent', () {
-    // Exactly the markers the brief names, plus casing and padding variants.
+    // Exactly the markers the requirement names, plus casing and padding
+    // variants.
     const absent = [
       'null',
       'NULL',

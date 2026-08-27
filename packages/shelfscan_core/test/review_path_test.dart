@@ -1,7 +1,7 @@
 /// Guards `resolve` and `export` against presenting a mistyped path as a
 /// crash (T-0049).
 ///
-/// The same defect T-0037 removed from `scan`, in the two commands its brief
+/// The same defect T-0037 removed from `scan`, in the two commands that task
 /// asserted were already safe: both went straight to
 /// `File(args.first).readAsStringSync()` and died with an unhandled
 /// `PathNotFoundException` and a five-frame trace. So the claims are the two
