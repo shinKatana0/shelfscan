@@ -3,10 +3,11 @@
 The measurements this project's decisions rest on, and everything it measured
 and then rejected. Collected here by T-0125, out of the front page that had
 accumulated them. Nothing here was rewritten; the numbers are quoted from code
-comments and from briefs, and several of those comments cite them back.
+comments and from the working record, and several of those comments cite them
+back.
 
-**Not every figure, though, and the shortfall is a real one rather than a
-backlog.** Some measurements live in the doc comment beside the rule they
+**Not every figure, though, and the shortfall is deliberate rather than
+pending.** Some measurements live in the doc comment beside the rule they
 settle instead of here, and `PROJECT.md` says so outright of
 `detectionPromptRules` and `detectionJsonSchema`: "their doc comments carry the
 numbers". Where a figure governs one constant, moving it here parts it from
@@ -682,8 +683,8 @@ That re-prices all three levers:
   and no true positives either: the only instance is one row of a real
   `gpt-4.1-mini` export, which is not reproducible without buying that scan
   again. The row already carries T-0123's `not in .xcoll -- tap to pick a
-  match`. Note the brief's premise that the candidate picker recovers the fix
-  is false: `_CandidateSheet` lists only what the resolver found and offers no
+  match`. Note the premise that the candidate picker recovers the fix is
+  false: `_CandidateSheet` lists only what the resolver found and offers no
   search, so for a read that names no game every choice in it is wrong or
   "No match"; the repair is the group header's add-by-hand.
 - **The alias table**, the third lever, priced here because nobody had. It
@@ -918,7 +919,7 @@ rows a human cannot tell apart, because `Candidate` carries no year either
 
 ## The exact join: IGDB does carry GoG ids, and 82% of them (T-0159, 2026-08-16)
 
-**The premise, which the brief asked to verify before anything was built:
+**The premise, verified before anything was built rather than assumed:
 IGDB's `external_game_sources` endpoint answers 22 sources and GOG is `5`.**
 The list runs `1 Steam`, `3 GiantBomb`, **`5 GOG`**, `10 Youtube`,
 `11 Microsoft`, `13 Apple`, `14 Twitch`, `15 Android`, `20 Amazon`,
@@ -1422,7 +1423,7 @@ Three things were already resting on this before it was written down here:
 Three further searches, the same evening and the same token, asked the other
 question: what happens to a year that is inside the query string rather than in
 the `year` parameter. They are the searches that produced T-0335, and until now
-they were written down nowhere but that task's entry on the board.
+they were written down nowhere but the unpublished working record.
 
 | query | results | first row |
 |---|---|---|

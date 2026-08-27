@@ -40,8 +40,7 @@ the shelf at a higher resolution.
   times slower, one photograph lost outright to a server error, and on the two it
   finished it matched the smaller model at best and transcribed Japanese worse.
 - **A bigger *cloud* model did not either — at first.** "A cloud model will read
-  the Japanese spines" was an assumption that had been repeated in briefs for
-  days. T-0090 measured it: the model tested reports those spines as unreadable
+  the Japanese spines" was an assumption that had been repeated for days. T-0090 measured it: the model tested reports those spines as unreadable
   rather than reading them, returns fewer detections than the local model, and
   invents a title at the lower resolution that the local model gets right. The
   assumption was retired as false *for that model*.
