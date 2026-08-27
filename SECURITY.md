@@ -10,12 +10,18 @@ vulnerability reporting — the **Security** tab of this repository →
 *Report a vulnerability*. That opens a private thread visible only to the
 maintainer.
 
-Expect a first response within a week. This is a one-maintainer hobby
-project: there is no on-call rotation and no bounty.
+This is a free project with a single maintainer and no support
+commitment attached to it. There is no response-time promise, no
+on-call rotation and no bounty; a report is read if and when there is
+time to read it, and may not be acted on at all.
 
-Only the latest commit on `main` is supported. A tag marks a release but is
-not separately supported: a fix goes out on `main`, never backwards into a
-release already made.
+Report privately anyway. It costs you nothing, and it is the only
+channel that does not publish the flaw to everyone running the code
+before there is a fix for any of them.
+
+Nothing is backported. If a fix is made it lands on `main` and stays
+there; a tag marks a release that happened, not a branch anyone is
+maintaining.
 
 ## Credentials
 
