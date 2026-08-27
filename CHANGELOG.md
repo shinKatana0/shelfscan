@@ -19,10 +19,12 @@ is the authority behind it.
 
 ## [Unreleased]
 
-Both `pubspec.yaml` files now read `0.2.0+2`, but `v0.1.0` is still the only
-tag, so this is still not a release — it is what the tree does that the tagged
-release did not. The number is `0.2.0` rather than `0.1.1` because the entries
-below add capability a user can see, which is what
+Nothing yet.
+
+## [0.2.0] - 2026-08-27
+
+Both `pubspec.yaml` files read `0.2.0+2`. The number is `0.2.0` rather than
+`0.1.1` because the entries below add capability a user can see, which is what
 [`doc/decisions/0014`](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md)
 defines MINOR against; `+2` is the build number that record's 2026-08-25
 amendment introduced, and it starts at 2 because 1 is what every Android

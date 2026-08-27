@@ -84,6 +84,26 @@ never reused. It is not a date: three release packages were built on
 2026-08-25 alone, and a date-shaped build number would have given all three the
 same value — which is the defect this amendment exists to remove.
 
+**A build that never leaves the machine consumes nothing.** The rule says
+*every artefact handed to anyone*, and the word doing the work is *handed*. A
+build made to measure something, to watch a check refuse, or to answer a
+question about the artefact itself is not a hand-over, however many of them a
+task makes: T-0404 built four apks and one Windows exe on its branch and
+nobody received any of them. Requiring a number for each would make `BUILD` a
+record of how much was built rather than of what was released, and would put
+the counting somewhere git cannot see -- which is the class of rule this
+record has spent two amendments narrowing.
+
+**The number is consumed when the tag is cut.** That is the operational form
+of the same sentence, and it is deliberately narrower than "handed to anyone":
+cutting the tag is what makes an artefact findable by anyone but its builder,
+and it is the only step of the release order git records. Handing a file to
+someone without a tag is therefore not merely irregular but unrecorded, and no
+check can see it. If it is ever done deliberately, cut the tag anyway.
+
+*Ruled by the owner 2026-08-27, choosing this reading over the stricter one in
+which any build consumes a number.*
+
 Everything else in this record stands unchanged: the `0.x` gate, the two
 formats that gate it, the lockstep between the two `pubspec.yaml` files, and
 the release order.
@@ -114,3 +134,50 @@ what those cost. Two of the three parts are now assertable, so they are
 asserted: that both `pubspec.yaml` files carry the same version, and that the
 version has a build number at all. The second is the one that matters, because
 its absence is silent — Flutter does not warn, it substitutes 1.
+
+**What a suite can say, and where it stops.** `app_version_test.dart` asserts
+everything the working tree knows about itself: that both `pubspec.yaml` files
+agree, that `app/lib/app_version.dart` agrees with them, and that a build
+number is present at all. It cannot say whether that number has been handed
+over before, because that is a property of history and a suite deliberately
+cannot see one -- it is exactly as green on a second artefact built at `+2` as
+on the first. So *whether there is a number* stopped being enforced by
+remembering and *which number it is* did not.
+
+`tool/check-release-order.dart` closes that, and it is a script rather than a
+test for that reason. Run before cutting a tag, it reads `app/pubspec.yaml`
+out of every tag's tree and refuses when this tree's build number is not ahead
+of all of them. Exit 0 in step, 1 refused, 2 when it compared nothing -- and
+the third is not the first, because a checkout with no tags has answered the
+question and a checkout where git cannot be reached has not.
+
+Two limits, recorded here so nobody rediscovers them. It reads each tag's
+**tree** and never its name, and **a tagged tree declaring no `+N` published
+1**, because that is what Flutter substitutes.
+
+**The changelog step is checked by the same script, in the one direction that
+can refuse.** A tree ahead of the last tag whose changelog names no heading
+for it is this repository on an ordinary day; the minute before a release is
+cut is the *same git state*, because cutting the tag is the step after.
+Nothing in the repository distinguishes them, so a check that refused one
+would refuse both -- and a check that refuses ordinary work is a check that
+stops being run. So the script answers in two voices: against this tree, a
+`NOTE` that changes no exit code; against **every tag**, a refusal, because a
+tag whose own tree carries no `## [VERSION]` heading for the version that tree
+declared is a release that went out describing itself as unreleased.
+
+Both halves share one limit and it is the mirror of the other: neither can see
+an artefact handed over without a tag, and the changelog half sees a skipped
+heading only once the tag exists. That is recoverable while the tag is local
+and a report rather than a remedy once it is pushed -- one more reason the tag
+is the last step and a person's act.
+
+**And a check nothing names is reached by remembering, one level up.** The
+release procedure is written where a person cutting a release will meet it --
+`CONTRIBUTING.md`, *Cutting a release* -- with the order above, the command
+for each check and what each answer means. It is a document because there is
+nothing better available: git offers no hook that fires when a tag is cut
+without also firing on ordinary commits, and any trigger at or after the tag
+meets a check that refuses by design, since after the tag this tree is itself
+something already published. Which is also why the tag is last: it is the step
+that makes every earlier check unrepeatable.

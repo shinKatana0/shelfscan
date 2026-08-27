@@ -13,9 +13,9 @@ maintainer.
 Expect a first response within a week. This is a one-maintainer hobby
 project: there is no on-call rotation and no bounty.
 
-Only the latest commit on `main` is supported. `v0.1.0` is tagged and the
-tree has moved on from it, but a tag is not separately supported: a fix goes
-out on `main`, never backwards into a release already made.
+Only the latest commit on `main` is supported. A tag marks a release but is
+not separately supported: a fix goes out on `main`, never backwards into a
+release already made.
 
 ## Credentials
 
