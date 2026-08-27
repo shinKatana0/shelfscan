@@ -1141,7 +1141,7 @@ String visionApiMessage({
         'does not carry, and a model it may not use. A proxy or gateway in '
         'front of $service can answer 403 on its own as well, having put '
         'nothing to the endpoint at all. It can also depend on the connection '
-        'this machine is on rather than on anything you configured -- the '
+        'this device is on rather than on anything you configured -- the '
         'same key and model can be refused over one network and work over '
         'another, with a VPN or a proxy changing the address the endpoint '
         'sees. So try another connection first, then check the key you '

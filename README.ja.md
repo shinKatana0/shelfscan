@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob 7fc127aed43e14992e8945d4278229253455769a CURRENT
+<!-- TRANSLATED-FROM: README.md blob 930c85cd854083e08b762b7047e2a078f8c9d8f3 CURRENT
      Translated 2026-08-26. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
@@ -49,7 +49,7 @@
 これは実測ではなく決定であり、以下の一覧はすべてこれを通して読まれるので、一覧の
 前に置く。二つのプラットフォームともこのリポジトリからビルドしているが、今日この
 プロジェクトが引き受けるのは Windows のほうであり、Android は現時点で優先事項で
-はない。**放棄したわけではない。** いまも予定に入っており、作業も続いている。
+はない。**放棄したわけではない。** いまも予定に入っており、作業は閉じていない。
 完成するまでは、この文書の Android に関する記述はすべて、動くアプリの報告では
 なくコードが何をするかの説明として読むこと。
 
@@ -57,15 +57,13 @@
   Android もこのリポジトリからビルドしているが、ここで**動かした**のは
   Windows だけである。デバッグ版とリリース版の apk はビルドできる
   （[`doc/android-build.md`](doc/android-build.md)、英語）が、どちらもどこにも
-  インストールしていない。このマシンには実機もエミュレータも無いからで、
-  だから Android 側については、動くものとしてではなくビルドできるものとして
-  しか書いていない。さらに構造上 Windows 限定のものが一つある。GOG Galaxy
-  ライブラリは Galaxy 自身のデータベースから読むが、Galaxy は Windows 用
-  プログラムである。HEIC の変換はこれに当たらない。コードは各プラットフォーム
-  用のデコーダを持っており、Windows では Windows Imaging Component、Android
-  ではシステムのコーデックを使う。インストーラも配布バイナリもなく、
-  ソースからビルドする
-  （[セットアップ](#setup)）。
+  インストールしていない。そのため Android 側については、動くものとしてでは
+  なくビルドできるものとしてしか書いていない。さらに構造上 Windows 限定の
+  ものが一つある。GOG Galaxy ライブラリは Galaxy 自身のデータベースから読む
+  が、Galaxy は Windows 用プログラムである。HEIC の変換はこれに当たらない。
+  コードは各プラットフォーム用のデコーダを持っており、Windows では Windows
+  Imaging Component、Android ではシステムのコーデックを使う。インストーラも
+  配布バイナリもなく、ソースからビルドする（[セットアップ](#setup)）。
 - **品質は与えたビジョンモデルの品質そのままであり、無料のものには既知の上限が
   ある。** 既定のローカルモデル `qwen2.5vl:7b` はラテン文字の背表紙をよく読む
   が、印刷された *Switch 2* の帯はまったく読まない。Switch 2 のケースは

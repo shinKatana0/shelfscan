@@ -47,16 +47,15 @@ it.** That is a decision rather than a measurement, and it comes before the list
 because everything in the list is read through it. Both platforms are built from
 this tree; Windows is the one this project stands behind today, and Android is
 not the priority at present. **It has not been abandoned** — it is still
-intended, and it still gets work. Until it is finished, read every Android
-sentence in this file as a description of what the code does rather than as a
-report of a working app.
+intended, and the work on it is not closed. Until it is finished, read every
+Android sentence in this file as a description of what the code does rather
+than as a report of a working app.
 
 - **Android is the thinner of the two platforms.** Both Windows and Android
   are built from this tree; only the Windows one has been **run** here. Debug
   and release apks build ([`doc/android-build.md`](doc/android-build.md)), and
-  neither has ever been installed on anything: there is no device and no
-  emulator on this machine, which is why nothing on the Android side is
-  reported here as working rather than as built. One further thing is
+  neither has ever been installed on anything, so nothing on the Android side
+  is reported here as working rather than as built. One further thing is
   Windows-only by construction: the GOG Galaxy library is read from Galaxy's
   own database, and Galaxy is a Windows program. HEIC conversion is not — the
   code carries a decoder on each platform, the Windows Imaging Component on
