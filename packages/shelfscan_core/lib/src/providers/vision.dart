@@ -1115,7 +1115,7 @@ String visionApiMessage({
         'front of $service can answer 403 on its own as well, having put '
         'nothing to the endpoint at all. So check the key you configured for '
         'this endpoint and what it is allowed to reach, and check what sits '
-        'between this machine and $service.${_errorTokens(body)}',
+        'between this machine and the endpoint.${_errorTokens(body)}',
     404 => '$service has no model "$model" (HTTP 404): that model id was not '
         'found. Check it against the endpoint\'s own model list -- a typo and '
         'a retired id both fail exactly like this, and the key is fine.$said',
