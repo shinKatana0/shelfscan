@@ -344,7 +344,8 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  /// Add a folder of games and films, from its own control (T-0161, T-0345).
+  /// Add a folder of games, films and anime, from its own control (T-0161,
+  /// T-0345, T-0430).
   ///
   /// Behind the same [_picking] guard as [_pickPhotos] and for the same
   /// reason, which here also covers one control being pressed while the
@@ -358,14 +359,19 @@ class _ScanScreenState extends State<ScanScreen> {
   /// so three things happen before an entry is read: the control says which
   /// folder it wants, the dialog repeats it, and a folder that holds whatever
   /// was put in it is questioned by name before it is added.
+  ///
+  /// **The prompt is ordered steer first, accumulation second (T-0430).** It
+  /// is the dialog's window caption, so a caption longer than the window is
+  /// ellipsised from the right -- what is at the front survives a truncation
+  /// nothing here can measure without a real dialog.
   Future<void> _pickFolder() async {
     if (_picking) return;
     setState(() => _picking = true);
     var path = '';
     try {
       path = await widget.picker.pickFolder(
-            prompt: 'Pick the folder your games are installed in or your '
-                'films are kept in',
+            prompt: 'Pick a folder your games are installed in or your films '
+                'and anime are kept in -- you can add more than one',
           ) ??
           '';
       if (path.isEmpty || !mounted) return;
@@ -407,7 +413,7 @@ class _ScanScreenState extends State<ScanScreen> {
       context: context,
       builder: (context) => AlertDialog(
         key: const Key('folder-concern'),
-        title: Text('Read games and films out of $path?'),
+        title: Text('Read games, films and anime out of $path?'),
         content: Text(concern),
         actions: [
           TextButton(
@@ -1327,9 +1333,19 @@ class _ScanScreenState extends State<ScanScreen> {
                               // same walk has read them since T-0162 and this
                               // line was the only place a person with a folder
                               // of them would have looked (T-0345).
+                              //
+                              // Plural since T-0430, and this line rather than
+                              // the label beside it: the control has always
+                              // appended, and the only place that said so was
+                              // the list of folders, which does not exist
+                              // until the first press. This is the one site a
+                              // person reads BEFORE it, and it costs the
+                              // button row nothing -- a longer label reflows
+                              // the Wrap below, this sentence does not.
                               const Text(
-                                  'or add the folder your PC games and films '
-                                  'are kept in',
+                                  'or add the folders your PC games, films '
+                                  'and anime are kept in -- one press each, '
+                                  'and one scan reads them all',
                                   key: Key('folder-hint')),
                               // The third input, named where the second one is
                               // and for the same reason: one run may hold all
@@ -1410,7 +1426,10 @@ class _ScanScreenState extends State<ScanScreen> {
                   // every-title-an-application steer is unchanged and lives
                   // where it is read at the moment of choosing -- the picker's
                   // prompt and the concern dialog. "media" is the same 16
-                  // characters, so the Wrap measures as it did.
+                  // characters, so the Wrap measures as it did -- and T-0430
+                  // left the label alone for that same reason, putting "you
+                  // can add more than one" in the empty screen's hint and in
+                  // the prompt, neither of which this row measures.
                   TextButton.icon(
                     key: const Key('add-games-folder'),
                     onPressed: _busy ? null : _pickFolder,

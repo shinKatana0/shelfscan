@@ -49,7 +49,9 @@ MediaFolder _folder(String path, List<String> names) => MediaFolder(
 class _BothPicker extends InputPicker {
   _BothPicker({this.directory, this.files = const {}, this.gate});
 
-  final String? directory;
+  /// Not final: T-0430 asks for a second folder from one screen, and the
+  /// dialog a user drives answers a different path each time it opens.
+  String? directory;
   final Map<String, Uint8List> files;
   final Completer<void>? gate;
   int directoryCalls = 0;
@@ -164,10 +166,60 @@ void main() {
     await _addFolder(tester);
     // T-0158's steer, verbatim where it is read at the moment of choosing:
     // the button lost the word "games" in T-0345 and this prompt did not.
+    // The steer stays at the FRONT (T-0430): this string is the dialog's
+    // window caption, and a caption too long for the window loses its tail.
     expect(
         picker.askedPrompt,
-        'Pick the folder your games are installed in or your films are '
-        'kept in');
+        'Pick a folder your games are installed in or your films and anime '
+        'are kept in -- you can add more than one');
+  });
+
+  // T-0430. The control has appended since T-0161 and refuses a duplicate
+  // path, and the only thing that said so was the list of folders -- which
+  // does not exist until the first press. A user who read the singular label
+  // as a picker either scans three times into three review files that never
+  // dedupe against each other, or scans once and leaves the rest unread.
+  group('a second folder is offered before the first is added (T-0430)', () {
+    testWidgets('the empty screen says folders accumulate', (tester) async {
+      await _pump(tester, picker: _BothPicker(directory: _gogGames));
+
+      final hint = tester.widget<Text>(find.byKey(const Key('folder-hint')));
+      expect(hint.data, contains('folders'));
+      expect(hint.data, contains('one scan reads them all'));
+    });
+
+    testWidgets('and so does the prompt, for the photos-first path',
+        (tester) async {
+      // The empty screen is gone once anything is picked, so the prompt is
+      // the only site left for a user who adds photographs first.
+      final picker = _BothPicker(directory: _gogGames, files: {'a.jpg': _jpeg});
+      await _pump(tester, picker: picker);
+      await tester.tap(find.text('Add photos'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('folder-hint')), findsNothing);
+
+      await _addFolder(tester);
+
+      expect(picker.askedPrompt, contains('more than one'));
+    });
+
+    testWidgets('two folders are two inputs, and both are read',
+        (tester) async {
+      const second = r'C:\Films';
+      final picker = _BothPicker(directory: _gogGames);
+      await _pump(tester,
+          picker: picker,
+          folder: _folder(_gogGames, const ['Some Game']));
+
+      await _addFolder(tester);
+      picker.directory = second;
+      await _addFolder(tester);
+
+      // Two tiles, each with its own remove control: the second press added
+      // rather than replaced, which is what the copy above now promises.
+      expect(find.byKey(const Key('remove-folder-$_gogGames')), findsOneWidget);
+      expect(find.byKey(const Key('remove-folder-$second')), findsOneWidget);
+    });
   });
 
   // T-0345. The label said "games" while the same walk had read films since
@@ -181,10 +233,12 @@ void main() {
 
       expect(find.text('Add media folder'), findsOneWidget);
       expect(find.text('Add games folder'), findsNothing);
-      expect(find.textContaining('games and films'), findsOneWidget);
+      // All three kinds since T-0430: the walk has read anime as long as it
+      // has read films, and the hint named two of the three.
+      expect(find.textContaining('games, films and anime'), findsOneWidget);
     });
 
-    testWidgets('and the question before a mixed folder names both',
+    testWidgets('and the question before a mixed folder names all three',
         (tester) async {
       await _pump(tester,
           picker: _BothPicker(directory: _downloads),
@@ -193,7 +247,7 @@ void main() {
       await tester.tap(find.text('Add media folder'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Read games and films out of $_downloads?'),
+      expect(find.text('Read games, films and anime out of $_downloads?'),
           findsOneWidget);
     });
 
@@ -223,13 +277,29 @@ void main() {
       expect(find.textContaining('- Film'), findsNWidgets(2));
     });
 
-    testWidgets('and nothing offers or implies anime', (tester) async {
-      // No source produces one: the filename grammar declines an episodic
-      // name by DeclineReason.seriesEpisode, so a label covering anime would
-      // cover nothing.
-      await _pump(tester, picker: _BothPicker(directory: _gogGames));
+    // T-0345 pinned the opposite here -- *nothing offers or implies anime* --
+    // and it was right on the day: no source emitted an anime row, so the
+    // word would have offered nothing. T-0368 turned the episodic decline
+    // into rows the same day, and this pin has outlived its premise by
+    // exactly that. What replaces it is the establishing run, in the shape
+    // T-0344 used for films: the word is earned rather than asserted.
+    testWidgets('a folder of anime reaches review as an anime row',
+        (tester) async {
+      const anime = 'anime';
+      final vision = await _pump(tester,
+          picker: _BothPicker(directory: anime),
+          folder: _folder(anime, const [
+            '[LANTERN] Tidewrack Harbour - 04 [1080p].mkv',
+            '[LANTERN] Tidewrack Harbour - 05 [1080p].mkv',
+          ]));
 
-      expect(find.textContaining('nime'), findsNothing);
+      await _addFolder(tester);
+      await tester.tap(find.text('Scan'));
+      await tester.pumpAndSettle();
+
+      expect(vision.seen, isEmpty, reason: 'no photograph, no vision call');
+      // One row for the series, not one per episode (T-0368).
+      expect(find.textContaining('- Anime series'), findsOneWidget);
     });
   });
 
