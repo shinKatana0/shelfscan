@@ -70,9 +70,9 @@ looks safest is the one that answers a stale number confidently.
   property does not.
 - The reasoning is written at the call site as well as here, because the next
   person to touch this code will have the same instinct that `immutable=1` is
-  the careful choice. A worker reasoning "read-only plus immutable is obviously
-  safest" would have shipped a silently stale library, and nothing else in the
-  code would have contradicted them.
+  the careful choice. Reasoning "read-only plus immutable is obviously safest"
+  would have shipped a silently stale library, and nothing else in the code
+  would have contradicted it.
 - This is the project's clearest instance of a general rule it holds elsewhere:
   **a silent wrong answer is worse than a loud failure** (see
   [0012](0012-what-is-dropped-is-named-never-counted.md)). Here the rule decided

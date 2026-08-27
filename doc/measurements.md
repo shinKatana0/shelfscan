@@ -381,10 +381,10 @@ compare two marks it says they are identical. The `2` is perceived and transcrib
 cannot hold that discrimination across a whole photo of spines while also
 reading titles.
 
-Remaining levers, in the worker's order: a **second targeted pass over the
-band region** — note T-0003 rejected pre-segmentation for the *title* read,
-not for a hint read, so it is not the same experiment — or a cloud model in
-T-0011's fallback slot.
+Remaining levers, in the order this measurement ranked them: a **second
+targeted pass over the band region** — note T-0003 rejected pre-segmentation
+for the *title* read, not for a hint read, so it is not the same experiment —
+or a cloud model in T-0011's fallback slot.
 
 ## The second lever works: `gpt-5.5` reads the band (T-0112, 2026-08-16)
 

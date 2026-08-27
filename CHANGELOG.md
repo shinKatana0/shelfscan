@@ -4,10 +4,9 @@ Notable changes to shelfscan. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-This file starts at the first public release. Everything before it was built
-task by task against a board that stays on a private disk and is not
-published, so there is no earlier history to list here. What that work decided,
-and why, is in [`doc/decisions/`](doc/decisions/); the figures behind it are in
+This file starts at the first public release, so there is no earlier history
+to list here. What the work before it decided, and why, is in
+[`doc/decisions/`](doc/decisions/); the figures behind it are in
 [`doc/measurements.md`](doc/measurements.md).
 
 **"Verified" is used sparingly here and always means the same thing:** run

@@ -63,10 +63,10 @@ underneath. Deriving a spine count from that sentence was rejected explicitly: i
 would be the fabricated count T-0028 already removed once.
 
 **On the count itself (T-0184).** This is the sharpest instance and it is worth
-stating exactly, because the task's own premise was wrong and its worker proved
-it. The task was filed as "a declined entry is named nowhere: the summary counts
-it and the document omits the list". The worker measured the chain link by link
-and found it intact — the field existed, was populated and was written whenever
+stating exactly, because the task's own premise was wrong and the work on it
+proved so. The task was filed as "a declined entry is named nowhere: the summary
+counts it and the document omits the list". Measuring the chain link by link
+found it intact — the field existed, was populated and was written whenever
 non-empty. There had been no decline. What had happened is that the summary line
 reported one number of entries read and another of games found, **a count
 invited a subtraction, the subtraction was performed, and it produced a decline
