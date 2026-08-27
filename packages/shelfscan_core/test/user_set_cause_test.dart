@@ -121,7 +121,7 @@ final _answered = <String, Map<String, ({Object failure, bool? userSet})>>{
       userSet: true,
     ),
   },
-  // T-0167.
+  // T-0167, and the second row T-0428.
   'visionWrongShapeFailure': {
     'JSON of the wrong shape: the model id again': (
       failure: visionWrongShapeFailure(
@@ -130,6 +130,18 @@ final _answered = <String, Map<String, ({Object failure, bool? userSet})>>{
           problem: 'items is a String; it must be a list',
           answer: '{"items":"Vex"}'),
       userSet: true,
+    ),
+    // One builder, both answers, decided on the document and not on the
+    // status: a looping frame is the photograph's to fix and the sentence says
+    // so, and offering Settings behind it would take back what it said.
+    'a repetition loop is not the model id': (
+      failure: visionWrongShapeFailure(
+          service: 'Ollama',
+          model: 'llama-x',
+          problem: 'the answer is a list; it must be an object',
+          answer: '[]',
+          document: List.filled(40, {'raw_title': 'Copper Vellum'})),
+      userSet: false,
     ),
   },
   'ollamaFailure': {
