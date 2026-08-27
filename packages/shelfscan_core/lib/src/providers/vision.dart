@@ -1180,18 +1180,11 @@ bool _recordsRepeat(List<String> records) {
   return records.toSet().length * _cycleDistinctShare <= records.length;
 }
 
-/// The elements of the longest list anywhere in [document], canonically.
+/// The elements of the longest list anywhere in [document], rendered so that
+/// two of them can be compared.
 ///
-/// Iterative, and [jsonEncode] runs only on values [jsonDecode] built, so
-/// nothing here can throw on the input it exists to judge -- a document that
-/// decoded and is not the one this scan asked for.
-///
-/// Re-encoding is what keeps the comparison exact, which is the whole of the
-/// false-positive defence: records the model wrote identically encode
-/// identically, records differing anywhere do not, so a numbered series stays
-/// a list of distinct records. Key order is the document's own and is never
-/// sorted -- the same fields in a different order read as distinct, which is
-/// the conservative direction to be wrong in.
+/// The search is iterative because the document is not this code's to trust:
+/// it decoded, and that is all that is known about it.
 List<String> _documentRecords(Object? document) {
   var longest = const <Object?>[];
   final pending = <Object?>[document];
@@ -1204,8 +1197,49 @@ List<String> _documentRecords(Object? document) {
       pending.addAll(node.values);
     }
   }
-  return [for (final element in longest) jsonEncode(element)];
+  return [for (final element in longest) _written(element, 0)];
 }
+
+/// One record as text, exactly enough that two records compare correctly.
+///
+/// **[jsonEncode] is what this replaces, and the reason is measured.**
+/// `jsonDecode` parses with a stack of its own and `jsonEncode` recurses, so a
+/// document nested deeply enough decodes and then overflows the stack on the
+/// way back out -- 20000 levels does it, and this branch's whole input is a
+/// document that decoded and is otherwise unknown. Bounded recursion cannot,
+/// which is what makes "it does not throw on the input it judges" a property
+/// rather than a hope.
+///
+/// Rendering rather than comparing structurally, because rendering is what
+/// makes the comparison **exact and cheap at once**: records the model wrote
+/// identically render identically, records differing anywhere do not, so a
+/// numbered series stays a list of distinct records. Key order is the
+/// document's own and is never sorted -- the same fields in a different order
+/// read as distinct, which is the conservative direction to be wrong in.
+/// Strings carry their length so that no title can be mistaken for the
+/// punctuation around it.
+String _written(Object? value, int depth) {
+  if (depth > _recordDepthLimit) return '...';
+  if (value is List) {
+    return '[${[for (final e in value) _written(e, depth + 1)].join(',')}]';
+  }
+  if (value is Map) {
+    return '{${[
+      for (final e in value.entries)
+        '${_written(e.key, depth + 1)}=${_written(e.value, depth + 1)}'
+    ].join(',')}}';
+  }
+  return value is String ? 's${value.length}:$value' : '$value';
+}
+
+/// How deep a record is read before the comparison stops caring.
+///
+/// A record here is a spine entry -- a title as a string, or a flat object of
+/// scalars -- so nothing this judges is more than two or three levels deep,
+/// and the cost of the bound is that two records differing only below it read
+/// as equal. The alternative was an unbounded walk that ends in a stack
+/// overflow, which is not a trade.
+const _recordDepthLimit = 8;
 
 /// How many byte-identical records in a row stop being a shelf.
 ///
