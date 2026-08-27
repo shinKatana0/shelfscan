@@ -1096,6 +1096,128 @@ String visionApiMessage({
   };
 }
 
+/// The two roads to the output cap, told apart on the answer itself (T-0427).
+///
+/// **Repetition is the mechanism and density is only one trigger for it.** A
+/// frame carrying no more readable titles than one that scans cleanly still
+/// loops if it also holds many narrow strips that look like a spine and carry
+/// no title -- cases stacked edge-on, a rib and a logo and nothing to read.
+/// The model cannot tell one from the next, and at `temperature` 0 there is no
+/// draw to break the repetition, so it enumerates them until the cap stops it.
+/// Told that the shelf was too full, the user cuts the shot into sections and
+/// every section still holds the strips.
+///
+/// **What must NOT be evidence is similarity.** A real shelf carries numbered
+/// entries of one series, a remaster beside its original, volumes differing by
+/// a word. Calling that a loop sends someone to re-shoot a photograph that was
+/// fine, which is worse than the message this replaces. So the test is exact
+/// repetition of a whole record, and near-identical records count as distinct.
+///
+/// **Two ways a greedy loop lands, and both of T-0278's measured sites are
+/// one of them.** Either the same record runs consecutively -- the `unreadable`
+/// site, where every entry was byte-identical to every other -- or the model
+/// re-emits a block it already wrote, which is a cycle with no long run at all:
+/// the `items` site answered 580 title keys over 20 distinct values, the last
+/// new one at index 19. [_repeatedRunFloor] catches the first,
+/// [_cycleDistinctShare] the second, and neither alone catches both.
+///
+/// Deliberately tolerant of anything: this reads text that is truncated by
+/// definition and may not be JSON at all, so it scans rather than parses and
+/// answers `false` for whatever it cannot make records of. `false` is the safe
+/// default -- it keeps today's message, which is right about the other road.
+bool answerRepeatsItself(String answer) {
+  final records = _jsonRecords(answer);
+  if (records.length < _repeatedRunFloor) return false;
+  var run = 1;
+  for (var i = 1; i < records.length; i++) {
+    run = records[i] == records[i - 1] ? run + 1 : 1;
+    if (run >= _repeatedRunFloor) return true;
+  }
+  if (records.length < _cycleRecordFloor) return false;
+  return records.toSet().length * _cycleDistinctShare <= records.length;
+}
+
+/// How many byte-identical records in a row stop being a shelf.
+///
+/// The largest honest identical group anyone here has measured is a pair:
+/// T-0093's phantom `unreadable` entries arrive byte-identical to each other,
+/// and `detectionPromptRules` forbids copies in as many words, so even that is
+/// the model misbehaving rather than the shelf repeating. Six clears it three
+/// times over. Nothing sits between: a loop at the cap spends what is left of
+/// the budget on copies and produces them by the hundred, so no honest answer
+/// reaches six and no loop stops at five.
+const _repeatedRunFloor = 6;
+
+/// Below this many records a cycle claim rests on too little to be worth
+/// making, and the run test above is the only one that runs.
+const _cycleRecordFloor = 20;
+
+/// A cycle is called when at most a quarter of the records are distinct.
+///
+/// Chosen against both directions rather than as a round number. T-0278's
+/// `items` loop is 20 distinct of 580, a thirtieth, so the margin above it is
+/// large; an honest answer cut off at the cap is a run of distinct titles and
+/// sits at nearly one, so the margin below it is larger still. A frame whose
+/// `unreadable` list repeats a reason a few times while its `items` stay
+/// distinct is left alone by this, which is the point.
+const _cycleDistinctShare = 4;
+
+/// The records in a possibly-truncated JSON answer, whitespace collapsed.
+///
+/// Brace matching rather than a parse, because the input is cut off by
+/// definition: an unclosed group is simply never yielded. Strings are tracked
+/// so a brace inside a title cannot move the depth.
+///
+/// A complete document closes its outer object and its records sit one level
+/// in; a truncated one never closes it, so the records ARE the shallowest
+/// groups. One group alone at the shallowest depth is the first case, more than
+/// one is the second -- which also covers an answer that opened with a bare
+/// array instead of an object.
+List<String> _jsonRecords(String text) {
+  final open = <int>[];
+  final groups = <({int depth, int start, String text})>[];
+  var inString = false;
+  var escaped = false;
+  for (var i = 0; i < text.length; i++) {
+    final c = text[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (c == r'\') {
+        escaped = true;
+      } else if (c == '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (c == '"') {
+      inString = true;
+    } else if (c == '{') {
+      open.add(i);
+    } else if (c == '}' && open.isNotEmpty) {
+      final start = open.removeLast();
+      groups.add((
+        depth: open.length,
+        start: start,
+        text: text.substring(start, i + 1)
+      ));
+    }
+  }
+  if (groups.isEmpty) return const [];
+  var shallowest = groups.first.depth;
+  for (final g in groups) {
+    if (g.depth < shallowest) shallowest = g.depth;
+  }
+  final outer = groups.where((g) => g.depth == shallowest).toList();
+  final records = outer.length == 1
+      ? groups.where((g) => g.depth == shallowest + 1).toList()
+      : outer;
+  records.sort((a, b) => a.start.compareTo(b.start));
+  return [
+    for (final r in records) r.text.replaceAll(RegExp(r'\s+'), ' ').trim()
+  ];
+}
+
 /// The exception for a 200 whose answer stopped at the output cap.
 ///
 /// [VisionApiException] rather than a class of its own, and the status it
@@ -1106,17 +1228,24 @@ String visionApiMessage({
 /// **The one of the four 200s that answers [UserSetCause] `false`** (T-0169),
 /// and its own sentence is the argument: the key, the model id and the photo
 /// file are all named as fine, the cap is a constant in this build that
-/// neither surface exposes, and the fix offered is to photograph the shelf in
-/// sections. Nothing in Settings changes any of that, so the shortcut its
-/// three neighbours get would lead nowhere here.
+/// neither surface exposes, and the fix offered -- sectioning on one road,
+/// framing on the other -- is about the photograph. Nothing in Settings
+/// changes any of that, so the shortcut its three neighbours get would lead
+/// nowhere here.
+///
+/// [answer] is read, not just measured for emptiness: [answerRepeatsItself]
+/// decides which of the two causes the message states, and doing it here is
+/// what gives all three providers the discrimination for nothing -- each
+/// already hands its truncated text to this constructor.
 ///
 /// Deliberately NOT retryable, and the arithmetic is the opposite of a 429's. A
 /// retry is not hopeless -- T-0120 measured one `CONTROL-HIRES` photo through
 /// `gpt-5.5` at completion 3046, 4093 and twice at the 4096 ceiling, so the
 /// tail is what crosses it -- but [Worker] gives four attempts, and each one
 /// re-uploads the whole photograph and bills a whole capped completion for an
-/// answer that will be discarded if it lands long again. Splitting the photo
-/// moves the ceiling; asking the same question four times does not.
+/// answer that will be discarded if it lands long again. Asking the same
+/// question four times moves nothing on either road; re-taking the photograph
+/// is what moves it, and which change to make is the message's whole job.
 Exception visionTruncatedFailure({
   required String service,
   required String model,
@@ -1131,6 +1260,7 @@ Exception visionTruncatedFailure({
         model: model,
         cap: cap,
         wroteNothing: answer.trim().isEmpty,
+        looped: answerRepeatsItself(answer),
         hasKey: hasKey,
       ),
       statusCode: 200,
@@ -1155,11 +1285,21 @@ Exception visionTruncatedFailure({
 /// because "your answer was cut short" is a lie about a photo that produced no
 /// answer at all.
 ///
+/// **Two roads reach this cap and until T-0427 the message knew one** (see
+/// [answerRepeatsItself]). [looped] picks between them, and the difference is
+/// not decoration: the density sentence's remedy is to cut the shot into
+/// sections, which on a looping frame is correct-sounding advice that fails
+/// again, because every section still holds the strips that caused it. A wrong
+/// cause stated confidently in the one message a user reads when stuck is
+/// worse than no cause. [looped] and [wroteNothing] cannot both be true -- an
+/// answer with no text has no records to repeat.
+///
 /// **The advice is what the user can reach, which is one action of the two.**
-/// Fewer spines per photo is theirs. The cap is not: it is a constant in this
-/// build (`_maxOutputTokens` in openai_compatible_vision.dart, `_numPredict`
-/// in ollama_vision.dart, [_anthropicMaxOutputTokens] here), and neither the
-/// app nor the CLI exposes a control for any of the three, so recommending it
+/// The photograph is theirs -- fewer spines on the density road, what is in
+/// the frame on the loop road. The cap is not: it is a constant in this build
+/// (`_maxOutputTokens` in openai_compatible_vision.dart, `_numPredict` in
+/// ollama_vision.dart, [_anthropicMaxOutputTokens] here), and neither the app
+/// nor the CLI exposes a control for any of the three, so recommending it
 /// would be T-0072 again in a new costume. A null [cap] is the case where this
 /// request carried none -- an endpoint that refused both names for it
 /// (T-0120/T-0139) -- and there the ceiling is the endpoint's own, so the
@@ -1170,6 +1310,7 @@ String visionTruncatedMessage({
   required String model,
   required int? cap,
   required bool wroteNothing,
+  bool looped = false,
   bool hasKey = true,
 }) {
   final ceiling =
@@ -1184,14 +1325,26 @@ String visionTruncatedMessage({
   final notAtFault = hasKey
       ? 'The key, the model id and the photo file are all fine'
       : 'Neither the model id nor the photo file is at fault';
+  final theirs = looped ? 'the framing' : 'fewer spines';
   final whose = cap == null
       ? 'That limit is the endpoint\'s own; this request carries no cap for it '
           'to raise.'
       : 'That cap is fixed in this build and neither the app nor the CLI has a '
-          'control for it, so fewer spines is the fix that is yours.';
+          'control for it, so $theirs is the fix that is yours.';
+  final because = looped
+      ? 'and neither is the size of the shelf: the answer that was cut off is '
+          'the same few entries written out over and over, not a long list '
+          'that ran out of room. That happens when a frame holds narrow strips '
+          'that look like a spine and carry nothing to read -- cases stacked '
+          'edge-on, showing a rib and a logo and no title. The model cannot '
+          'tell one from the next, so it enumerates them without end. Re-frame '
+          'the shot so that only spines whose titles face the camera are in '
+          'it, and keep edge-on stacks out of frame. Cutting this same shot '
+          'into sections will not help: every section still holds them.'
+      : 'there was more on that shelf than one answer can hold. Photograph it '
+          'in two or three sections and scan those instead.';
   return '$service stopped model "$model" at $ceiling $what. $notAtFault -- '
-      'there was more on that shelf than one answer can hold. Photograph it in '
-      'two or three sections and scan those instead. $whose';
+      '$because $whose';
 }
 
 /// The exception for a 200 that carries no answer text for a reason other than

@@ -31,16 +31,22 @@ const _defaultSeed = 20260814;
 /// The generation cap this request carries, and why the ceiling that bounds it
 /// is [timeout] rather than the context window (T-0281).
 ///
-/// Without one, this model past its density ceiling repeats itself under
-/// greedy decoding and generates until the context window is full. Measured on
-/// a synthetic 176-spine frame, first ask: 27836 tokens after a 4932-token
-/// prefill -- `4932 + 27836 = 32768` exactly -- 296 s, and what comes back is
-/// not JSON, so the photo yields nothing. `temperature` 0 is why nothing
-/// escapes: greedy decoding has no draw to break a repetition fixed point
-/// with. The same frame and the same first-ask sequence under this cap stops
-/// at 8192 tokens exactly with `done_reason: length` in 93 s, which is the
-/// branch below -- the user reaches [visionTruncatedFailure] and its advice to
-/// photograph the shelf in sections three times sooner.
+/// Without one, this model repeats itself under greedy decoding and generates
+/// until the context window is full. **Repetition is the mechanism; density is
+/// one trigger for it and not the only one** (T-0427) -- a frame carrying no
+/// more readable titles than one that scans cleanly reaches the same fixed
+/// point if it also holds many narrow strips that look like a spine and carry
+/// no title, because the model cannot tell one from the next. So this cap
+/// bounds a loop whatever started it, and the branch below has to say which
+/// one it was. Measured past the density ceiling on a synthetic 176-spine
+/// frame, first ask: 27836 tokens after a 4932-token prefill -- `4932 + 27836
+/// = 32768` exactly -- 296 s, and what comes back is not JSON, so the photo
+/// yields nothing. `temperature` 0 is why nothing escapes: greedy decoding has
+/// no draw to break a repetition fixed point with. The same frame and the same
+/// first-ask sequence under this cap stops at 8192 tokens exactly with
+/// `done_reason: length` in 93 s, which is the branch below -- the user
+/// reaches [visionTruncatedFailure] and the advice that fits their frame three
+/// times sooner.
 ///
 ///   floor    a frame that answers must not be cut off and called truncated.
 ///            Output is linear at ~48 tokens a row; T-0278's densest honest
@@ -222,9 +228,9 @@ class OllamaVisionProvider implements VisionProvider {
     final answer = jsonDecode(response.body) as Map<String, dynamic>;
     final content =
         (answer['message'] as Map<String, dynamic>?)?['content'] as String?;
-    // Reached routinely, not hypothetically: past the density ceiling this
-    // model runs to [_numPredict] every time (T-0281), which is why the cap is
-    // named here rather than passed as null. An Ollama old enough to omit
+    // Reached routinely, not hypothetically: once this model is looping it
+    // runs to [_numPredict] every time (T-0281), which is why the cap is named
+    // here rather than passed as null. An Ollama old enough to omit
     // `done_reason` still falls through to the parse.
     if (answer['done_reason'] == 'length') {
       throw visionTruncatedFailure(
