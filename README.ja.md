@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob afd6fc76b93c0cf11ae45900aa98a30a06fc8895 CURRENT
+<!-- TRANSLATED-FROM: README.md blob 4113bdfb593db60cd40b723fb0e0116609c43a8d CURRENT
      Translated 2026-08-26. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
@@ -44,6 +44,14 @@
 ## できないこと
 
 正直なほうの半分を先に置く。ここの各行は実測であり、リンク先にその数値がある。
+
+**Android のビルドは未完成であり、この文書は Android について何も約束しない。**
+これは実測ではなく決定であり、以下の一覧はすべてこれを通して読まれるので、一覧の
+前に置く。二つのプラットフォームともこのリポジトリからビルドしているが、今日この
+プロジェクトが引き受けるのは Windows のほうであり、Android は現時点で優先事項で
+はない。**放棄したわけではない。** いまも予定に入っており、作業も続いている。
+完成するまでは、この文書の Android に関する記述はすべて、動くアプリの報告では
+なくコードが何をするかの説明として読むこと。
 
 - **二つのプラットフォームのうち Android のほうが手薄である。** Windows も
   Android もこのリポジトリからビルドしているが、ここで**動かした**のは
