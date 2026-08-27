@@ -20,6 +20,16 @@ is the authority behind it.
 ## [Unreleased]
 
 ### Fixed
+- **A refused cloud vision call no longer reports a 403 as a rejected API
+  key.** 401 and 403 are separate sentences now: 401 says the credentials were
+  rejected, 403 says access was refused and deliberately claims nothing about
+  the key in either direction — on this endpoint family a 403 can be a
+  project, a region, a permission or a model the key may not use, and a proxy
+  in front of the API can answer one having asked the API nothing. A 403 also
+  says that access can depend on the connection the machine is on rather than
+  on anything you configured, and sends you to try another network before
+  checking your key: the same key and model can be refused over one connection
+  and work over another.
 - **A photo the vision model loops on is no longer reported as a shelf with
   too many games on it.** A frame can carry no more readable titles than one
   that scans cleanly and still fill the model's output budget, because it also
@@ -37,6 +47,20 @@ is the authority behind it.
   because the model id is not what to change.
 
 ### Changed
+- **A refused vision call carries a sanitised summary of what answered it**, on
+  `VisionApiException.diagnostics`: the endpoint's own `error.type` and
+  `error.code`, the response `content-type`, a classification of the body as
+  `json`, `unrecognized-json`, `non-json` or `empty`, the `x-request-id` its
+  support can look up, and `server` and `cf-ray` where they are sent. Together
+  those tell an endpoint's own refusal apart from a proxy or an edge answering
+  in front of it, and an API error document apart from an HTML block page. It
+  is deliberately kept out of the sentence you read and out of the raw response
+  body, which is unchanged and still never shown — on a 401 that body holds the
+  API key echoed back. `error.message` is never read, no character of the body
+  is ever quoted, and a value that cannot be made safe is dropped whole rather
+  than shortened.
+- **The empty scan screen's heading lines up with the text below it.**
+  Alignment only; no wording, spacing or behaviour changed.
 - **The READMEs say where Android stands.** It builds from this tree and it
   is not finished; it is not the priority at present, nothing about it is
   promised, and it has not been abandoned. Every Android sentence in those
