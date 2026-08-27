@@ -31,7 +31,7 @@
 /// any catalogue to answer -- in every one of the four states, including the
 /// two that build a live client.
 ///
-/// Every credential below is invented (`doc/conventions.md` §3b).
+/// Every credential below is invented.
 @Timeout(Duration(minutes: 3))
 library;
 
@@ -112,8 +112,9 @@ void main() {
     games = _tempDir('shelfscan_narration_games_');
     out = _join(_tempDir('shelfscan_narration_out_').path, 'n.review.json');
     // Declines by name, so the run holds no row and no catalogue is called.
-    // An OS default folder name is the software's own vocabulary, which is
-    // the standing exception `doc/conventions.md` §3b names.
+    // An OS default folder name is the software's own vocabulary rather than
+    // anybody's file, which is a standing exception to the invented-fixture
+    // rule.
     Directory(_join(games.path, 'Downloads')).createSync();
   });
 

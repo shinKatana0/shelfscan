@@ -18,7 +18,8 @@
 /// **The counts are what stop that from guarding nothing.** A regex that
 /// finds nothing passes vacuously, so the number of quotes, of labels, of
 /// exit claims and of scripts is asserted, and the extractor carries a
-/// control in each direction (`doc/conventions.md` 4a, fifth shape).
+/// control in each direction: a string that must be found, and one that must
+/// not.
 ///
 /// **One claim the extractor cannot read** (T-0419). The section also says
 /// the changelog voice joins a run only once the version this tree declares

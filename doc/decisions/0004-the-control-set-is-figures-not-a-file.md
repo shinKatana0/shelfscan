@@ -128,7 +128,7 @@ of them, and the size of the truncation corpus. The 2026-08-17 ruling names
 machine, and the owner ruled again over the whole 2026-08-18 audit: all of it
 comes out. Nothing about the disclosure changed; what changed is that somebody
 asked what the figures say about the person who took them, which is the
-question `doc/conventions.md` §6a now opens with.
+question the pre-publication audit now opens with.
 
 **What survives the removal, and it is the part that mattered.** The check
 this decision built is the prompt fingerprint, and the fingerprint was never a

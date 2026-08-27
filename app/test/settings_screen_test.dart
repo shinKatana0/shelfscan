@@ -781,8 +781,9 @@ void main() {
   // condition -- "Any use of any TMDB logos in Your Application must be less
   // prominent than the logos or marks that primarily describe or identify
   // Your Application" -- and that comparison is settled here out of the widget
-  // tree. It has to be: doc/conventions.md section 3 forbids driving the GUI,
-  // so a compliance claim that needs somebody to look at the screen is a claim
+  // tree. It has to be: nothing in this project drives the GUI, because
+  // automation competes for focus with whoever is at the machine -- so a
+  // compliance claim that needs somebody to look at the screen is a claim
   // this project cannot make at all.
   testWidgets(
       'the TMDB mark is the published asset, and smaller than the wordmark '

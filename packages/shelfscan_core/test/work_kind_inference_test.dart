@@ -7,9 +7,9 @@
 /// third group is the one that matters most -- one folder holding all three
 /// shapes at once, which is what a real download directory is.
 ///
-/// **Every name here is invented** (`doc/conventions.md` §3b). None is off any
-/// disk, and the films are not films: a title that resolves against a real
-/// catalogue would make this a test of TMDB rather than of the parser.
+/// **Every name here is invented**. None is off any disk, and the films are
+/// not films: a title that resolves against a real catalogue would make this
+/// a test of TMDB rather than of the parser.
 library;
 
 import 'package:shelfscan_core/shelfscan_core.dart';

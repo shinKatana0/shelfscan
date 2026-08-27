@@ -20,7 +20,7 @@ void main() {
   // The comments below name the debug config at length in order to say why it
   // is absent, so the code has to be judged without them -- and a strip that
   // ate everything would make the assertions pass on nothing, which is the
-  // shape doc/conventions.md 4a says to control in both directions.
+  // shape a control in each direction exists to catch.
   final code = gradle.replaceAll(RegExp(r'//.*'), '');
 
   group('the release build refuses the debug key', () {

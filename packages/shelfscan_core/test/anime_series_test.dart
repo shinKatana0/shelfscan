@@ -23,8 +23,8 @@
 /// has answered is still refused, and by the one reason that is still true of
 /// it.
 ///
-/// **Every name here is invented** (`doc/conventions.md` §3b), and reuses the
-/// families already in this tree's fixtures. No title is anybody's.
+/// **Every name here is invented**, and reuses the families already in this
+/// tree's fixtures. No title is anybody's.
 library;
 
 import 'dart:convert';

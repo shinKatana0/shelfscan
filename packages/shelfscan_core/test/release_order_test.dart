@@ -37,10 +37,10 @@ import '../../../tool/check-release-order.dart';
 void main() {
   group('the pattern this check judges versions by', () {
     // Controls on the matcher itself, because a pattern that cannot fail
-    // proves nothing about what it passed (doc/conventions.md 4a). `+BUILD`
-    // is OPTIONAL here and required in app_version_test.dart, so these are
-    // not that file's controls over again -- the first case is the one that
-    // differs, and it is the tagged tree this repository actually has.
+    // proves nothing about what it passed. `+BUILD` is OPTIONAL here and
+    // required in app_version_test.dart, so these are not that file's
+    // controls over again -- the first case is the one that differs, and it
+    // is the tagged tree this repository actually has.
     test('a version with no build number parses, and publishes 1', () {
       final parsed = parseVersion('0.1.0');
       expect(parsed, isNotNull);
@@ -174,7 +174,7 @@ void main() {
     });
 
     // Exit 2 is not exit 0: a run that compared nothing has proved nothing
-    // and must not read as green (doc/conventions.md 4a).
+    // and must not read as green.
     test('a missing pubspec compares nothing, and does not read as green', () {
       final verdict =
           judge(app: null, core: null, tags: const [], changelog: null);
@@ -236,7 +236,7 @@ void main() {
 
     // Controls on the pattern itself: it must not answer for text that only
     // looks like a heading, or the quiet cases below would be quiet for the
-    // wrong reason (doc/conventions.md 4a).
+    // wrong reason.
     test('what is not a release heading', () {
       expect(releasedHeadings('### [1.2.3]\n'), isEmpty,
           reason: 'a deeper heading is not a release heading');

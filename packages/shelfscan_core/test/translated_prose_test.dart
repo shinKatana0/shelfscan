@@ -350,10 +350,10 @@ void main() {
 
   group('the scan can see what it claims to scan', () {
     // Half of every check in this project that reported nothing was a check
-    // that could see nothing (`doc/conventions.md` 4a). Blanking is what this
-    // file does most of, so a blanking bug would report a confident zero on
-    // all six documents at once. The floor is deliberately far below what any
-    // of them carries: it answers "did the prose survive", not "how much".
+    // that could see nothing. Blanking is what this file does most of, so a
+    // blanking bug would report a confident zero on all six documents at
+    // once. The floor is deliberately far below what any of them carries: it
+    // answers "did the prose survive", not "how much".
     for (final doc in _documents) {
       test('${doc.path} still has its own script left after the blanking', () {
         var own = 0;

@@ -40,8 +40,9 @@
 /// Run all four: `write` and `clear` leave state in the real credential store
 /// of whoever runs them, and `gone` is what takes it back out.
 ///
-/// **This opens a window.** `doc/conventions.md` section 3 forbids driving it
-/// while the owner is at the machine, which is why it has never been run here.
+/// **This opens a window.** A harness that raises windows and synthesises
+/// clicks competes for focus with whoever is at the machine, so nothing here
+/// is driven while somebody is there -- which is why it has never been run.
 ///
 /// ## Why it does not touch the app's own keys
 ///

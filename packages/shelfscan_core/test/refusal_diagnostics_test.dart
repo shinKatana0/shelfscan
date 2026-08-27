@@ -17,8 +17,8 @@
 /// quoted. The first group asserts the second invariant in both directions,
 /// so an empty fixture cannot pass for a refusal.
 ///
-/// Every fixture here is invented (`doc/conventions.md` §3b), including
-/// anything shaped like a credential, a request id or an endpoint.
+/// Every fixture here is invented, including anything shaped like a
+/// credential, a request id or an endpoint.
 library;
 
 import 'dart:convert';
@@ -36,7 +36,7 @@ const _model = 'vision-mini-typo';
 const _credential = 'sk-invented-9WQ2m4Kx7Ttz0Ab1Cd3Ef5Gh7Ij9Kl';
 
 /// Control characters by code point rather than by escape: a backslash in this
-/// file is one shell away from being eaten (`doc/conventions.md` §4a).
+/// file is one shell away from being eaten.
 final _lf = String.fromCharCode(0x0a);
 final _cr = String.fromCharCode(0x0d);
 final _nul = String.fromCharCode(0x00);

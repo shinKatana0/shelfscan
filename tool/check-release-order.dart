@@ -33,10 +33,9 @@
 // **Every tag, not just the most recent one.** "Never reused" is a claim
 // about everything ever published, not about the last thing published, and
 // this repository has already carried two root commits with a tag pointing
-// into the orphaned one (doc/conventions.md 6a). Where the two readings agree
-// -- which is every case with one tag, including today's -- they are the same
-// answer; where they differ, the stricter one is the rule decision 0014
-// actually states.
+// into the orphaned one. Where the two readings agree -- which is every case
+// with one tag, including today's -- they are the same answer; where they
+// differ, the stricter one is the rule decision 0014 actually states.
 //
 // **What it cannot see, and this is a hole rather than a caveat:** an
 // artefact handed to someone without a tag being cut. Nothing in git records
@@ -80,7 +79,7 @@
 // can have been reused and the question is answered -- vacuously, but
 // answered; a check that failed there is a check people delete. A checkout
 // where git cannot be reached at all answers nothing, and exits 2 rather than
-// green (doc/conventions.md 4a).
+// green.
 //
 // The changelog answer needs no code of its own: a tag that skipped it is
 // `refused`, because a rule of decision 0014 is broken by something already

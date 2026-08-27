@@ -159,9 +159,10 @@ scaffolding built over nobody.
 namespace goes in everywhere in one commit. A `Candidate` whose id is sometimes
 bare and sometimes namespaced is worse than either shape on its own, because
 every consumer then has to guess which it holds — and a half-applied rename is
-the specific failure `doc/conventions.md` §3b lists first, and the one T-0162
-found twice in one afternoon. One commit for the type, the exporter's namespace
-check, and the reader's legacy path.
+a substitution that stopped halfway, which is the failure shape this project
+has paid for most often, and the one T-0162 found twice in one afternoon. One
+commit for the type, the exporter's namespace check, and the reader's legacy
+path.
 
 ## The measurement that settled it, and how it was counted
 

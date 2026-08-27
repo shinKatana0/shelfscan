@@ -22,8 +22,7 @@
 /// title read off its filename, asks IGDB nothing, exports to CSV and is
 /// refused by `.xcoll`.
 ///
-/// Every title, filename, id and credential below is invented
-/// (`doc/conventions.md` §3b).
+/// Every title, filename, id and credential below is invented.
 library;
 
 import 'dart:convert';

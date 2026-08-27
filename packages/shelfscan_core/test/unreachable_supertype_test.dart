@@ -125,8 +125,8 @@ void main() {
         'only listens to itself.';
 
     // Invented hosts throughout, except the two vendors' own published
-    // addresses already in the tree and Ollama's own documented default
-    // (`doc/conventions.md` 3b).
+    // addresses already in the tree and Ollama's own documented default --
+    // each of those is the software's own vocabulary, not anybody's.
     final families = <String, ({UnreachableEndpoint error, String outward})>{
       'the vision endpoint the user typed': (
         error: VisionUnreachableException(_refused,
