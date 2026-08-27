@@ -96,10 +96,3 @@ PROJECT.md
 # reproducing runs over them is development rather than product. The figures it
 # yields are quoted where they are used, in doc/measurements.md.
 doc/control-set.md
-
-# And the one decision record whose whole subject is the working record above.
-# It says the agent rules are committed and each kind of writing has one
-# destination -- true of the development repository, false of the published one
-# the moment those files stop being published. A record that describes files a
-# reader cannot see is the defect it was written to prevent.
-doc/decisions/0013-the-rules-the-agents-follow-are-committed.md

@@ -63,10 +63,6 @@ anyone who ever does hold that record.
 | [0015](0015-the-kind-of-work-is-a-property-of-the-row.md) | The kind of work is a property of the row, not of the run | The export target is a mixed-media manager and the models already answer a mixed shelf, so a games-or-anime mode would only be discarding rows that were read correctly. |
 | [0016](0016-a-row-is-identified-by-the-catalogue-that-answered.md) | A row is identified by the catalogue that answered and that catalogue's id | Two of the three fields in this tree that hold an external id already say which service issued it; the third is named after one catalogue and now carries another's. |
 
-**0013 is not missing.** It records how this project's own working record is
-organised, which is development rather than product, so it stays on the private
-disk with the record it describes. Numbers are never reused.
-
 ## Adding one
 
 A new record is written when a decision is *taken*, in the same pass that takes
