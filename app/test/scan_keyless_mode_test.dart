@@ -227,7 +227,7 @@ void main() {
 
     // The whole of what somebody with no credentials meets, pinned as one
     // screen rather than as three assertions scattered through this file: it
-    // is the common path, and T-0367's brief settles that it may not change.
+    // is the common path, and T-0367 settles that it may not change.
     // Both sentences are the ones that were on this screen before that task,
     // and neither names a catalogue the reader has not registered for.
     testWidgets('with no credentials at all, both sentences are the ones that '

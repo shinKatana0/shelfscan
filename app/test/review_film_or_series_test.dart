@@ -7,12 +7,12 @@
 /// somebody answers, and this screen is where the somebody is.
 ///
 /// **Half of what is pinned here is the negative half, and it is the half the
-/// brief was written around.** A game row and a film row answer nothing new:
-/// their sheet is the three kinds it has always been, with no fourth control
-/// and no new sentence, and their row text does not move. A screen that asked
-/// everybody about series to serve anime would tax the common path for the
-/// rare one, which is the opposite of what T-0311, T-0313, T-0317, T-0337 and
-/// T-0340 each spent a task doing.
+/// requirement was written around.** A game row and a film row answer nothing
+/// new: their sheet is the three kinds it has always been, with no fourth
+/// control and no new sentence, and their row text does not move. A screen
+/// that asked everybody about series to serve anime would tax the common path
+/// for the rare one, which is the opposite of what T-0311, T-0313, T-0317,
+/// T-0337 and T-0340 each spent a task doing.
 ///
 /// The row's own clause did not change by one character either. `not in
 /// .xcoll -- film or series?` was written by T-0290 for a question nothing
@@ -100,8 +100,8 @@ void main() {
       expect(find.text('Game'), findsOneWidget);
       expect(find.text('Film'), findsOneWidget);
       expect(find.text('Anime'), findsOneWidget);
-      // The whole of the brief's "must not happen", in the negative, which is
-      // the only direction that can catch it: nothing about series reaches a
+      // The whole of the "must not happen", in the negative, which is the
+      // only direction that can catch it: nothing about series reaches a
       // sheet that is not an anime's.
       expect(find.text('Film or series'), findsNothing);
       expect(find.byKey(const Key('work-kind-animationFilm')), findsNothing);

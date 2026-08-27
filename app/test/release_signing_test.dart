@@ -92,7 +92,7 @@ void main() {
   });
 
   group('the secrets stay ignored in both places', () {
-    // The brief's "verify, do not redo" half: nothing here adds an ignore
+    // The "verify, do not redo" requirement: nothing here adds an ignore
     // rule, it fails if one of the two existing sets goes away.
     for (final ignore in const {
       'the repository root': '../.gitignore',

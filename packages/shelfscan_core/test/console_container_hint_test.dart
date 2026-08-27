@@ -151,7 +151,7 @@ void main() {
 
   test('an unnameable container reaches the resolver as no row at all',
       () async {
-    // The result the brief asked to be stated rather than worked around. A
+    // The result required to be stated rather than worked around. A
     // `.pkg` is a PlayStation package across PS3, PS4 and Vita and a `.chd` is
     // not a PlayStation format at all; either hint would come back `mismatch`
     // on every candidate, and the row would be strictly worse than absent.

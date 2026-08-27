@@ -35,16 +35,16 @@ const _igdbUrl = 'https://api.igdb.com/v4';
 /// byte-identical documents -- which is why the defect never showed in a run's
 /// own summary. What it cost was that sixth of the run in refused requests off
 /// a personal Twitch application quota (BYOK, decision 0011), on a burst six
-/// times the documented rate; T-0064's brief measured the same shape worse on
-/// a worse day.
+/// times the documented rate; T-0064 measured the same shape worse on a worse
+/// day.
 ///
 /// Holding the rate costs wall clock and nothing else, and that cost is
 /// arithmetic rather than overhead: one request per row cannot start faster
 /// than 4 a second, so the floor is the row count over that rate and it grows
-/// with the collection. Bursting finished under that floor. The brief expected
-/// the fix to be free because its two lane rows came out the other way round
-/// -- that ordering is a function of how many 429s the day hands out and did
-/// not reproduce here.
+/// with the collection. Bursting finished under that floor. The fix was
+/// expected to be free because the two lane rows behind that expectation came
+/// out the other way round -- that ordering is a function of how many 429s the
+/// day hands out and did not reproduce here.
 const igdbRequestsPerSecond = 4;
 
 /// Keys are hints uppercased with spaces stripped, so a spelling the model
@@ -666,9 +666,9 @@ class IgdbClient {
   /// The same filter on the bare series name returns **12 games**, and the one
   /// that is not among them settles the other half of the filing: Path of Ember
   /// True 2 holds no Japanese alternative name at all, only Chinese ones. Of
-  /// the そらのは spines the brief calls "in this state", exactly one is
-  /// -- a name IGDB has and will not return. The other is a name IGDB does not
-  /// have, which no query shape reaches.
+  /// the そらのは spines in this state, exactly one is -- a name IGDB has
+  /// and will not return. The other is a name IGDB does not have, which no
+  /// query shape reaches.
   Future<List<IgdbHit>> search(String query, {String? platformHint}) =>
       // Stripped here rather than in the caller so no future caller can send a
       // query IGDB is known not to match.

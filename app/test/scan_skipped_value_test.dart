@@ -7,10 +7,11 @@
 /// warning opening the same way able to move a photo between the two banners.
 ///
 /// Rewording core's sentence from a test is not possible without editing core,
-/// which the brief rules out; the equivalent and stronger proof is a decoy. The
-/// fake provider writes a sentence of exactly the shape the old parse looked
-/// for, about a photo it is wrong about. Under the parse it decided the banner;
-/// under `ReviewDocument.failedPhotos` / `notLookedAtPhotos` it is ignored.
+/// which is out of scope here; the equivalent and stronger proof is a decoy.
+/// The fake provider writes a sentence of exactly the shape the old parse
+/// looked for, about a photo it is wrong about. Under the parse it decided the
+/// banner; under `ReviewDocument.failedPhotos` / `notLookedAtPhotos` it is
+/// ignored.
 ///
 /// These drive the real [Orchestrator], so the values under test are the ones
 /// core actually writes.

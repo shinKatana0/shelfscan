@@ -170,7 +170,7 @@ void main() {
       expect(rows, hasLength(2));
     });
 
-    // The relation the brief asked to be checked rather than assumed. A box
+    // The relation required to be checked rather than assumed. A box
     // is one row a catalogue answered with several entries; a series is
     // several entries that are one work. `parts` is read by LENGTH, and a
     // series row's is empty -- so `mapsToSeveral` is false, the review screen

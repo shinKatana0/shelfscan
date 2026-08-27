@@ -72,7 +72,7 @@ List<String> _titles(ReviewDocument doc) =>
 List<String> _rows(ReviewDocument doc) =>
     [for (final game in doc.games) jsonEncode(game.toJson())];
 
-/// The brief's own measurement: two photos, five reads, one spine on both.
+/// The measurement behind this: two photos, five reads, one spine on both.
 ///
 /// `shelf_b.jpg` yields more, so its read of the shared spine wins the merge
 /// (`_photoYield`, T-0027) while `shelf_a.jpg` is where the spine is first

@@ -6,9 +6,9 @@
 /// path really receives the rendered string.
 ///
 /// The Android share sheet itself is still NOT driven here -- that needs a
-/// device, see the T-0005 worker report and T-0015. What is covered is the one
-/// decision that branch makes: which share results mean the export was saved
-/// and which mean the user backed out. [shareOutcome] exists to be reachable
+/// device, see T-0005 and T-0015. What is covered is the one decision that
+/// branch makes: which share results mean the export was saved and which mean
+/// the user backed out. [shareOutcome] exists to be reachable
 /// from here, because reporting a cancelled export as a saved one is the worst
 /// thing this file can do and a device test is not available to catch it.
 library;

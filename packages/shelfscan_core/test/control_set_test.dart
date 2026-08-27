@@ -1,9 +1,10 @@
 /// Keeps the control-set manifest honest (T-0081).
 ///
-/// The defect: four briefs and the project's own front page measured the
-/// resolver against "the control document", which was on no disk. The
-/// prompt had moved three times under the figures and nothing said so, so each
-/// worker rediscovered it -- twice by paying for a live IGDB run.
+/// The defect: four separate documents and the project's own front page
+/// measured the resolver against "the control document", which was on no disk.
+/// The prompt had moved three times under the figures and nothing said so, so
+/// it was rediscovered again and again -- twice by paying for a live IGDB
+/// run.
 ///
 /// The fix has to work without the photographs, since they are a private home
 /// and are gitignored. So the check that matters is `the prompt the figures
