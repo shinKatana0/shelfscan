@@ -1142,7 +1142,7 @@ String visionApiMessage({
         'front of $service can answer 403 on its own as well, having put '
         'nothing to the endpoint at all. It can also depend on the connection '
         'this machine is on rather than on anything you configured -- the '
-        'same key and model refused over one network and accepted over '
+        'same key and model can be refused over one network and work over '
         'another, with a VPN or a proxy changing the address the endpoint '
         'sees. So try another connection first, then check the key you '
         'configured for this endpoint and what it is allowed to '
@@ -1257,14 +1257,20 @@ String? _refusalDiagnostics(
 /// spoke JSON this code does not know, which is a different answer from
 /// `non-json`, where whatever replied was not speaking JSON at all. Collapsing
 /// the two would lose the distinction the field exists for.
+/// Not through [_decodeOrNull]: that folds a decode failure and a body of
+/// literal `null` into the same answer, and calling valid JSON `non-json` is
+/// the kind of plausible wrong answer a diagnosis is then built on.
 String _bodyClass(String body) {
   if (body.trim().isEmpty) return 'empty';
-  final decoded = _decodeOrNull(body);
-  if (decoded == null) return 'non-json';
-  return decoded is Map<String, dynamic> &&
-          decoded['error'] is Map<String, dynamic>
-      ? 'json'
-      : 'unrecognized-json';
+  try {
+    final decoded = jsonDecode(body);
+    return decoded is Map<String, dynamic> &&
+            decoded['error'] is Map<String, dynamic>
+        ? 'json'
+        : 'unrecognized-json';
+  } on FormatException {
+    return 'non-json';
+  }
 }
 
 /// The longest realistic value among the six is a `content-type` carrying a
