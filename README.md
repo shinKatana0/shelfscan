@@ -7,8 +7,7 @@
      that line's last word to STALE — marking is cheap and honest, a silent lag
      is neither.
      The rule in full, what the marker names and why it is not a commit:
-     "Translations", under "How this repository is developed", in
-     CONTRIBUTING.md. -->
+     CONTRIBUTING.md, "Translations". -->
 
 # shelfscan
 
