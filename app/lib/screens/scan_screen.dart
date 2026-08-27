@@ -1326,14 +1326,15 @@ class _ScanScreenState extends State<ScanScreen> {
                       // and the plural arrived. The empty screen fitted a
                       // 360x564 body before that and a 360x604 one after,
                       // measured with `flutter test`; scrolling ends the class
-                      // rather than buying back the 40 px. Centred still, and
-                      // unchanged wherever it fits: a scroll view under loose
-                      // constraints is exactly as tall as its child.
+                      // rather than buying back the 40 px. Centred vertically
+                      // still, and unchanged wherever it fits: a scroll view
+                      // under loose constraints is exactly as tall as its child.
                       Expanded(
                         child: Center(
                           child: SingleChildScrollView(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text('Pick shelf photos to begin'),
                                 // The empty screen is the first place the
