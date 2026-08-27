@@ -570,11 +570,21 @@ abstract class VisionProvider {
 /// of the transport, not a licence for the two to disagree about a payload
 /// (T-0013).
 PhotoAnalysis parsePhotoAnalysisText(String text, String photoName) =>
+    _parseDecodedAnswer(_decodeAnswer(text), photoName);
+
+/// The answer's JSON value, with whatever the transport wrapped it in gone.
+///
+/// Split out of [parsePhotoAnalysisText] so [parsePhotoAnalysisAnswer] can
+/// keep the decoded document (T-0428): the wrong-shape sentence is decided on
+/// the records in it, and decoding a second time to get them back would be
+/// paying twice for what this call already produced.
+Object? _decodeAnswer(String text) =>
+    jsonDecode(_stripCodeFence(_stripThinkingBlock(text)));
+
+PhotoAnalysis _parseDecodedAnswer(Object? decoded, String photoName) =>
     parsePhotoAnalysis(
         _shaped<Map<String, dynamic>>(
-            jsonDecode(_stripCodeFence(_stripThinkingBlock(text))),
-            _answerPath,
-            'an object with an "items" list'),
+            decoded, _answerPath, 'an object with an "items" list'),
         photoName);
 
 /// [parsePhotoAnalysisText], with an answer this parse cannot use reported as
@@ -598,14 +608,17 @@ PhotoAnalysis parsePhotoAnalysisAnswer(
   required String model,
   bool hasKey = true,
 }) {
+  Object? decoded;
   try {
-    return parsePhotoAnalysisText(text, photoName);
+    decoded = _decodeAnswer(text);
+    return _parseDecodedAnswer(decoded, photoName);
   } on ReviewFormatException catch (e) {
     throw visionWrongShapeFailure(
         service: service,
         model: model,
         problem: '$e',
         answer: text,
+        document: decoded,
         hasKey: hasKey);
   } on FormatException {
     throw visionNotJsonFailure(
@@ -1125,8 +1138,38 @@ String visionApiMessage({
 /// definition and may not be JSON at all, so it scans rather than parses and
 /// answers `false` for whatever it cannot make records of. `false` is the safe
 /// default -- it keeps today's message, which is right about the other road.
-bool answerRepeatsItself(String answer) {
-  final records = _jsonRecords(answer);
+bool answerRepeatsItself(String answer) =>
+    _recordsRepeat(_jsonRecords(answer));
+
+/// Whether a decoded answer is a repetition loop (T-0428).
+///
+/// The typed half of [answerRepeatsItself], for the branch where the loop
+/// closed its document instead of running into the cap -- HTTP 200, valid
+/// JSON, the wrong shape. **One rule, two extractors:** the argument, the two
+/// thresholds and the refusal to treat similarity as evidence are all
+/// [answerRepeatsItself]'s and are read there. What differs is only how the
+/// records are got, and the two inputs are genuinely different things.
+///
+/// **And it is not merely cheaper, it sees a shape the text scan cannot.**
+/// [_jsonRecords] counts brace-balanced groups, so `{"items":["Vex","Vex",
+/// ...]}` -- plain strings, which [parsePhotoAnalysis] names as the wrong
+/// shape a model plausibly writes -- yields it no records at all and answers
+/// `false` however far the list runs. Decoded, those entries are values like
+/// any other.
+///
+/// The records are the longest list anywhere in the document. A loop spends
+/// the whole answer on one list, so if there is a loop the longest list is it;
+/// a document with no list at all has no records and answers `false`, which is
+/// the same safe default the text road takes.
+bool documentRepeatsItself(Object? document) =>
+    _recordsRepeat(_documentRecords(document));
+
+/// The rule both roads share, over records however they were read.
+///
+/// Shared rather than written twice: a twin holding its own copy of
+/// [_repeatedRunFloor] and [_cycleDistinctShare] would move one road's message
+/// silently the first time the other was tuned.
+bool _recordsRepeat(List<String> records) {
   if (records.length < _repeatedRunFloor) return false;
   var run = 1;
   for (var i = 1; i < records.length; i++) {
@@ -1135,6 +1178,33 @@ bool answerRepeatsItself(String answer) {
   }
   if (records.length < _cycleRecordFloor) return false;
   return records.toSet().length * _cycleDistinctShare <= records.length;
+}
+
+/// The elements of the longest list anywhere in [document], canonically.
+///
+/// Iterative, and [jsonEncode] runs only on values [jsonDecode] built, so
+/// nothing here can throw on the input it exists to judge -- a document that
+/// decoded and is not the one this scan asked for.
+///
+/// Re-encoding is what keeps the comparison exact, which is the whole of the
+/// false-positive defence: records the model wrote identically encode
+/// identically, records differing anywhere do not, so a numbered series stays
+/// a list of distinct records. Key order is the document's own and is never
+/// sorted -- the same fields in a different order read as distinct, which is
+/// the conservative direction to be wrong in.
+List<String> _documentRecords(Object? document) {
+  var longest = const <Object?>[];
+  final pending = <Object?>[document];
+  while (pending.isNotEmpty) {
+    final node = pending.removeLast();
+    if (node is List) {
+      if (node.length > longest.length) longest = node;
+      pending.addAll(node);
+    } else if (node is Map) {
+      pending.addAll(node.values);
+    }
+  }
+  return [for (final element in longest) jsonEncode(element)];
 }
 
 /// How many byte-identical records in a row stop being a shelf.
@@ -1578,20 +1648,29 @@ Exception visionWrongShapeFailure({
   required String model,
   required String problem,
   required String answer,
+  Object? document,
   bool hasKey = true,
-}) =>
-    VisionApiException(
-      visionWrongShapeMessage(
-        service: service,
-        model: model,
-        problem: problem,
-        answer: answer,
-        hasKey: hasKey,
-      ),
-      statusCode: 200,
-      body: answer,
-      causeIsUserSet: true,
-    );
+}) {
+  final looped = documentRepeatsItself(document);
+  return VisionApiException(
+    visionWrongShapeMessage(
+      service: service,
+      model: model,
+      problem: problem,
+      answer: answer,
+      looped: looped,
+      hasKey: hasKey,
+    ),
+    statusCode: 200,
+    body: answer,
+    // T-0169's rule is that the sentence and the Settings shortcut agree, and
+    // on the loop branch the sentence says the model id is not the thing to
+    // change. `true` there would offer the route the sentence just withdrew --
+    // the same misattribution one surface over, and the reason this is read
+    // off [looped] rather than fixed at `true` (T-0428).
+    causeIsUserSet: !looped,
+  );
+}
 
 /// What a 200 carrying the wrong document means for the person who took the
 /// photograph.
@@ -1600,15 +1679,29 @@ Exception visionWrongShapeFailure({
 /// 'Map<String, dynamic>' in type cast` -- the T-0072 class at its purest, a
 /// Dart generic naming neither the run, the model nor the endpoint.
 ///
-/// **Measured since T-0278**, and by the default local model: past a density
-/// ceiling `qwen2.5vl:7b` repeats itself under greedy decoding until it runs
-/// out of context, and the answer that arrives is one array of near-identical
-/// entries. Whether that reaches here or [visionTruncatedFailure] is decided
-/// by nothing the user did -- the model either closes the document first
-/// (here) or fills the context first (there) -- which is why the advice below
-/// now names the shelf as well as the model id. The shapes the filing measured
-/// offline still hold; `{"items":["Vex"]}` is the one a model plausibly
-/// writes.
+/// **Measured since T-0278**, and by the default local model: under greedy
+/// decoding `qwen2.5vl:7b` repeats itself until it runs out of context, and
+/// the answer that arrives is one array of near-identical entries. Whether
+/// that reaches here or [visionTruncatedFailure] is decided by nothing the
+/// user did -- the model either closes the document first (here) or fills the
+/// context first (there). The shapes the filing measured offline still hold;
+/// `{"items":["Vex"]}` is the one a model plausibly writes.
+///
+/// **Two causes reach this shape and until T-0428 the message named one, and
+/// named it wrongly** ([documentRepeatsItself], and [visionTruncatedMessage]
+/// for the same correction one branch over). Density is a trigger for the
+/// loop, not the loop; a frame carrying no more readable titles than one that
+/// scans cleanly still loops if it also holds narrow strips that look like a
+/// spine and carry nothing to read. Told the shelf was too full, the user cuts
+/// the shot into sections and every section still holds them. So [looped]
+/// picks the advice, and the density sentence -- which was never measured as
+/// the cause of *this* shape either -- is gone from both branches.
+///
+/// **The loop branch does not end on the model id**, which is the other half
+/// of the correction: a greedy decoder given indistinguishable input is doing
+/// what it does, and a different model id is not the fix.
+/// [visionWrongShapeFailure] carries that through to `causeIsUserSet` so the
+/// app's Settings shortcut says the same thing the sentence does.
 ///
 /// [problem] is the parse's own `path is X; it must be Y`, which is the reason
 /// the check lives in the parse: the boundary could only have said "the wrong
@@ -1622,10 +1715,25 @@ String visionWrongShapeMessage({
   required String model,
   required String problem,
   required String answer,
+  bool looped = false,
   bool hasKey = true,
 }) {
   final said = _capped(answer);
   final quote = said == null ? '' : ' It said: $said';
+  final advice = looped
+      ? 'The answer is also the same few entries written out over and over '
+          'rather than a list of different spines, and that is not the size '
+          'of the shelf: the model cannot tell one thing in the frame from '
+          'the next, so it enumerates them without end. That happens when a '
+          'frame holds narrow strips that look like a spine and carry nothing '
+          'to read -- cases stacked edge-on, showing a rib and a logo and no '
+          'title. Re-frame the shot so that only spines whose titles face the '
+          'camera are in it, and keep edge-on stacks out of frame. Cutting '
+          'this same shot into sections will not help: every section still '
+          'holds them, and the model id is not what to change either.'
+      : 'Scan that photo again. If the answer has the same shape a second '
+          "time, the model id is yours to type, in the app's settings and in "
+          "the CLI's environment.";
   return '$service answered for model "$model" with JSON that is not the '
       'document the rest of the scan reads: $problem.$quote '
       '${_accepted(hasKey)}, and the call itself succeeded (HTTP 200) -- the '
@@ -1633,13 +1741,7 @@ String visionWrongShapeMessage({
       'one this scan asks for. None of it was read anyway: an answer this shape '
       'is declined whole rather than repaired into a plausible one, because a '
       'repaired row would sit in your review list looking exactly like a title '
-      'read off a spine. Scan that photo again. If the answer has the same '
-      'shape a second time, try the shelf before the model: the one cause '
-      'measured for this shape is a frame holding more spines than the model '
-      'can hold at once, which makes it repeat itself until the answer is a '
-      'wall of copies, and photographing the shelf in two or three sections '
-      'ends it. If sections change nothing, the model id is yours to type, in '
-      'the app\'s settings and in the CLI\'s environment.';
+      'read off a spine. $advice';
 }
 
 /// How much of a provider's explanation is quoted before it stops being one.
