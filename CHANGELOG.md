@@ -19,7 +19,32 @@ is the authority behind it.
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+- **A photo the vision model loops on is no longer reported as a shelf with
+  too many games on it.** A frame can carry no more readable titles than one
+  that scans cleanly and still fill the model's output budget, because it also
+  holds narrow strips that look like a spine and carry no title — cases
+  stacked edge-on, a rib and a logo and nothing to read. The model cannot tell
+  one from the next and enumerates them until the budget runs out. Both
+  endings of that now read the answer before naming a cause: whether the loop
+  runs into the output cap or closes its document first and arrives as JSON of
+  the wrong shape, an answer that repeats itself is told to re-frame the shot
+  so that only spines whose titles face the camera are in it, and told that
+  cutting the same shot into sections will not help. An answer of distinct
+  entries that simply ran out of room keeps the advice it already had; a
+  wrong-shaped answer that is not a loop no longer claims a cause nobody
+  measured. A looping frame is also no longer offered the settings screen,
+  because the model id is not what to change.
+
+### Changed
+- **The app says that media folders accumulate, before you have to guess it.**
+  *Add media folder* has appended since the control existed, and the only
+  thing that said so was the list of folders — which does not exist until you
+  have pressed it twice. The empty screen and the picker's own prompt now say
+  it, and both name anime beside games and films, which the walk has read
+  since the fansub grammar landed. Games in one folder, films in another and
+  anime in a third are one scan and one dedupe; nothing about what the app
+  does has changed.
 
 ## [0.2.0] - 2026-08-27
 
