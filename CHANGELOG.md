@@ -116,6 +116,13 @@ amendment introduced, and it starts at 2 because 1 is what every Android
 package built before it already declares.
 
 ### Added
+- **Building the app has its own page, [`doc/build.md`](doc/build.md).** It
+  was 164 lines inside `CONTRIBUTING.md`, where someone who wants to run the
+  program rather than change it had no reason to look — and since no release
+  attaches a built app, those notes are the only way to have one. The guide's
+  walkthrough offered two ways through, both of them the command line, while
+  naming the app eleven times as something you already had; it now offers the
+  app as a third and links both build pages.
 - **Films are read as films.** A video file whose name is release-shaped —
   `Some.Title.1999.1080p.BluRay.x264-GROUP.mkv` — comes back as a film row
   rather than a game row, and a film kept in its own folder comes back as one
