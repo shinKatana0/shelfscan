@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob 4113bdfb593db60cd40b723fb0e0116609c43a8d CURRENT
+<!-- TRANSLATED-FROM: README.md blob 7fc127aed43e14992e8945d4278229253455769a CURRENT
      Translated 2026-08-26. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
@@ -59,10 +59,12 @@
   （[`doc/android-build.md`](doc/android-build.md)、英語）が、どちらもどこにも
   インストールしていない。このマシンには実機もエミュレータも無いからで、
   だから Android 側については、動くものとしてではなくビルドできるものとして
-  しか書いていない。さらに構造上 Windows 限定のものが二つある。スマートフォン
-  の HEIC 写真の変換は Windows Imaging Component を使い、GOG Galaxy ライブラリ
-  は Galaxy 自身のデータベースから読むが、Galaxy は Windows 用プログラムで
-  ある。インストーラも配布バイナリもなく、ソースからビルドする
+  しか書いていない。さらに構造上 Windows 限定のものが一つある。GOG Galaxy
+  ライブラリは Galaxy 自身のデータベースから読むが、Galaxy は Windows 用
+  プログラムである。HEIC の変換はこれに当たらない。コードは各プラットフォーム
+  用のデコーダを持っており、Windows では Windows Imaging Component、Android
+  ではシステムのコーデックを使う。インストーラも配布バイナリもなく、
+  ソースからビルドする
   （[セットアップ](#setup)）。
 - **品質は与えたビジョンモデルの品質そのままであり、無料のものには既知の上限が
   ある。** 既定のローカルモデル `qwen2.5vl:7b` はラテン文字の背表紙をよく読む
@@ -603,9 +605,9 @@ flutter run -d windows   # or: flutter run -d <android-device>
 かった——し、Windows ではプロセス内で一枚ずつ、4000×3000 の写真あたり 340〜610
 ミリ秒、UI スレッドの外で変換する。スキャンしないものは、数分後のプロバイダ
 呼び出しの時点ではなく、あなたが選んだその瞬間に、却下された写真のパネルで名指し
-される。**Android では何も変換しない。** 使っている HEIC コーデックは Windows の
-一部なので、そこで選ばれた HEIC はその理由とともに却下され、あなたが先に変換する
-ことになる。
+される。**Android では Android 自身のコーデックで変換する。** WIC を通さない
+ので、そこで選ばれた HEIC を先に変換しておく必要はない。HEIF を復号できない
+ほど古い Android の端末では、同じパネルにファイルごとにその旨が出る。
 
 <a id="commands"></a>
 
