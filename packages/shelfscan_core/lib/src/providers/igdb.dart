@@ -454,8 +454,10 @@ Exception igdbFailure({
 /// - the token request carries `client_secret` in its own body, so an echo of
 ///   it is an echo of the credential, and 401/403 is the likeliest failure on
 ///   this path (BYOK, decision 0011 -- every user registers their own
-///   application). [visionApiMessage] already refuses to quote those two
-///   statuses for the weaker version of this reason, a key echoed back;
+///   application). [visionApiMessage] refuses those two statuses the whole
+///   `error.message` for the weaker version of this reason, a key echoed
+///   back, and since T-0435 quotes `error.type` and `error.code` from them
+///   instead -- the narrow road the next bullet says is closed here;
 /// - IGDB's documented error shape is a JSON **array**
 ///   (`[{"title":"Unauthorized","status":401,"cause":"..."}]`), which
 ///   [providerDetail] cannot read: it finds no explanation field, falls back to

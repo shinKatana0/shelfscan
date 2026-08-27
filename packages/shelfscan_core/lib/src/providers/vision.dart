@@ -1036,7 +1036,9 @@ Exception visionFailure({
 /// why the rest are excluded rather than defaulted in -- a shortcut that leads
 /// nowhere teaches the user to ignore the one that does (T-0102, moved here
 /// from the app by T-0169 so it sits beside the sentences it describes):
-///  - 401/403 name the key and 404 the model id, and both are Settings fields;
+///  - 401 names the key and 404 the model id, both Settings fields; 403 names
+///    the key among several causes it cannot choose between, and T-0435 left
+///    it on this list for that reason rather than for a rejected credential;
 ///  - 400 names two candidates, "a parameter or the model id", and only one of
 ///    them is the user's -- it is how an endpoint refuses a photo, and how it
 ///    reports the T-0089 `max_tokens` case. Which endpoint families answer 400
@@ -1076,8 +1078,17 @@ Exception visionApiFailure({
 ///     model. Use 'max_completion_tokens' instead.` -- the T-0089 case, and
 ///     the reason a 400 quotes the provider at all: that sentence is the fix.
 ///   - 401: `Incorrect API key provided: sk-not-a*********-000.` The key
-///     is echoed back with its ends intact, which is why 401 and 403 quote
-///     nothing at all -- the redaction is the endpoint's choice, not ours.
+///     is echoed back with its ends intact -- the redaction is the endpoint's
+///     choice and not ours, which is why 401 and 403 never quote
+///     `error.message` and never route through [providerDetail]. They take
+///     [_errorTokens] instead: `error.type` and `error.code` alone, the two
+///     enum-like fields a credential is not written into.
+///
+/// **No 403 body from this family has been measured here at all** (T-0435),
+/// which is why the 403 sentence claims less than the 401 one rather than
+/// more. A 403 says access was refused and does not say by whom: a proxy in
+/// front of the endpoint can answer one having put no question to it, so the
+/// sentence neither blames the key nor reports that the key was taken.
 /// Anthropic answers the same `error.message` shape (`{"type":"error",
 /// "error":{"type":"not_found_error","message":"model: ..."}}`), unmeasured
 /// here: no Anthropic key was available.
@@ -1093,9 +1104,18 @@ String visionApiMessage({
     400 => '$service rejected the request for model "$model" as invalid '
         '(HTTP 400). The key is not the problem; a parameter or the model id '
         'is.$said',
-    401 || 403 => '$service rejected the API key (HTTP $statusCode) -- the '
-        'key itself, not the model id "$model". Check the key you configured '
-        'for this endpoint, and that it may use this model.',
+    401 => '$service rejected the API key (HTTP 401) -- the key itself, not '
+        'the model id "$model". Check the key you configured for this '
+        'endpoint.${_errorTokens(body)}',
+    403 => '$service refused this request for model "$model" (HTTP 403). A '
+        '403 reports that access was refused and not what refused it: on this '
+        'endpoint family it covers a project or organisation the key may not '
+        'reach, a region the endpoint does not serve, a permission the key '
+        'does not carry, and a model it may not use. A proxy or gateway in '
+        'front of $service can answer 403 on its own as well, having put '
+        'nothing to the endpoint at all. So check the key you configured for '
+        'this endpoint and what it is allowed to reach, and check what sits '
+        'between this machine and the endpoint.${_errorTokens(body)}',
     404 => '$service has no model "$model" (HTTP 404): that model id was not '
         'found. Check it against the endpoint\'s own model list -- a typo and '
         'a retired id both fail exactly like this, and the key is fine.$said',
@@ -1107,6 +1127,49 @@ String visionApiMessage({
     _ => '$service refused the request for model "$model" (HTTP $statusCode).'
         '$said',
   };
+}
+
+/// The `error.type` and `error.code` of a refused response, as a clause naming
+/// them, or the empty string when there is nothing quotable there (T-0435).
+///
+/// **Why 401 and 403 read the body here instead of through [providerDetail].**
+/// That function quotes whatever explanation it finds, and on these two
+/// statuses the explanation can be the credential itself -- the measured 401
+/// above echoes the key back. `type` and `code` are enum-like tokens
+/// (`invalid_api_key`, `insufficient_quota`,
+/// `unsupported_country_region_territory`), and a key is not written into
+/// them.
+///
+/// **A value that is not a token is dropped whole and never trimmed to fit**,
+/// which is the half a length bound alone does not buy: a bearer token is one
+/// unbroken run of exactly the characters [_tokenShape] allows, so a cut would
+/// print its first [_tokenLimit] of them. Longer than a token, shaped unlike
+/// one, or not a string at all is a body whose shape this code does not know,
+/// and the safe reading of one is silence.
+String _errorTokens(String body) {
+  final decoded = _decodeOrNull(body);
+  final fields = decoded is Map<String, dynamic> ? decoded['error'] : null;
+  if (fields is! Map<String, dynamic>) return '';
+  final named = [
+    for (final field in const ['type', 'code'])
+      if (_asToken(fields[field]) case final token?) '$field $token',
+  ];
+  return named.isEmpty ? '' : ' The endpoint named it: ${named.join(', ')}.';
+}
+
+/// The longest token this endpoint family is known to use is
+/// `unsupported_country_region_territory`, at 36 characters.
+const _tokenLimit = 48;
+
+final _tokenShape = RegExp(r'^[A-Za-z0-9._-]+$');
+final _controlCharacters = RegExp(r'[\x00-\x1f\x7f]');
+
+/// [value] if it is one short enum-like token, and null for anything else.
+String? _asToken(Object? value) {
+  if (value is! String) return null;
+  final stripped = value.replaceAll(_controlCharacters, '').trim();
+  if (stripped.isEmpty || stripped.length > _tokenLimit) return null;
+  return _tokenShape.hasMatch(stripped) ? stripped : null;
 }
 
 /// The two roads to the output cap, told apart on the answer itself (T-0427).

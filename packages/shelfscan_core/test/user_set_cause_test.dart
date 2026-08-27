@@ -58,7 +58,12 @@ final _answered = <String, Map<String, ({Object failure, bool? userSet})>>{
       failure: _api(401),
       userSet: true,
     ),
-    'a forbidden key is the same field': (failure: _api(403), userSet: true),
+    // T-0435: the 403 sentence names the key among several causes rather
+    // than as the fault, and every one of them is a Settings field.
+    'a refusal still points at the key field': (
+      failure: _api(403),
+      userSet: true,
+    ),
     'an unknown model id is theirs to type (T-0067)': (
       failure: _api(404),
       userSet: true,
