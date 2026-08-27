@@ -20,6 +20,14 @@ is the authority behind it.
 ## [Unreleased]
 
 ### Fixed
+- **The READMEs said the app converts HEIC on Windows only.** It has carried a
+  decoder on each platform since the Android one landed — the Windows Imaging
+  Component on Windows, the system codec on Android — and two claims in each
+  of the three files were wrong: the one naming HEIC as Windows-only, and the
+  one telling an Android user to convert a HEIC by hand before picking it. The
+  second is the one that cost something, because it is advice a reader acts
+  on. What replaces them describes the code and claims nothing about a phone,
+  which no build has run on.
 - **A refused cloud vision call no longer reports a 403 as a rejected API
   key.** 401 and 403 are separate sentences now: 401 says the credentials were
   rejected, 403 says access was refused and deliberately claims nothing about
