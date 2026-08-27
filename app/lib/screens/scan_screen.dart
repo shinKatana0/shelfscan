@@ -1320,47 +1320,61 @@ class _ScanScreenState extends State<ScanScreen> {
             child: !_hasInput
                 ? Column(
                     children: [
+                      // Scrolled for the reason the panels below are (T-0230,
+                      // T-0430): this Column cannot shrink, and the sentences
+                      // in it grew by two lines at 360 dp when the third kind
+                      // and the plural arrived. The empty screen fitted a
+                      // 360x564 body before that and a 360x604 one after,
+                      // measured with `flutter test`; scrolling ends the class
+                      // rather than buying back the 40 px. Centred still, and
+                      // unchanged wherever it fits: a scroll view under loose
+                      // constraints is exactly as tall as its child.
                       Expanded(
                         child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('Pick shelf photos to begin'),
-                              // The empty screen is the first place the second
-                              // input can be named, and naming the folder it
-                              // wants is half of T-0161's steer away from a
-                              // downloads folder. It names films because the
-                              // same walk has read them since T-0162 and this
-                              // line was the only place a person with a folder
-                              // of them would have looked (T-0345).
-                              //
-                              // Plural since T-0430, and this line rather than
-                              // the label beside it: the control has always
-                              // appended, and the only place that said so was
-                              // the list of folders, which does not exist
-                              // until the first press. This is the one site a
-                              // person reads BEFORE it, and it costs the
-                              // button row nothing -- a longer label reflows
-                              // the Wrap below, this sentence does not.
-                              const Text(
-                                  'or add the folders your PC games, films '
-                                  'and anime are kept in -- one press each, '
-                                  'and one scan reads them all',
-                                  key: Key('folder-hint')),
-                              // The third input, named where the second one is
-                              // and for the same reason: one run may hold all
-                              // three, and a disc and an install of one game
-                              // are one row only if they are in the same run
-                              // (T-0179). Where it cannot exist, the same slot
-                              // carries why instead of an offer (T-0344).
-                              if (_noGalaxy case final reason?)
-                                Text(reason,
-                                    key: const Key('no-library-here'))
-                              else
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('Pick shelf photos to begin'),
+                                // The empty screen is the first place the
+                                // second input can be named, and naming the
+                                // folder it wants is half of T-0161's steer
+                                // away from a downloads folder. It names films
+                                // because the same walk has read them since
+                                // T-0162 and this line was the only place a
+                                // person with a folder of them would have
+                                // looked (T-0345).
+                                //
+                                // Plural since T-0430, and this line rather
+                                // than the label beside it: the control has
+                                // always appended, and the only place that
+                                // said so was the list of folders, which does
+                                // not exist until the first press. This is the
+                                // one site a person reads BEFORE it, and it
+                                // costs the button row nothing -- a longer
+                                // label reflows the Wrap below, this sentence
+                                // does not.
                                 const Text(
-                                    'or the GOG library this PC has synced',
-                                    key: Key('library-hint')),
-                            ],
+                                    'or add the folders your PC games, films '
+                                    'and anime are kept in -- one scan reads '
+                                    'them all',
+                                    key: Key('folder-hint')),
+                                // The third input, named where the second one
+                                // is and for the same reason: one run may hold
+                                // all three, and a disc and an install of one
+                                // game are one row only if they are in the same
+                                // run (T-0179). Where it cannot exist, the same
+                                // slot carries why instead of an offer
+                                // (T-0344).
+                                if (_noGalaxy case final reason?)
+                                  Text(reason,
+                                      key: const Key('no-library-here'))
+                                else
+                                  const Text(
+                                      'or the GOG library this PC has synced',
+                                      key: Key('library-hint')),
+                              ],
+                            ),
                           ),
                         ),
                       ),

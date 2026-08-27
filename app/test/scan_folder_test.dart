@@ -188,6 +188,23 @@ void main() {
       expect(hint.data, contains('one scan reads them all'));
     });
 
+    // The sentence above cost two lines at 360 dp and the empty screen had
+    // ~40 px of slack: it fitted a 360x564 body before this task and would
+    // have needed 360x604 after, which is a striped bar across a small phone.
+    // The Column it sits in now scrolls, so the pin is the whole class rather
+    // than the one wording -- 320 to 660 all clean, measured here.
+    testWidgets('and the empty screen still fits a small phone',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 560);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await _pump(tester, picker: _BothPicker(directory: _gogGames));
+
+      expect(find.byKey(const Key('folder-hint')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('and so does the prompt, for the photos-first path',
         (tester) async {
       // The empty screen is gone once anything is picked, so the prompt is
