@@ -27,14 +27,23 @@ What you end up with: a `.xcoll` file Tonkatsu Box imports, or a `.csv` any
 spreadsheet reads. shelfscan owns no catalog and no database. It recognises
 your shelf and hands the result to an app that does.
 
-There are two ways through, and the first step of the guide is really choosing
-between them:
+There are three ways through, and the first step of the guide is really
+choosing between them:
 
 - **Keyless.** A local vision model and a CSV export. No registration
   anywhere, nothing paid, no key. This is the default on Windows.
 - **Full.** The same scan plus an IGDB key, which is what makes `.xcoll`
   possible — that format carries IGDB ids and nothing else, so an item with
   no id cannot be in the file at all.
+- **The app.** The same pipeline behind a window: photos picked from a
+  dialog, progress on a screen, each row approved or rejected on a review
+  screen instead of by editing JSON, the export saved from a save dialog.
+  **Every command on this page is the CLI** — that is what a page can
+  show — and the app is named where the two differ. Keyless and full apply
+  to it unchanged: which keys you hold is not which interface you drive.
+  Nothing publishes a built app, so you build it yourself —
+  [`build.md`](build.md), with Android in
+  [`android-build.md`](android-build.md).
 
 You can start keyless and add the key later: the key affects one stage, and
 that stage can be re-run on its own over a scan you have already paid for.
@@ -1055,6 +1064,12 @@ is the last point at which a wrong row is still cheap to remove.
 
 ## Where to go next
 
+- [`build.md`](build.md) — the graphical app, which is built rather than
+  downloaded: both platforms, the prerequisites `flutter doctor` does not
+  check, and what each failure actually says.
+- [`android-build.md`](android-build.md) — the Android toolchain from a
+  bare Windows machine, and the failures that name something other than the
+  missing step.
 - [`measurements.md`](measurements.md) — the measurements this project's
   decisions rest on, including what it measured and then decided not to do.
   Not every figure: one that settles a single constant usually lives in the
