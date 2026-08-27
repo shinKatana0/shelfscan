@@ -1,5 +1,5 @@
-<!-- TRANSLATED-FROM: README.md blob 930c85cd854083e08b762b7047e2a078f8c9d8f3 CURRENT
-     Translated 2026-08-26. What that line names, and how to check it:
+<!-- TRANSLATED-FROM: README.md blob 4f2b41f7da6ad131a63c0062ab2b93959ac1fbf7 CURRENT
+     Translated 2026-08-27. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
      survived neither (T-0406).
@@ -983,9 +983,9 @@ app/                       # Flutter shell: Windows (built and run), Android (ne
 ## Рабочий процесс разработки
 
 Хотите поучаствовать? Начните с [CONTRIBUTING.md](CONTRIBUTING.md) (англ.) — как
-гонять два набора тестов и что изменение не должно тихо сломать. Там же — о том,
-как организована сама работа
-([How this repository is developed](CONTRIBUTING.md#how-this-repository-is-developed)),
+гонять два набора тестов и что изменение не должно тихо сломать. Там же — что
+этот репозиторий публикует, а что нет
+([What is published, and what is not](CONTRIBUTING.md#what-is-published-and-what-is-not)),
 и там же правило, которому подчиняется любая правка этих файлов
 ([Translations](CONTRIBUTING.md#translations)). Обе страницы — только на
 английском.

@@ -932,9 +932,9 @@ are the way they are — each record carrying the measurement that settled it.
 ## Development workflow
 
 Contributing? Start with [CONTRIBUTING.md](CONTRIBUTING.md) — how to run the
-two test suites, and what a change must not silently break. How the work
-itself is organised is there too, under
-[How this repository is developed](CONTRIBUTING.md#how-this-repository-is-developed),
+two test suites, and what a change must not silently break. What this
+repository publishes and what it leaves out is there too, under
+[What is published, and what is not](CONTRIBUTING.md#what-is-published-and-what-is-not),
 and so is the rule every edit to this file is held to:
 [Translations](CONTRIBUTING.md#translations).
 

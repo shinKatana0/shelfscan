@@ -5,8 +5,8 @@ reversal itself **narrowed the same day** — see "The reversal" and "The
 correction to the reversal" below
 **Tasks:** T-0081 (*The control document every resolver measurement quotes is
 not on disk*), T-0119 (*control_set_test's unreadable assertion names
-no cause*), T-0131 (*Every measuring worker re-scans the control set for
-detections another worker already had*), T-0136 (*the control-set definition
+no cause*), T-0131 (*Every measurement re-scans the control set for
+detections an earlier one already had*), T-0136 (*the control-set definition
 defines a control by what a directory does NOT hold*), T-0246 (*The published
 control-set figures reconstruct the owner's physical game collection*), T-0260
 (*The manifest still publishes which platforms the control photographs
@@ -24,9 +24,9 @@ That left an awkward gap. Four separate documents, and the project's own front
 page, quoted figures against "the control document" as though such a file
 existed.
 The closest file on disk held a different number of rows and had been produced by
-a prompt three versions old. Two workers each paid for a live database run before
-discovering that. A measurement everyone cites and nobody can identify is not a
-control.
+a prompt three versions old. Two measurements each paid for a live database
+run before discovering that. A measurement everyone cites and nobody can
+identify is not a control.
 
 The obvious fix is to commit the review document — it is only text. That was
 considered and rejected.
@@ -46,8 +46,8 @@ a scan of them must produce, and commit the definition rather than the output.**
   *(That last clause is what was reversed on 2026-08-18.)*
 - **No review document is committed, and none should be.**
 - The detections themselves are captured once per machine and kept **outside** the
-  repository, with a status command that says whether the capture is fresh. A
-  worker asks before it scans.
+  repository, with a status command that says whether the capture is fresh.
+  Ask it before scanning.
 - The manifest is enforced by a test at three levels of strength, the strongest
   of which needs neither the photographs nor a network.
 

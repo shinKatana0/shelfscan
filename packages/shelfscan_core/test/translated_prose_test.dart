@@ -1,12 +1,12 @@
 /// Nothing read the translated prose, so a word from the wrong language
 /// shipped silently (T-0375).
 ///
-/// T-0370's worker drafted `README.ja.md`'s summary bullet from the Russian
-/// one and left a Russian word standing inside the Japanese sentence. It
-/// caught that by eye and then said the thing that made this a task: nothing
-/// else in the process would have. Everything the suite knew about the
-/// translations was structural -- `guide_transcript_test.dart` pins their code
-/// blocks byte for byte against the English, which enforces the rule that code
+/// T-0370 drafted `README.ja.md`'s summary bullet from the Russian one and
+/// left a Russian word standing inside the Japanese sentence. That was caught
+/// by eye, and what made it a task is that nothing else would have caught it.
+/// Everything the suite knew about the translations was structural --
+/// `guide_transcript_test.dart` pins their code blocks byte for byte against
+/// the English, which enforces the rule that code
 /// and program output are never translated. No check read a sentence, and a
 /// reviewer who does not read the language sees a plausible-looking line.
 ///

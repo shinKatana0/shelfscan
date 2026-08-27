@@ -3,8 +3,8 @@
 ///
 /// The defect: T-0055, T-0062, T-0085 and T-0100 each needed the same
 /// detections off the same photographs to replay through [dedupeDetections],
-/// and each produced them itself -- 35-80 s of scan per worker and, far more
-/// expensively, the whole detection JSON through that agent's context. Every
+/// and each produced them itself -- 35-80 s of scan every time and, far more
+/// expensively, the whole detection JSON read into a transcript. Every
 /// piece needed to stop that already existed: T-0053 pinned the sampling,
 /// T-0081 wrote the manifest and the prompt fingerprint, T-0106 established
 /// that a regeneration must follow an `ollama stop`.
@@ -12,9 +12,9 @@
 /// **Nothing here ever prints a raw title, and that is the point.** The
 /// photographs are a private home (decision 0004) and the detections are that
 /// home as a list of possessions, so the capture lives outside the repository
-/// and this tool answers in counts. A worker that reads the capture file into
-/// its context has paid the cost this tool exists to remove and has put an
-/// inventory of a private house into a transcript.
+/// and this tool answers in counts. Reading the capture file into a transcript
+/// pays the cost this tool exists to remove and puts an inventory of a private
+/// house where it does not belong.
 ///
 /// **The manifest is in a clone; the prose around it is not (T-0231).** The
 /// figures this tool parses are [manifestPath], which is tracked. The document
@@ -243,10 +243,10 @@ List<String> notHereReport(List<String> sets, String reason) => [
 // --------------------------------------------------------------------- //
 // Where a capture lives
 
-/// The capture directory: outside the repository, stable across workers, one
+/// The capture directory: outside the repository, stable across runs, one
 /// per user account.
 ///
-/// Not the agent scratchpad, which is where two workers overwrote each other's
+/// Not a per-session scratchpad, which is where two runs overwrote each other's
 /// files on 2026-08-15: a scratchpad is per-session by design, so it is either
 /// shared and racy or private and useless for the one thing wanted here.
 /// `%LOCALAPPDATA%` is per-user, survives a reboot, is on the same volume as
@@ -268,14 +268,14 @@ String captureDir(Map<String, String> env) {
       'repository.');
 }
 
-/// One separator in every message, so two workers quoting the same path quote
+/// One separator in every message, so two runs quoting the same path quote
 /// the same string. Windows accepts either.
 String _slashes(String path) => path.replaceAll(r'\', '/');
 
 /// Everything that decides the answer, in the file name.
 ///
-/// Two workers with the same key write the same bytes, so the collision that
-/// destroyed work in the scratchpad cannot destroy anything here; two workers
+/// Two runs with the same key write the same bytes, so the collision that
+/// destroyed work in the scratchpad cannot destroy anything here; two runs
 /// with different keys cannot reach each other's file at all. Model and server
 /// are in the name because both have been measured to move a counted figure --
 /// the model tag obviously, and the server through `OLLAMA_NUM_PARALLEL`, which
@@ -431,7 +431,7 @@ class CaptureCheck {
   bool get usable => verdict == Verdict.fresh;
 }
 
-/// What a worker should do about the capture for [want] at [path].
+/// What to do about the capture for [want] at [path].
 ///
 /// The counted figures are re-checked against the manifest on every call and
 /// not only at capture time: a file truncated by a killed process parses, and
@@ -564,7 +564,7 @@ Map<String, int> countHints(List<Detection> detections) {
 
 /// Writes [content] to [path] through a uniquely named temporary file.
 ///
-/// Two workers capturing the same key at once write identical bytes, so the
+/// Two runs capturing the same key at once write identical bytes, so the
 /// rename is safe whichever lands last; what it prevents is a reader seeing a
 /// half-written file, which is the failure mode a plain write has and which
 /// looks exactly like a corrupt capture.
@@ -760,7 +760,7 @@ Future<int> run(List<String> args,
             manifest[name]!);
         if (mismatch != null) {
           // Written anyway: a run that disagrees with the recorded figures is
-          // a measurement, and deleting it leaves the next worker to
+          // a measurement, and deleting it leaves the next run to
           // rediscover it. It just does not pass `status`.
           writeAtomically(path, const JsonEncoder.withIndent('  ').convert(capture));
           stderr.writeln('WARN: this run does not reproduce the recorded '

@@ -41,8 +41,7 @@
 /// of whoever runs them, and `gone` is what takes it back out.
 ///
 /// **This opens a window.** `doc/conventions.md` section 3 forbids driving it
-/// while the owner is at the machine, which is why the worker that wrote this
-/// did not run it.
+/// while the owner is at the machine, which is why it has never been run here.
 ///
 /// ## Why it does not touch the app's own keys
 ///
