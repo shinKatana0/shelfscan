@@ -357,6 +357,7 @@ class OpenAiCompatibleVisionProvider implements VisionProvider {
         model: model,
         statusCode: status,
         body: response.body,
+        headers: response.headers,
         retryable: status == 429 || status >= 500,
       );
     }

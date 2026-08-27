@@ -800,7 +800,8 @@ class VisionApiException implements Exception, UserSetCause {
   VisionApiException(this.message,
       {required this.statusCode,
       required this.body,
-      required this.causeIsUserSet});
+      required this.causeIsUserSet,
+      this.diagnostics});
 
   final String message;
   final int statusCode;
@@ -815,6 +816,20 @@ class VisionApiException implements Exception, UserSetCause {
   /// [message]: it is what the user used to be given instead of an
   /// explanation.
   final String body;
+
+  /// The sanitised fields naming what refused a 401 or a 403, null on every
+  /// other status (T-0437).
+  ///
+  /// **The counterpart of [body], and deliberately not folded into it.** That
+  /// one is the raw answer and is unsafe by construction -- on a 401 it holds
+  /// the API key echoed back by the endpoint. This is derived from the same
+  /// response through gates that read no `error.message` and quote no body
+  /// text at all, so it is the half that may be shown or pasted. One field
+  /// could only be one of those two things.
+  ///
+  /// Out of [message] for the reason [body] is out of it: a status line is
+  /// read, not searched.
+  final String? diagnostics;
 
   @override
   String toString() => message;
@@ -1022,13 +1037,15 @@ Exception visionFailure({
   required String body,
   required bool retryable,
   required bool causeIsUserSet,
+  String? diagnostics,
 }) =>
     retryable
         ? RetryableVisionApiException(message)
         : VisionApiException(message,
             statusCode: statusCode,
             body: body,
-            causeIsUserSet: causeIsUserSet);
+            causeIsUserSet: causeIsUserSet,
+            diagnostics: diagnostics);
 
 /// The exception for a non-2xx CLOUD vision response.
 ///
@@ -1052,6 +1069,7 @@ Exception visionApiFailure({
   required int statusCode,
   required String body,
   required bool retryable,
+  Map<String, String> headers = const {},
 }) =>
     visionFailure(
       message: visionApiMessage(
@@ -1060,6 +1078,7 @@ Exception visionApiFailure({
       body: body,
       retryable: retryable,
       causeIsUserSet: const {401, 403, 404}.contains(statusCode),
+      diagnostics: _refusalDiagnostics(statusCode, body, headers),
     );
 
 /// What [statusCode] means for the person who typed the model id.
@@ -1089,6 +1108,14 @@ Exception visionApiFailure({
 /// more. A 403 says access was refused and does not say by whom: a proxy in
 /// front of the endpoint can answer one having put no question to it, so the
 /// sentence neither blames the key nor reports that the key was taken.
+///
+/// **What HAS been measured is the connection (2026-08-27): one endpoint, one
+/// key and one model answered 403 over one network and 200 over another, with
+/// nothing configured in between.** That is why the 403 sentence sends the
+/// reader to try another connection before checking anything they typed --
+/// it is the one cause of the four that costs nothing to rule out, and it is
+/// the one that was actually hit here. The fields naming what answered are
+/// [VisionApiException.diagnostics] and stay off this sentence (T-0437).
 /// Anthropic answers the same `error.message` shape (`{"type":"error",
 /// "error":{"type":"not_found_error","message":"model: ..."}}`), unmeasured
 /// here: no Anthropic key was available.
@@ -1113,9 +1140,13 @@ String visionApiMessage({
         'reach, a region the endpoint does not serve, a permission the key '
         'does not carry, and a model it may not use. A proxy or gateway in '
         'front of $service can answer 403 on its own as well, having put '
-        'nothing to the endpoint at all. So check the key you configured for '
-        'this endpoint and what it is allowed to reach, and check what sits '
-        'between this machine and the endpoint.${_errorTokens(body)}',
+        'nothing to the endpoint at all. It can also depend on the connection '
+        'this machine is on rather than on anything you configured -- the '
+        'same key and model can be refused over one network and work over '
+        'another, with a VPN or a proxy changing the address the endpoint '
+        'sees. So try another connection first, then check the key you '
+        'configured for this endpoint and what it is allowed to '
+        'reach.${_errorTokens(body)}',
     404 => '$service has no model "$model" (HTTP 404): that model id was not '
         'found. Check it against the endpoint\'s own model list -- a typo and '
         'a retired id both fail exactly like this, and the key is fine.$said',
@@ -1170,6 +1201,103 @@ String? _asToken(Object? value) {
   final stripped = value.replaceAll(_controlCharacters, '').trim();
   if (stripped.isEmpty || stripped.length > _tokenLimit) return null;
   return _tokenShape.hasMatch(stripped) ? stripped : null;
+}
+
+/// What answered a 401 or a 403, as one sanitised line for a bug report, or
+/// null on any other status (T-0437).
+///
+/// **Every field here is chosen for a diagnosis somebody has to make**, not
+/// for completeness. `type` and `code` are the endpoint's own naming of the
+/// refusal. `content-type` and the body class separate an API error document
+/// from a block page put up by something in front of it. `x-request-id` is
+/// the handle the endpoint's own support can look up. `server` and `cf-ray`
+/// come last and are best-effort: they suggest who answered, nothing here
+/// branches on them, and their absence means nothing either way.
+///
+/// **`content-type` and the body class are both kept, never reconciled.** A
+/// response announcing JSON over a body that does not parse is itself the
+/// finding -- something answered in place of the API -- and folding either
+/// into the other is what would lose it.
+///
+/// Never `error.message` and never a character of the body: the measured 401
+/// echoes the key back through the first (T-0435), and the second is
+/// [VisionApiException.body], which is kept raw and unshown.
+String? _refusalDiagnostics(
+    int statusCode, String body, Map<String, String> headers) {
+  if (!const {401, 403}.contains(statusCode)) return null;
+  // The `http` package lower-cases the keys of a response it builds from the
+  // wire, and leaves untouched the ones an `http.Response` constructor is
+  // handed -- both measured on http 1.6.0 -- so neither casing may be assumed
+  // at a lookup. A map read case-sensitively would find nothing and report a
+  // clean response, which is the shape of failure that reports success.
+  final byName = {
+    for (final entry in headers.entries) entry.key.toLowerCase(): entry.value
+  };
+  final decoded = _decodeOrNull(body);
+  final fields = decoded is Map<String, dynamic> ? decoded['error'] : null;
+  final named = <String>[
+    'HTTP $statusCode',
+    if (fields is Map<String, dynamic>)
+      for (final field in const ['type', 'code'])
+        if (_asToken(fields[field]) case final token?) '$field $token',
+    if (_asHeader(byName['content-type']) case final value?)
+      'content-type $value',
+    'body ${_bodyClass(body)}',
+    for (final name in const ['x-request-id', 'server', 'cf-ray'])
+      if (_asHeader(byName[name]) case final value?) '$name $value',
+  ];
+  return named.join('; ');
+}
+
+/// [body] as exactly one of `json`, `unrecognized-json`, `non-json` or
+/// `empty`, without quoting a character of it.
+///
+/// `json` is the shape [_errorTokens] reads -- an object carrying an `error`
+/// object. Anything else that decodes is `unrecognized-json`: the endpoint
+/// spoke JSON this code does not know, which is a different answer from
+/// `non-json`, where whatever replied was not speaking JSON at all. Collapsing
+/// the two would lose the distinction the field exists for.
+/// Not through [_decodeOrNull]: that folds a decode failure and a body of
+/// literal `null` into the same answer, and calling valid JSON `non-json` is
+/// the kind of plausible wrong answer a diagnosis is then built on.
+String _bodyClass(String body) {
+  if (body.trim().isEmpty) return 'empty';
+  try {
+    final decoded = jsonDecode(body);
+    return decoded is Map<String, dynamic> &&
+            decoded['error'] is Map<String, dynamic>
+        ? 'json'
+        : 'unrecognized-json';
+  } on FormatException {
+    return 'non-json';
+  }
+}
+
+/// The longest realistic value among the six is a `content-type` carrying a
+/// boundary parameter, near 75 characters.
+const _headerLimit = 80;
+
+/// [value] if it is one short printable line, and null for anything else.
+///
+/// **Headers inherit [_asToken]'s drop-whole rule across a wider character
+/// class, and the wider class is the reason rather than an obstacle to it.**
+/// A header value needs punctuation and spaces -- `application/json;
+/// charset=utf-8`, `nginx/1.18.0 (Ubuntu)` -- and that class strictly contains
+/// the token class, so it admits every string a cut would have printed the
+/// front of and more, `Bearer <token>` among them. Being over-long is itself
+/// the anomaly: all six of these are short by nature, each is gated on its own
+/// so one bad value never suppresses the rest, and a truncated value cannot be
+/// told from a genuinely long one by whoever reads it.
+///
+/// Printable ASCII only. Header values are ASCII by specification, and this
+/// one is about to be read by a person.
+String? _asHeader(String? value) {
+  if (value == null) return null;
+  final stripped = value.replaceAll(_controlCharacters, '').trim();
+  if (stripped.isEmpty || stripped.length > _headerLimit) return null;
+  return stripped.codeUnits.every((unit) => unit >= 0x20 && unit <= 0x7e)
+      ? stripped
+      : null;
 }
 
 /// The two roads to the output cap, told apart on the answer itself (T-0427).
@@ -2098,6 +2226,7 @@ class AnthropicVisionProvider implements VisionProvider {
         model: model,
         statusCode: status,
         body: response.body,
+        headers: response.headers,
         retryable: const {429, 500, 502, 503, 529}.contains(status),
       );
     }
