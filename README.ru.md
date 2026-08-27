@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob ad6696930531e5985220faf8aa6fe5d470b88d0d CURRENT
+<!-- TRANSLATED-FROM: README.md blob afd6fc76b93c0cf11ae45900aa98a30a06fc8895 CURRENT
      Translated 2026-08-26. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
@@ -20,7 +20,11 @@
 GOG Galaxy на вашей машине — они читаются вообще без модели и без затрат.
 Фильм, лежащий в такой папке, читается как фильм, а не как игра, и ищется в
 каталоге фильмов, а не в каталоге игр
-([докуда это доведено](#films-are-read-as-films-and-how-far-that-goes)). Всё,
+([докуда это доведено](#films-are-read-as-films-and-how-far-that-goes)).
+**В приложении это папки, а не папка:** жмите *Add media folder* по разу на
+каждую папку — один запуск прочитает их все, так что игры в одной, фильмы в
+другой и аниме в третьей пройдут через одну дедупликацию, а не превратятся в
+три файла проверки, которые потом нечем свести. Всё,
 что дал один запуск, попадает в один файл проверки, который вы подтверждаете
 руками, а из него получается `.xcoll` для Tonkatsu Box — тот сам подтягивает
 обложки и метаданные по идентификаторам из файла — или обычный CSV для CLZ

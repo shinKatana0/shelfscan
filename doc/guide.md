@@ -1024,6 +1024,16 @@ That writes **one** review document in which that game is one row. Run the
 commands separately and you get two files nobody can reconcile — and the
 second `-o` overwrites the first.
 
+**In the app, that is folders rather than a folder.** *Add media folder*
+appends: press it once per folder, each one becomes its own row with its path
+and how many entries it will read, and the scan reads all of them into one
+review. So games in one folder, films in another and anime in a third are one
+run and one dedupe — you do not scan three times and try to reconcile three
+files afterwards. The same path twice is refused by name rather than read
+twice, and any folder can be taken back out before you press Scan. The CLI has
+no equivalent: `--installs` takes one directory, and a second one needs a
+second run.
+
 A command may add sources that cost less than its own, never more:
 `scan-installs` takes `--library` (neither reads a photo), `scan-library`
 takes neither, and nothing adds photographs to a run that has none — that run
