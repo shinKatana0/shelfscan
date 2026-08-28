@@ -145,7 +145,7 @@ not one.
 
 **But do not distribute the folder YOU built** -- build locally to run and to
 test, and let the tag produce what is published. Measured on a release build of
-this tree: the AOT snapshot `datapp.so` carries the absolute path of the
+this tree: the AOT snapshot `data\app.so` carries the absolute path of the
 directory it was compiled in, as one string ending
 `app/.dart_tool/flutter_build/dart_plugin_registrant.dart`. The toolchain writes
 it; nothing here asks for it and no build flag was found that removes it.
