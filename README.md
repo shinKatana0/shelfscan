@@ -368,11 +368,88 @@ A hand-written entry resolves exactly like a read one. Without IGDB
 credentials `resolve` refuses to run, and the entry then stays unmatched —
 which the CSV export still carries and `.xcoll` does not.
 
+## Windows: download and run
+
+**The quickest way to have the app is not to build it.** Every `v*` tag
+publishes one asset, built on a Windows runner from the tree that tag names:
+
+1. Open [Releases](https://github.com/shinKatana0/shelfscan/releases) and take
+   **`ShelfScan-win-x64.zip`** from the newest one.
+2. Extract the folder wherever you like. It is portable — no installer, no
+   registry keys, nothing written outside it and the app's own settings.
+3. Run **`shelfscan_app.exe`** inside that folder.
+
+**No Flutter and no Dart SDK** — neither is needed to run it, and there is no
+build step. That is not the same as "runs on any Windows installation": on a
+machine that has never had Microsoft's Visual C++ Redistributable installed, one
+of the bundled plugins will not load, which is the second bullet below and a
+one-time fix. Keep the folder together:
+the executable is small and does not run alone — the DLLs and the `data\`
+folder beside it are the program.
+
+Windows may warn that the publisher is unrecognised before it will start the
+file. The build is not code-signed and this project holds no certificate to
+sign it with, so that warning is expected rather than a sign anything is
+wrong.
+
+Two things can stop it starting, and neither is a fault in the download:
+
+- **"Windows protected your PC".** SmartScreen, because the build is not
+  code-signed and this project holds no certificate to sign it with. *More
+  info* → *Run anyway*.
+- **A missing `VCRUNTIME140.dll` or `MSVCP140.dll`.** Two of the bundled
+  plugins are compiled against Microsoft's C++ runtime, which is not part of
+  Windows and is not redistributed here. Most machines already have it, put
+  there by some other program. If yours has not, install the
+  [Microsoft Visual C++ Redistributable for x64](https://aka.ms/vs/17/release/vc_redist.x64.exe)
+  once and the folder starts working.
+
+### The model is a separate download, and nothing here bundles one
+
+Reading spines off a photograph needs a vision model, and **there is no model
+and no Ollama inside that zip.** The app installs and starts correctly without
+one; what it cannot do until you choose a backend in Settings is scan. The
+three choices are the same ones the CLI has:
+
+- **Local** — an [Ollama](https://ollama.com) server that you install and run,
+  with the vision model pulled once (`ollama pull qwen2.5vl:7b`, about 6 GB).
+  This is what Windows starts on. It needs no account and no key, and your
+  photographs go no further than that server. [Path A](#path-a--keyless) below
+  is the whole of the setup.
+- **Anthropic**, or **any OpenAI-compatible endpoint you name** — your own key,
+  and every photograph is uploaded in full. [Path B](#path-b--bring-your-own-keys)
+  below.
+
+So a first scan that stops saying it cannot reach Ollama is a prerequisite that
+is not there yet, not a broken install. Settings says the same thing beside the
+field, before you scan rather than after.
+
+### What this release is, and is not
+
+**It is a `0.x` build and GitHub labels it a pre-release**, which is deliberate
+and not modesty: the two file formats this program writes can still change
+shape, so a review document written by one version is not promised to load in
+the next. The reasoning is
+[decision 0014](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md).
+
+**Windows x64 is the only build published.** There is no installer, no Android
+apk, no macOS or Linux binary, and no auto-updater — a newer version is another
+download, and you replace the folder. Building any of the other targets from
+source is documented and unchanged: [`doc/build.md`](doc/build.md).
+
+Everything from [Setup](#setup) onwards is the reference and the source build.
+None of it is needed to run the download.
+
 ## Setup
 
 The CLI needs the Dart SDK (>= 3.4) and nothing else; the app needs the
 Flutter SDK, which includes it. Windows is the only host this has been built
 and run on.
+
+**None of this is needed to run the Windows app** —
+[Windows: download and run](#windows-download-and-run) above is a zip and
+no toolchain. What follows is for the CLI, for the other platforms, and
+for changing the code.
 
 For a walkthrough of one whole run rather than a reference, see
 [doc/guide.md](doc/guide.md).
@@ -541,6 +618,10 @@ In the app, keys go in the settings screen and are stored in the OS
 keychain, never in a file inside the repository.
 
 ### The app
+
+This is how to build it. A Windows reader who only wants to *run* it does not
+come this way — [Windows: download and run](#windows-download-and-run) is that
+route, and it needs none of what follows.
 
 Both targets have been built from this tree. Neither builds on a
 `flutter doctor` that prints green, and the prerequisites each one is missing

@@ -18,7 +18,51 @@ is the authority behind it.
 
 ## [Unreleased]
 
+### Added
+- **A tagged release now hands over a Windows app, so having one no longer
+  means building it.** Pushing a `v*` tag runs a Windows runner through both
+  suites, `flutter build windows --release` and the bundle-asset check, and
+  then attaches `ShelfScan-win-x64.zip` to the GitHub Release for that tag.
+  The zip holds a single folder — the executable, the DLLs beside it and
+  `data\` — which is extracted and run: no Flutter, no Dart SDK, no
+  installer, nothing written outside it. Every step before the upload is a
+  gate, so a build that goes red leaves no release at all rather than a
+  release carrying a download that does not start. Nothing is in the zip that
+  is not Flutter's own build output: no Ollama, no model weights, no key, and
+  no configuration belonging to the machine that built it. Windows x64 is the
+  only target published, and while the version is `0.x` the release is
+  labelled a pre-release — which is what the version has meant here since the
+  first one. The two things that can stop a downloaded folder from starting are
+  named where it is downloaded: SmartScreen, because nothing here is signed,
+  and Microsoft's C++ runtime, which two of the bundled plugins are compiled
+  against and which is neither part of Windows nor redistributed here.
+- **The Settings screen says that Ollama is a separate program.** On the
+  desktop, Local is the backend the app starts on, and the screen said only
+  that it "needs no keys" — true, and not the thing a reader who has just
+  unzipped the app does not know: that the model runs in a second program
+  nothing here installs. The note beside the field now names it, gives the
+  page it comes from and the one command that pulls the model, and says the
+  other two backends need none of it. Its counterpart for a phone, which
+  names a server on the network instead, has been there since Local started
+  rendering on both platforms; exactly one of the two now appears wherever
+  the app runs, so neither reader is left to infer which program is missing.
+- **The READMEs open the download route before the build one**, in all three
+  languages, and four pages stop saying that no release publishes a built app —
+  `doc/build.md`, `CONTRIBUTING.md` in two places, and `doc/guide.md`, whose
+  walkthrough told a Windows reader to go and build the app. Each was true when
+  it was written and stopped being true with this change.
+
 ### Fixed
+- **A machine that had never run Ollama was told to start a server it does not
+  have.** *"Cannot reach Ollama … Start the server with: `ollama serve`"* is
+  the right remedy for a machine that installed it once and the wrong first
+  sentence for one that never did — and a download makes the second reader the
+  common one, on the very first scan. The failure now names which of the two
+  programs is missing before it says what to do about it, so an absent
+  prerequisite stops reading as an application that does not work. It still
+  does not say where to install it: the address may be another machine, which
+  is what the sentence after it is for, and the screen that does know it means
+  *this* machine says so itself.
 - **Three links in the READMEs pointed at a heading that had been
   renamed.** One in each language, all to the same dead anchor in
   `CONTRIBUTING.md`. A fourth reference to it sat in an HTML comment, where

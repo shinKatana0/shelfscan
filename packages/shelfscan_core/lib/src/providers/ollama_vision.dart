@@ -314,9 +314,28 @@ class OllamaUnreachableException extends UnreachableEndpoint {
   /// control to name (T-0152).
   final String? stallRemedy;
 
+  /// Said first, because this is the sentence a downloaded build fails on and
+  /// the reader has no way to tell the two apart (T-0453). Ollama is not
+  /// bundled with anything here and never has been -- not with the app, not
+  /// with the CLI -- so on a machine that has only just unzipped one, nothing
+  /// answering at the default address is the expected state rather than a
+  /// broken install. Naming which of the two programs is missing is the whole
+  /// of the difference between "this needs a separate download" and "what I
+  /// downloaded does not work".
+  ///
+  /// It does not say how to install it: the address may be another machine
+  /// (the phone case, and the LAN case on the desktop), and an instruction to
+  /// install something *here* would be wrong in exactly the case the next
+  /// sentence covers. Where the shell knows it is talking about this machine
+  /// it says so on its own screen instead -- the app's Settings note.
+  static const _separateProgram =
+      'Ollama is a separate program and shelfscan does not include or install '
+      'it.';
+
   @override
   String get message => waited == null
-      ? 'Cannot reach Ollama at $baseUrl -- nothing answered there. Start the '
+      ? 'Cannot reach Ollama at $baseUrl -- nothing answered there. '
+          '$_separateProgram Start the '
           'server with: ollama serve. If that address is another machine, check '
           'it is right and reachable from here. $_outwardCheck ($reason)'
       : timedOutMessage(

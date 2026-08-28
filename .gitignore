@@ -4,6 +4,15 @@
 build/
 pubspec.lock
 
+# The release artefact and the notes written beside it.
+# `.github/workflows/release.yml` builds both at the repository ROOT on a
+# runner -- `build/` above only reaches app/build/ -- and running the same
+# packaging step by hand to check it writes them here too. A built app is
+# obtained from a release (README.md, "Windows: download and run"), never from
+# a commit.
+ShelfScan-win-x64.zip
+release-notes.md
+
 # Flutter platform folders are COMMITTED -- app/windows/ and, when they are
 # generated, app/android/ and the rest. `flutter create` scaffolds them once;
 # after that they are hand-edited source carrying the release identity

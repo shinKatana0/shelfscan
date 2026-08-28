@@ -92,6 +92,13 @@ void main() {
       expect(find.text('Local (Ollama)'), findsOneWidget);
       expect(find.byKey(const Key('settings-ollama-lan-note')),
           onThisMachine ? findsNothing : findsOneWidget);
+      // Exactly one of the two, never neither (T-0453). Which program the
+      // reader has to go and fetch differs by platform -- a server on the
+      // network, or Ollama on this machine -- and the screen may not be silent
+      // about it on either, because Local is what the desktop starts on and
+      // the paragraph above says only that it "needs no keys".
+      expect(find.byKey(const Key('settings-ollama-desktop-note')),
+          onThisMachine ? findsOneWidget : findsNothing);
     }
   });
 

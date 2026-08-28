@@ -1,5 +1,5 @@
-<!-- TRANSLATED-FROM: README.md blob 16e61a4817c244f813c65dedd505773bf1597204 CURRENT
-     Translated 2026-08-27. What that line names, and how to check it:
+<!-- TRANSLATED-FROM: README.md blob 119953a429be1a2744d2b34090f99e72d8a52dda CURRENT
+     Translated 2026-08-28. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
      survived neither (T-0406).
@@ -374,6 +374,79 @@ dart run shelfscan_core:shelfscan resolve collection.review.json
 なければ `resolve` は実行を拒否し、その項目は未解決のまま残る。CSV の書き出しは
 それも運ぶが、`.xcoll` は運ばない。
 
+<a id="windows-download-and-run"></a>
+
+## Windows: ダウンロードして動かす
+
+**アプリを手に入れる一番早い方法は、ビルドしないことである。** `v*` タグを push
+するたびに、そのタグが指す木から Windows ランナー上でビルドされた成果物がひとつ
+公開される:
+
+1. [Releases](https://github.com/shinKatana0/shelfscan/releases) を開き、いちばん
+   新しいものから **`ShelfScan-win-x64.zip`** を取得する。
+2. フォルダを好きな場所に展開する。ポータブルであり、インストーラもレジストリ
+   キーもなく、そのフォルダとアプリ自身の設定より外には何も書かない。
+3. その中の **`shelfscan_app.exe`** を実行する。
+
+**Flutter も Dart SDK も要らない。** ビルドの手順もない。ただしそれは「どの
+Windows でも必ず動く」という意味ではない: Microsoft の Visual C++ 再頒布可能
+パッケージが一度も入ったことのないマシンでは、同梱プラグインのひとつが読み込め
+ない。下の二つ目の項目がそれで、一度入れれば済む。フォルダは分解せずに
+まとめておくこと。実行ファイル自体は小さく、単体では動かない——隣にある DLL 群と
+`data\` フォルダまで含めて、はじめてプログラムである。
+
+起動する前に、発行元が確認できないという Windows の警告が出ることがある。この
+ビルドはコード署名されておらず、署名するための証明書をこのプロジェクトは持って
+いないので、その警告は異常ではなく想定どおりである。
+
+起動を妨げうるものが二つあるが、どちらもダウンロードの不良ではない:
+
+- **「Windows によって PC が保護されました」。** SmartScreen である。ビルドは
+  コード署名されておらず、署名するための証明書をこのプロジェクトは持っていない。
+  *詳細情報* → *実行* でよい。
+- **`VCRUNTIME140.dll` か `MSVCP140.dll` が見つからない。** 同梱プラグインの
+  うち二つが Microsoft の C++ ランタイムに対してコンパイルされている。これは
+  Windows の一部ではなく、ここでは再配布していない。たいていのマシンには別の
+  プログラムが入れた状態で既にある。もし無ければ
+  [Microsoft Visual C++ 再頒布可能パッケージ (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe)
+  を一度入れれば、そのフォルダは動くようになる。
+
+### モデルは別のダウンロードであり、同梱されているものは何もない
+
+写真から背表紙を読むにはビジョンモデルが要るが、**その zip の中に Ollama も
+モデルも入っていない。** モデルがなくてもアプリは正しく入り、正しく起動する。
+設定でバックエンドを選ぶまでできないのはスキャンだけである。選択肢はコマンド
+ライン版と同じ三つ:
+
+- **ローカル** — 自分で入れて自分で動かす [Ollama](https://ollama.com) サーバ。
+  ビジョンモデルは一度だけ取得しておく（`ollama pull qwen2.5vl:7b`、約 6 GB）。
+  Windows の既定はこれである。アカウントも鍵も要らず、写真はそのサーバより先へ
+  出ない。下の[経路 A](#path-a--keyless) がその全部である。
+- **Anthropic**、または **自分で指定する OpenAI 互換のエンドポイント** — 自分の
+  鍵を使い、写真は一枚残らずアップロードされる。下の
+  [経路 B](#path-b--bring-your-own-keys)。
+
+したがって、最初のスキャンが Ollama に届かないと言って止まるのは、まだ用意されて
+いない前提条件であって、壊れたインストールではない。設定画面でも、スキャンの後
+ではなく前に、同じことが項目の脇に書いてある。
+
+### このリリースが何であって、何ではないか
+
+**これは `0.x` のビルドであり、GitHub 上ではプレリリースとして扱われる。** これは
+謙遜ではなく意図である。このプログラムが書き出す二つのファイル形式はまだ形が
+変わりうるので、あるバージョンが書いたレビュー文書が次のバージョンで読めることは
+約束していない。その理由は
+[決定 0014](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md)
+にある。
+
+**公開されるビルドは Windows x64 だけである。** インストーラも、Android の apk
+も、macOS や Linux のバイナリも、自動更新もない——新しいバージョンはもう一度
+ダウンロードして、フォルダを置き換えるものである。ほかの対象をソースから
+ビルドする手順は変わらず残っている: [`doc/build.md`](doc/build.md)。
+
+[セットアップ](#setup)から下はリファレンスとソースからのビルドであり、
+ダウンロードしたものを動かすだけなら、どれも要らない。
+
 <a id="setup"></a>
 
 ## セットアップ
@@ -381,6 +454,11 @@ dart run shelfscan_core:shelfscan resolve collection.review.json
 コマンドライン版に必要なのは Dart SDK（3.4 以上）だけである。アプリには Flutter
 SDK が要り、そちらには Dart が含まれる。ビルドして動かしたホストは Windows だけ
 である。
+
+**Windows のアプリを動かすだけなら、以上のどれも要らない**——上の
+[Windows: ダウンロードして動かす](#windows-download-and-run) は zip ひとつで、
+ツールチェーンは要らない。以下はコマンドライン版と、ほかのプラットフォームと、
+コードを変更する場合のためのものである。
 
 リファレンスではなく一回の実行の通しの解説は
 [doc/guide.ja.md](doc/guide.ja.md) にある。
@@ -545,6 +623,10 @@ export IGDB_CLIENT_SECRET=...
 ファイルには保存されない。
 
 ### アプリ
+
+ここはビルドの手順である。Windows で *動かす* だけの読者はここを通らない——
+[Windows: ダウンロードして動かす](#windows-download-and-run) がその経路で、
+以下のどれも要らない。
 
 どちらのターゲットもこのリポジトリからビルドしている。ただし
 `flutter doctor` が緑でもどちらも通らない。それぞれに足りない前提は、後から

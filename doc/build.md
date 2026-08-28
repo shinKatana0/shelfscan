@@ -1,10 +1,15 @@
 # Building the app
 
-**This project publishes no built app.** No release carries an installer, an
-apk or a Windows binary: cutting a release here writes a version, a changelog
-entry and a tag, and attaches nothing. So building it from this repository is
-the only way to have the graphical app at all, and this page is written for
-someone who wants to *run* it as much as for someone who wants to change it.
+**A tagged release now carries one built app, and it is the Windows one.**
+A `v*` tag builds `ShelfScan-win-x64.zip` on a Windows runner and attaches it
+to that release (`.github/workflows/release.yml`), so a reader who wants to
+*run* the app on Windows downloads and extracts it and never comes to this
+page. `README.md`'s *Windows: download and run* is that whole route.
+
+**Everything else is still built here and nowhere else.** No installer, no
+apk, no macOS or Linux binary is published, so this repository remains the
+only way to have the app on any other platform -- and the only way to run a
+change you have made, on any platform at all. That is who this page is for.
 
 Only the app needs what follows. The CLI is plain Dart and needs none of it —
 [`guide.md`](guide.md) walks one whole run with it, from nothing to an
@@ -126,6 +131,39 @@ minutes and do not assume it has hung.
 
 The release exe is only 90 KB and does not run alone: `flutter_windows.dll`,
 `data\`, and one DLL per plugin sit beside it. Distribute the folder.
+
+**The folder is not quite self-contained, measured on its own PE imports.**
+`share_plus_plugin.dll` imports `MSVCP140.dll`, `VCRUNTIME140.dll` and
+`VCRUNTIME140_1.dll`, and `dartjni.dll` imports the second of those. Those are
+Microsoft's C++ runtime, they are not part of Windows, and neither Flutter nor
+the packaging step copies them in -- so a machine that has never had the
+redistributable installed answers with a missing-DLL box rather than a window.
+Everything else the exe needs is beside it: the `api-ms-win-crt-*` imports are
+the Universal CRT, which is in-box on Windows 10 and 11. All three READMEs name
+this under the download, because it looks exactly like a broken download and is
+not one.
+
+**But do not distribute the folder YOU built** -- build locally to run and to
+test, and let the tag produce what is published. Measured on a release build of
+this tree: the AOT snapshot `datapp.so` carries the absolute path of the
+directory it was compiled in, as one string ending
+`app/.dart_tool/flutter_build/dart_plugin_registrant.dart`. The toolchain writes
+it; nothing here asks for it and no build flag was found that removes it.
+
+That one string is the *only* build-machine path in the whole folder, which is
+the reason it is worth naming rather than worrying about generally. A sweep of
+every file in a packaged build -- both UTF-8 and UTF-16LE, because a Windows
+binary holds both -- returns exactly three other things that look like one and
+none of them is yours: Flutter's own engine build path, baked into the
+prebuilt `flutter_windows.dll` upstream; `C:\fakepath`, a web-platform
+constant inside the same DLL; and the GOG Galaxy database location, which this
+code holds on purpose. No credential of any shape is in it at all -- the
+`client_secret` that turns up in the snapshot's symbol table is the name of an
+OAuth form field, never a value.
+
+So the zip a reader downloads is the one the Windows runner built
+(`.github/workflows/release.yml`), where that string names a throwaway
+workspace and discloses nothing about anyone.
 
 ### Do not delete `app\build\` by hand — use `flutter clean`
 

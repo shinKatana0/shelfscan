@@ -41,9 +41,10 @@ choosing between them:
   **Every command on this page is the CLI** — that is what a page can
   show — and the app is named where the two differ. Keyless and full apply
   to it unchanged: which keys you hold is not which interface you drive.
-  Nothing publishes a built app, so you build it yourself —
-  [`build.md`](build.md), with Android in
-  [`android-build.md`](android-build.md).
+  On Windows a tagged release carries the built app, so you download it
+  rather than build it (`README.md`, *Windows: download and run*); on any
+  other platform you build it yourself — [`build.md`](build.md), with
+  Android in [`android-build.md`](android-build.md).
 
 You can start keyless and add the key later: the key affects one stage, and
 that stage can be re-run on its own over a scan you have already paid for.
