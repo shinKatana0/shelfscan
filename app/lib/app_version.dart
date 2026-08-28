@@ -20,9 +20,9 @@
 /// notice `settings_licenses_test.dart` then has to be told to expect; it
 /// answers only over a platform channel and so is a fake under `flutter test`
 /// exactly where the display is asserted; and the two platforms hold the
-/// number differently -- measured on this build, the apk's manifest carries
-/// `versionName='0.2.0'` and `versionCode='2'` as two fields, while the
-/// Windows exe's resource carries `0.2.0+2` whole -- so the displayed line
+/// number differently -- measured on the `0.2.0+2` build, the apk's manifest
+/// carried `versionName='0.2.0'` and `versionCode='2'` as two fields, while
+/// the Windows exe's resource carried `0.2.0+2` whole -- so the displayed line
 /// would have to be reassembled per platform to read alike. What it buys over
 /// this constant is a disagreement that `app_version_test.dart` already fails
 /// on.
@@ -34,4 +34,4 @@
 /// so if you do not.
 library;
 
-const appVersion = '0.2.0+2';
+const appVersion = '0.3.0+3';
