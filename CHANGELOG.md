@@ -20,6 +20,30 @@ is the authority behind it.
 
 Nothing yet.
 
+## [0.3.1] - 2026-08-28
+
+Both `pubspec.yaml` files read `0.3.1+4`. PATCH rather than MINOR because
+nothing a user can do changed: the program in this release is the program in
+`0.3.0`, and what moved is what the pages say about running it — which is what
+[`doc/decisions/0014`](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md)
+defines PATCH against. `+4` is the next build number, `+3` having been consumed
+by the `v0.3.0` tag.
+
+### Fixed
+- **The download instructions did not say to extract the zip before running
+  the app**, and Windows lets you not. An `.exe` started from inside a zip
+  preview comes up without the files sitting beside it in the archive and stops
+  on a missing-DLL box naming one of the four bundled plugins — which reads as
+  a broken download and is not one. Found against the published `v0.3.0`
+  artefact rather than reasoned about. The steps now say to extract it *fully*
+  and to open the extracted folder, a pulled-out note under them says plainly
+  not to start the executable from inside the archive, and both say why in one
+  clause: the executable does not run alone. In all three READMEs, and in
+  `doc/build.md` beside the paragraph that already explains that the folder is
+  the program. The Visual C++ runtime guidance next to it is untouched and
+  stays a separate failure: one is an archive that was not extracted, the other
+  a machine without Microsoft's runtime.
+
 ## [0.3.0] - 2026-08-28
 
 Both `pubspec.yaml` files read `0.3.0+3`. The number is `0.3.0` rather than
