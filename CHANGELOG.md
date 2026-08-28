@@ -18,6 +18,21 @@ is the authority behind it.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.3.0] - 2026-08-28
+
+Both `pubspec.yaml` files read `0.3.0+3`. The number is `0.3.0` rather than
+`0.2.1` because of the first entry below: a release now hands over a built
+Windows app, which is a capability a user can see rather than a fix — the
+reading
+[`doc/decisions/0014`](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md)
+defines MINOR against. No released contract broke: no `*.review.json` field, no
+export column and no CLI flag changed meaning, so nothing here reaches for the
+MAJOR that record would fold into MINOR anyway while the project is in `0.x`.
+`+3` is the next build number; `+2` was consumed by the `v0.2.0` tag and a
+build number is never reused.
+
 ### Added
 - **A tagged release now hands over a Windows app, so having one no longer
   means building it.** Pushing a `v*` tag runs a Windows runner through both
