@@ -84,17 +84,22 @@ Both platforms, the prerequisites `flutter doctor` does not check and the
 failures each one has are on their own page:
 [`doc/build.md`](doc/build.md). Nothing was cut in the move.
 
-It is there rather than here because it is not contributor-only material: no
-release publishes a built app, so anyone who wants to *run* this one builds it
-too, and the only account of how was sitting behind a title that says the page
-is about contributing.
+It is there rather than here because it is not contributor-only material.
+A `v*` tag now publishes the Windows app as a zip, so a Windows reader who only
+wants to *run* it downloads that instead -- but every other platform is still
+built by whoever wants to run it, and the only account of how was sitting
+behind a title that says the page is about contributing.
 
 ## Cutting a release
 
 Deciding the version and cutting the tag are a person's acts, and this
-project means that. Nothing below fires on its own: CI runs the two suites on
+project means that. **Nothing below decides anything on its own**, and none of
+the checks in it can be delegated to a runner: `ci.yml` runs the two suites on
 a push to `main` and on a pull request, never on a tag, and git offers no hook
-that fires when a tag is cut without also firing on ordinary work. What
+that fires when a tag is cut without also firing on ordinary work.
+
+What the tag does fire is step 7, and it is the last step rather than a
+replacement for the six before it. What
 follows is the order from
 [`doc/decisions/0014`](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md),
 with the command that checks each step and what its answers mean.
@@ -201,6 +206,35 @@ neither runner can be trusted to say what happened to itself.
 
 **6 — cut the tag.** A person's act, and the only step of the release order
 git records.
+
+**7 — the tag builds and attaches the Windows zip, and you read what it did.**
+Pushing the tag starts
+[`.github/workflows/release.yml`](.github/workflows/release.yml) on a Windows
+runner: both suites, `flutter build windows --release`,
+`check-bundle-assets.dart` against the bundle it just built, then
+`ShelfScan-win-x64.zip` and a GitHub Release for that tag. Every step is a
+gate — a failure anywhere stops the run before `gh release create` is reached,
+so a red run leaves no release rather than a broken download.
+
+Two things about it that are easy to get wrong:
+
+- **It does not run `check-release-order.dart`, and must not.** That check
+  compares this tree's build number against every number a tag has published,
+  and by the time the workflow starts, the tag it would compare against is this
+  one — the measurement above, one second either side of `git tag`. It is a
+  pre-tag check by construction. Step 3 is where it runs and there is no
+  substitute for having run it.
+- **The zip is the artefact this project hands over**, so BUILD in step 1 has
+  been handed over the moment this run goes green. Decision 0014's "never
+  reused" is counted from here.
+
+Read the run rather than the tag: a tag exists whether or not anything built
+from it. The release page carrying `ShelfScan-win-x64.zip` is the receipt.
+
+**And the zip that is handed to anyone is the runner's, never one you built.**
+The AOT snapshot carries the absolute path of the directory it was compiled in;
+[`doc/build.md`](doc/build.md) says which string, what else was swept for, and
+what came back.
 
 ## What a change must not break
 

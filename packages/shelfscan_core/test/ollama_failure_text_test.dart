@@ -117,6 +117,16 @@ void main() {
       expect(error, isA<OllamaUnreachableException>());
       expect(message, startsWith('Cannot reach Ollama at http://127.0.0.1:'));
       expect(message, contains('ollama serve'));
+      // The sentence a downloaded build fails on, and the one thing it cannot
+      // leave the reader to guess (T-0453): which of the two programs is
+      // missing. Nothing here bundles Ollama, so on a machine that has only
+      // unzipped this one, nothing answering is the expected state -- and a
+      // remedy alone reads as this program being broken.
+      expect(message, contains('separate program'));
+      expect(message, contains('does not include or install it'));
+      // It claims nothing about where to install it: this address may be
+      // another machine, which is the case the next sentence is for.
+      expect(message, isNot(contains('ollama.com')));
       // The reason is the socket's, and on Windows it comes back in the OS
       // display language -- so it may never be the whole explanation.
       expect((error as OllamaUnreachableException).reason, isNotEmpty);

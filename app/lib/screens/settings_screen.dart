@@ -281,6 +281,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 '(OLLAMA_HOST=0.0.0.0), and its address goes below.',
                 key: const Key('settings-ollama-lan-note'),
                 style: Theme.of(context).textTheme.bodySmall,
+              )
+            // The desktop counterpart, and it exists for the downloaded build
+            // rather than for the built-from-source one (T-0453). Local is the
+            // backend this platform starts on, the paragraph above says it
+            // "needs no keys", and neither of those says the thing a reader who
+            // has just unzipped the app does not know: that the model runs in a
+            // second program nothing here installs. Without it the first scan
+            // is where they find out, from a failure -- which reads as the app
+            // being broken rather than as a prerequisite being absent.
+            //
+            // The model id is read from the provider's constant rather than
+            // typed, for the reason the URL hint above is: two copies of a
+            // default drift, and this one is a command the reader will paste.
+            else
+              Text(
+                'Ollama is a separate program and shelfscan does not include '
+                'or install it -- the app is working correctly with it '
+                'absent, and the other two backends do not need it at all. '
+                'Install it from ollama.com, then pull the vision model once '
+                '(ollama pull $defaultOllamaModel) and leave the server '
+                'running (ollama serve).',
+                key: const Key('settings-ollama-desktop-note'),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             TextField(
               key: const Key('settings-ollama-url'),

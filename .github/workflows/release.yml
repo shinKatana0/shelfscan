@@ -1,0 +1,201 @@
+name: Release
+
+# Cutting the tag is still a person's act -- CONTRIBUTING.md, "Cutting a
+# release", and decision 0014's order: both pubspecs, then CHANGELOG.md, then
+# the tag. This workflow is what happens AFTER that last step. It decides
+# nothing about the version and refuses nothing about it; it builds the tree
+# the tag names and attaches one zip to the release for that tag.
+on:
+  push:
+    tags: ['v*']
+
+# The only workflow here that writes anything. `contents: write` is what
+# `gh release create` needs and it is scoped to this job alone; ci.yml stays
+# read-only.
+permissions:
+  contents: write
+
+# A tag is pushed once, so this exists for the re-run rather than the race:
+# two runs uploading the same asset name is the one way this workflow can
+# half-finish. No `cancel-in-progress` -- a half-cancelled upload is the state
+# it is guarding against.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    name: portable windows zip
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      # `channel: stable` is what ci.yml already installs, and the two must
+      # agree: a release built on a different Flutter from the one that went
+      # green is a release nothing tested. There is no narrower pin in the
+      # tree to honour -- both pubspecs say `sdk: ^3.4.0`, which is a floor
+      # rather than a version, and `pubspec.lock` is gitignored -- so this
+      # follows CI rather than inventing a second source of truth.
+      #
+      # `cache: true` caches the SDK download only, keyed by the version the
+      # action resolves. No pub cache is kept: with no committed lockfile a
+      # warm pub cache is a second, invisible input to the artefact.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # ---- validation, in the order CONTRIBUTING.md's release checklist runs
+      # it. One job, sequential, and every step is a gate: a failure anywhere
+      # stops the run before `gh release create` is reached, so a broken build
+      # cannot leave a partial asset on the release page.
+      #
+      # What is deliberately NOT run here: `tool/check-release-order.dart`.
+      # It compares this tree's build number against every number any tag has
+      # published, and by the time this workflow starts the tag it would
+      # compare against is this one -- measured, and written up in
+      # CONTRIBUTING.md: the same tree passes one second before `git tag` and
+      # answers REFUSED one second after, with nothing else changed. It is a
+      # pre-tag check by construction and would refuse every release from
+      # here. It stays a step a person runs before cutting the tag.
+
+      # The core package is pure Dart and must stay that way (ARCHITECTURE.md,
+      # "Platform boundary rules"), so it gets the Dart the Flutter SDK ships
+      # rather than a Flutter dependency of its own. Same split as ci.yml.
+      - name: core -- pub get
+        working-directory: packages/shelfscan_core
+        run: dart pub get
+      - name: core -- analyze
+        working-directory: packages/shelfscan_core
+        run: dart analyze
+      # Nine suites run CLI children off one kernel snapshot (T-0217); building
+      # it here gives a compile failure its own red step instead of nine
+      # failing setUpAlls.
+      - name: core -- CLI snapshot
+        working-directory: packages/shelfscan_core
+        run: dart run test/cli_snapshot.dart
+      # `expanded`, pinned for the reason ci.yml records: the `github` reporter
+      # takes its summary from the engine and has reported a pass over three
+      # tests it never counted.
+      - name: core -- test
+        working-directory: packages/shelfscan_core
+        run: dart test --reporter expanded
+
+      - name: app -- pub get
+        working-directory: app
+        run: flutter pub get
+      - name: app -- analyze
+        working-directory: app
+        run: flutter analyze
+      - name: app -- test
+        working-directory: app
+        run: flutter test --reporter expanded
+
+      # Since T-0194 app/windows/ is committed, so the runner checks it out and
+      # this builds the identity in `Runner.rc` rather than a `flutter create`
+      # default. There is no `flutter create` step here for that reason.
+      - name: app -- build windows release
+        working-directory: app
+        run: flutter build windows --release
+
+      # Step 4 of the release checklist, against the bundle actually being
+      # shipped rather than the default list. The failure it exists for is an
+      # asset key beginning `../`, which is written outside the bundle and
+      # reaches no packaged app while every test still passes (T-0386). Named
+      # explicitly because with no argument the script also checks the
+      # unit-test bundle, which is the one bundle that cannot answer this.
+      - name: verify the shipped bundle carries its assets
+        run: dart run tool/check-bundle-assets.dart app/build/windows/x64/runner/Release/data/flutter_assets
+
+      # The zip holds ONE top-level folder, not loose files: a reader who
+      # extracts in place gets a folder rather than a dozen items loose in
+      # Downloads. `flutter build` writes a 90 KB exe that does not run alone
+      # -- flutter_windows.dll, data\ and one DLL per plugin sit beside it
+      # (doc/build.md) -- so the whole directory is what ships.
+      - name: stage and zip
+        shell: pwsh
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'ShelfScan-win-x64'
+          if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item -Recurse -Force -Path 'app/build/windows/x64/runner/Release/*' -Destination $stage
+          Compress-Archive -Path $stage -DestinationPath 'ShelfScan-win-x64.zip' -Force
+
+      # Assert on the thing itself, not on the report of the step that made it:
+      # `Compress-Archive` exits 0 over an empty staging directory. This reads
+      # the entries back out of the finished zip and refuses to go on if the
+      # asset is missing any of the five files without which nothing starts.
+      - name: verify the zip is runnable before publishing it
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path 'ShelfScan-win-x64.zip'))
+          try { $names = $zip.Entries.FullName } finally { $zip.Dispose() }
+          $required = @(
+            'ShelfScan-win-x64/shelfscan_app.exe',
+            'ShelfScan-win-x64/flutter_windows.dll',
+            'ShelfScan-win-x64/data/app.so',
+            'ShelfScan-win-x64/data/icudtl.dat',
+            'ShelfScan-win-x64/data/flutter_assets/AssetManifest.bin'
+          )
+          $missing = @($required | Where-Object { $names -notcontains $_ })
+          Write-Host "$($names.Count) entries in the zip"
+          if ($missing.Count -gt 0) {
+            Write-Host "MISSING: $($missing -join ', ')"
+            exit 1
+          }
+          Write-Host 'every required entry is present'
+
+      # `gh` rather than a third-party release action, and it is preinstalled
+      # on this runner. The one step holding `contents: write` is the one worth
+      # keeping first-party: pinning a major tag of somebody else's action
+      # still follows wherever that tag is moved to.
+      #
+      # `--prerelease` for the whole of 0.x, which is where decision 0014 keeps
+      # this project until the two file formats it writes stop moving. Read off
+      # the tag rather than configured, so it stops being true exactly when 1.0
+      # is cut and not a release before or after.
+      - name: publish the release with the zip attached
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $notes = @(
+            "Portable Windows build of shelfscan $tag.",
+            '',
+            '**ShelfScan-win-x64.zip** -- download it, extract the folder, run',
+            '`shelfscan_app.exe` inside it. No Flutter or Dart SDK is needed',
+            'and there is no build step -- though a machine that has never had',
+            "Microsoft's Visual C++ Redistributable will need that once.",
+            '',
+            'Reading shelf photos needs a vision model, and one is **not** in',
+            'this download. Choose it in Settings: a local Ollama server -- a',
+            'separate program you install and run yourself -- or any',
+            'OpenAI-compatible endpoint, or Anthropic, the last two with your',
+            'own key. The app installs and starts correctly without any of',
+            'them, and says what it needs when you scan.',
+            '',
+            'If it will not start: SmartScreen warns because the build is not',
+            'signed (More info, Run anyway), and a missing `VCRUNTIME140.dll`',
+            'means this machine has no Microsoft Visual C++ runtime yet --',
+            'that is not part of Windows and is not redistributed here.',
+            '',
+            'What changed is in `CHANGELOG.md`. Building from source is still',
+            'documented in `doc/build.md`.'
+          )
+          Set-Content -Path 'release-notes.md' -Value $notes -Encoding utf8
+          $ghArgs = @($tag, 'ShelfScan-win-x64.zip',
+                    '--title', "shelfscan $tag",
+                    '--notes-file', 'release-notes.md')
+          if ($tag.StartsWith('v0.')) { $ghArgs += '--prerelease' }
+          gh release create @ghArgs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# No `env:` block of credentials, and deliberately, for the reason ci.yml
+# gives: no key, no network the build depends on, and the only token here is
+# the one `gh` needs to write the release. Nothing in the artefact is
+# configured from this file -- every credential this app uses is typed by its
+# own user into the OS keychain (decision 0011), so there is none to bake in
+# and no step below that could.
