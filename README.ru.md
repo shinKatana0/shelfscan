@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob 119953a429be1a2744d2b34090f99e72d8a52dda CURRENT
+<!-- TRANSLATED-FROM: README.md blob f1b132f5c64063e33c44878c0ee5333fc5ba8424 CURRENT
      Translated 2026-08-28. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
@@ -401,10 +401,17 @@ dart run shelfscan_core:shelfscan resolve collection.review.json
 
 1. Откройте [Releases](https://github.com/shinKatana0/shelfscan/releases) и
    возьмите **`ShelfScan-win-x64.zip`** из самого свежего.
-2. Распакуйте папку куда угодно. Она портативная: ни установщика, ни ключей
-   реестра, ничего не пишется за её пределами и за пределами настроек самого
-   приложения.
-3. Запустите **`shelfscan_app.exe`** внутри неё.
+2. **Распакуйте полностью**, куда угодно. Папка портативная: ни установщика,
+   ни ключей реестра, ничего не пишется за её пределами и за пределами
+   настроек самого приложения.
+3. Откройте распакованную папку и запустите **`shelfscan_app.exe`** внутри неё.
+
+> **Распакуйте архив перед запуском `shelfscan_app.exe`. Не запускайте
+> исполняемый файл прямо из архива.** Windows спокойно открывает `.exe` из
+> просмотра zip, но тогда рядом с ним нет остальных файлов — и он
+> останавливается на окне о ненайденной библиотеке с именем вроде
+> `file_selector_windows_plugin.dll`. Распакуйте папку целиком, и он
+> запустится. Это не дефект загрузки: архив рассчитан именно на распаковку.
 
 **Ни Flutter, ни Dart SDK не нужны**, и шага сборки нет. Но это не то же
 самое, что «работает на любой установке Windows»: на машине, где никогда не

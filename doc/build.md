@@ -132,6 +132,14 @@ minutes and do not assume it has hung.
 The release exe is only 90 KB and does not run alone: `flutter_windows.dll`,
 `data\`, and one DLL per plugin sit beside it. Distribute the folder.
 
+**That is also why the published zip has to be extracted and not browsed.**
+Windows will open an `.exe` straight out of a zip preview, and it starts
+without the files sitting next to it inside the archive -- so it stops on a
+missing-DLL box naming one of the plugins. Reported by an external user on
+2026-08-28 against the v0.3.0 download, and named in all three READMEs under
+the download steps. Nothing is wrong with the artefact: a folder of files is
+what it is, and extracting it is how it is used.
+
 **The folder is not quite self-contained, measured on its own PE imports.**
 `share_plus_plugin.dll` imports `MSVCP140.dll`, `VCRUNTIME140.dll` and
 `VCRUNTIME140_1.dll`, and `dartjni.dll` imports the second of those. Those are

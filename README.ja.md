@@ -1,4 +1,4 @@
-<!-- TRANSLATED-FROM: README.md blob 119953a429be1a2744d2b34090f99e72d8a52dda CURRENT
+<!-- TRANSLATED-FROM: README.md blob f1b132f5c64063e33c44878c0ee5333fc5ba8424 CURRENT
      Translated 2026-08-28. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
@@ -384,9 +384,15 @@ dart run shelfscan_core:shelfscan resolve collection.review.json
 
 1. [Releases](https://github.com/shinKatana0/shelfscan/releases) を開き、いちばん
    新しいものから **`ShelfScan-win-x64.zip`** を取得する。
-2. フォルダを好きな場所に展開する。ポータブルであり、インストーラもレジストリ
+2. 好きな場所に **完全に展開する**。ポータブルであり、インストーラもレジストリ
    キーもなく、そのフォルダとアプリ自身の設定より外には何も書かない。
-3. その中の **`shelfscan_app.exe`** を実行する。
+3. 展開したフォルダを開き、その中の **`shelfscan_app.exe`** を実行する。
+
+> **`shelfscan_app.exe` は展開してから実行すること。zip の中から直接起動しない。**
+> Windows は zip をプレビューしたまま中の `.exe` を開いてしまうが、そのときは隣に
+> 並んでいるファイルが伴わないので、`file_selector_windows_plugin.dll` などの名前が
+> 出る DLL 不足のダイアログで止まる。フォルダごと展開すれば起動する。ダウンロード
+> の不具合ではなく、zip はそう使うものである。
 
 **Flutter も Dart SDK も要らない。** ビルドの手順もない。ただしそれは「どの
 Windows でも必ず動く」という意味ではない: Microsoft の Visual C++ 再頒布可能

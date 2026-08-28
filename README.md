@@ -375,9 +375,18 @@ publishes one asset, built on a Windows runner from the tree that tag names:
 
 1. Open [Releases](https://github.com/shinKatana0/shelfscan/releases) and take
    **`ShelfScan-win-x64.zip`** from the newest one.
-2. Extract the folder wherever you like. It is portable — no installer, no
-   registry keys, nothing written outside it and the app's own settings.
-3. Run **`shelfscan_app.exe`** inside that folder.
+2. **Extract it fully**, wherever you like. It is portable — no installer, no
+   registry keys, nothing written outside the folder and the app's own
+   settings.
+3. Open the extracted folder and run **`shelfscan_app.exe`** inside it.
+
+> **Extract the zip before running `shelfscan_app.exe`. Do not start the
+> executable from inside the archive.** Windows will happily open an `.exe`
+> straight out of a zip preview, and it launches without the files that sit
+> beside it — so it stops with a missing-DLL box naming
+> `file_selector_windows_plugin.dll` or one of its neighbours. Extract the
+> folder and it starts. This is how the zip is meant to be used rather than
+> anything wrong with the download.
 
 **No Flutter and no Dart SDK** — neither is needed to run it, and there is no
 build step. That is not the same as "runs on any Windows installation": on a
