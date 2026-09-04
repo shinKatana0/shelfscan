@@ -18,6 +18,22 @@ is the authority behind it.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.4.0] - 2026-09-04
+
+Both `pubspec.yaml` files read `0.4.0+5`. MINOR rather than PATCH because
+of the first entry below: `--target tonkatsu-cards` is a new export target,
+which is one of the four examples
+[`doc/decisions/0014`](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md)
+gives for MINOR, word for word. No released contract broke — no
+`*.review.json` field and no export column was renamed, removed or re-meant,
+and no CLI flag changed meaning; the new target is a value added beside the
+two that were already there — so nothing here reaches for the MAJOR that
+record would fold into MINOR anyway while the project is in `0.x`. `+5` is
+the next build number; `+4` was consumed by the `v0.3.1` tag and a build
+number is never reused.
+
 ### Added
 - **A second Tonkatsu export, for the rows the first one cannot carry.**
   `--target tonkatsu-cards` writes a Custom Cards JSON file that the same app
@@ -79,6 +95,17 @@ is the authority behind it.
 - **The dropped-rows sentence is the exporter's own.** Each target now says why
   it left rows out instead of one hardcoded sentence naming IGDB for all of
   them. `tonkatsu` and `csv` print exactly what they printed before.
+- **A release published from here is no longer labelled a pre-release.** The
+  workflow added `--prerelease` to every tag beginning `v0.`, and the label was
+  taken off the last release by hand afterwards; the argument is gone, so no tag
+  receives it. **Nothing about the version moved with it.** This is still a `0.x`
+  build for the reason
+  [`doc/decisions/0014`](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md)
+  gives — the two file formats this program writes can still change shape, so a
+  review document written by one version is not promised to load in the next —
+  and that record is unchanged. The version gate and GitHub's label were two
+  different things, one read off the other. The three READMEs said the label was
+  applied and now say what the `0.x` version means on its own.
 
 ### Documentation
 - **What this integration depends on is written down**, in
