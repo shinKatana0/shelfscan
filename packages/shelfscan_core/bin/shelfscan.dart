@@ -1328,7 +1328,11 @@ Never _usage() {
       '                              # the whole GOG library, installed or not\n'
       '  shelfscan resolve <review.json> [-o out.json] [--aliases <file>]\n'
       '                                                 # IGDB stage only, no vision\n'
-      '  shelfscan export <review.json> --target <tonkatsu|csv> -o <file>\n'
+      '  shelfscan export <review.json>\n'
+      '                      --target <tonkatsu|csv|tonkatsu-cards> -o <file>\n'
+      '                              # tonkatsu-cards is the .xcoll leftovers:\n'
+      '                              # the rows nothing resolved, as Tonkatsu\n'
+      '                              # custom cards\n'
       '\n'
       'Photos: JPEG, PNG and WebP are read. Each file is identified by its\n'
       'contents, not by its name, so a HEIC your phone renamed .jpg is still\n'
@@ -2340,8 +2344,11 @@ Future<void> _export(List<String> args) async {
   File(outPath).writeAsStringSync(exporter.export(doc));
   stdout.writeln('Exported $written of $approved approved game(s) -> $outPath');
   if (written < approved) {
+    // The reason is the exporter's, like the count above it: three targets
+    // leave a row out for three different reasons, and the one sentence this
+    // line used to hold named IGDB for all of them.
     stdout.writeln('  ${approved - written} left out: the $target target '
-        'carries only items with a resolved IGDB match.');
+        '${exporter.leftOutReason}');
   }
   for (final line in spreadsheetNote(exporter.formulaCells(doc), outPath)) {
     stdout.writeln(line);

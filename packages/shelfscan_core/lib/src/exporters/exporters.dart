@@ -50,6 +50,21 @@ abstract class Exporter {
   /// Filter + render in one call.
   String export(ReviewDocument doc) => render(select(doc));
 
+  /// Why this target left a marked row out, as the CLI's summary says it --
+  /// the tail of `N left out: the <target> target ...`.
+  ///
+  /// A member for the same reason [canExport] is one: the shells narrate, the
+  /// exporter owns the rule. It was one hardcoded sentence in `bin/` naming
+  /// IGDB, which had already stopped being the whole truth for a TMDB-matched
+  /// film row and would be exactly backwards for [TonkatsuCardsExporter],
+  /// whose subject is the rows with no match at all.
+  ///
+  /// The default is the shipped wording byte for byte: `doc/guide.md` and its
+  /// two translations quote that line, and `guide_transcript_test.dart` pins
+  /// the guides against what the program prints.
+  String get leftOutReason =>
+      'carries only items with a resolved IGDB match.';
+
   /// Cells of the file this would write that a spreadsheet reads as a
   /// formula rather than as text.
   ///
@@ -477,8 +492,171 @@ class CsvExporter extends Exporter {
       : value;
 }
 
+/// Tonkatsu Box exporter -- the Custom Cards import.
+///
+/// Format reference: hacan359/tonkatsu_box at `release/0.44`,
+/// `lib/core/import/sources/custom_file/` -- `custom_cards_parser.dart`,
+/// `custom_card_entry.dart` and `custom_cards_template.dart`. EXTERNAL
+/// CONTRACT, the same standing as [TonkatsuExporter]'s: upstream changes get a
+/// new writer rather than a mutation of this one.
+///
+/// **The row this exists for.** An `.xcoll` item IS a pair of ids, so a row
+/// nothing resolved has none and [TonkatsuExporter] declines it -- correctly,
+/// and that was the whole of the story since T-0012: such a row left through
+/// CSV, which no Tonkatsu import reads. This is the other import that same app
+/// already has, and it takes exactly that row -- a title and a type, every
+/// other field optional.
+///
+/// **JSON and not the CSV upstream also accepts.** The JSON form types its
+/// values, and this repository already writes a `.csv` whose columns mean
+/// something else entirely; two `.csv` exports with different headers and
+/// different audiences is the confusion [CsvExporter]'s `source_photo` was kept
+/// narrow to avoid.
+///
+/// **A file this target writes must not depend on the importer being
+/// forgiving.** Upstream turns a bad row into issues rather than a whole-file
+/// failure -- but that is upstream's property to change, so nothing here rests
+/// on it: [_card] refuses a row it cannot build and [render] omits it.
+class TonkatsuCardsExporter extends Exporter {
+  /// The other target's rule, asked rather than restated.
+  ///
+  /// The two Tonkatsu targets partition the approved rows, so this one's
+  /// question is literally "would the other decline it?" -- and which catalogue
+  /// a kind's `external_id` must come from is that exporter's rule and private
+  /// to it. `review_screen.dart`'s `_pickReachesXcoll` holds an instance for
+  /// the same reason: a second copy of that rule rots, and it has moved twice.
+  final TonkatsuExporter _xcoll = TonkatsuExporter();
+
+  @override
+  String get name => 'tonkatsu-cards';
+
+  @override
+  String get extension => 'json';
+
+  /// The `type` values the import accepts (`CustomCardFields.allowedTypes`).
+  ///
+  /// `custom` is deliberately absent upstream: the card is stored as a custom
+  /// item whatever this field says, and the value only picks how it presents.
+  /// Four of these are reachable from [WorkKind.wire] today; the list is kept
+  /// whole because it is a transcription of an external vocabulary rather than
+  /// a list of what this project happens to write.
+  static const cardTypes = <String>{
+    'game',
+    'movie',
+    'tv_show',
+    'animation',
+    'visual_novel',
+    'manga',
+    'anime',
+    'book',
+  };
+
+  @override
+  String get leftOutReason => 'carries only what .xcoll cannot -- an item with '
+      'a resolved match belongs in that file instead.';
+
+  /// The rows the other Tonkatsu target leaves behind, and only those.
+  ///
+  /// A partition rather than a second opinion: a row `.xcoll` can carry belongs
+  /// in `.xcoll`, where the importer fetches metadata and a cover from an id.
+  /// Sending it here as well would import one shelf twice, once as catalogue
+  /// entries and once as bare cards.
+  ///
+  /// The second clause is whatever [_card] needs to build a row at all, asked
+  /// here rather than listed again, so the shells' "carries none of the marked
+  /// rows" and the file's contents cannot disagree.
+  @override
+  bool canExport(ResolvedGame game) =>
+      !_xcoll.canExport(game) && _card(game) != null;
+
+  @override
+  String render(List<ResolvedGame> games) {
+    // Throws on no member of the list. [Exporter.render]'s contract is that it
+    // is only called for rows [canExport] accepted, which holds for
+    // [Exporter.export] and not for a caller with a hand-built list -- and
+    // this is the target where that matters, because its whole subject is the
+    // rows nothing could resolve.
+    final cards = <Map<String, Object?>>[];
+    for (final game in games) {
+      final card = _card(game);
+      if (card != null) cards.add(card);
+    }
+    // A bare array: no envelope, so no clock. Unlike `.xcoll`, which stamps
+    // `created` with `DateTime.now()`, one document renders to the same bytes
+    // every time.
+    return const JsonEncoder.withIndent('  ').convert(cards);
+  }
+
+  /// One card, or null where this pipeline holds nothing honest to build one
+  /// from.
+  ///
+  /// **`title` and `type` are the whole of what upstream requires**, and the
+  /// two optional keys below are the only ones this project can fill without
+  /// inventing. Every other field of the import schema is refused on purpose:
+  ///
+  /// - **`cover`, under no condition.** It takes an `http(s)` URL and nothing
+  ///   else; the only image this project holds is a photograph on the owner's
+  ///   own disk, and a path off that machine must never leave it.
+  /// - **`year`, under no condition.** The only year a row here can carry is
+  ///   [Detection.sourceYear], whose own doc comment forbids exactly this --
+  ///   on a scene name it is conventionally the year of the rip.
+  ///   [Candidate.releaseYear] is the trustworthy one and is unreachable here
+  ///   by construction: a row with a usable match went to `.xcoll`, so a match
+  ///   left on this one is for the wrong catalogue and its year is a year for
+  ///   a different work.
+  /// - **`status`, `rating`, `comment`, `favorite`, `tags`, `rewatch_count`,
+  ///   the two dates, `time_spent_minutes`, `current_episode`,
+  ///   `current_season`** -- this tool collects none of them, and a default
+  ///   written into a card is a claim the owner did not make.
+  /// - **`description`, `genres`, `link`, `format`, `unit_total`,
+  ///   `unit_group_total`** -- nothing upstream of this exporter holds a value
+  ///   for them at all.
+  static Map<String, Object?>? _card(ResolvedGame game) {
+    // [CsvExporter]'s title cell, for its reason: a match's canonical name
+    // where there is one, the read title where there is not.
+    final title = game.best?.title ?? game.detection.rawTitle.trim();
+    // [WorkKind.wire] and not a second mapping table -- it is already this
+    // importer's vocabulary. The membership test is what makes a further kind
+    // fail loudly here rather than write a row `unknownType` disqualifies.
+    final type = game.detection.workKind.wire;
+    if (title.isEmpty || !cardTypes.contains(type)) return null;
+
+    final rawTitle = game.detection.rawTitle.trim();
+    final platform = _platform(game);
+    return {
+      'title': title,
+      'type': type,
+      if (rawTitle.isNotEmpty && rawTitle != title) 'alt_title': rawTitle,
+      if (platform != null) 'platform': platform,
+    };
+  }
+
+  /// The platform text for a card, or null where writing one would invent it.
+  ///
+  /// [CsvExporter]'s chain, and its shape is that file's measurement rather
+  /// than a preference: the hint is reached ONLY when nothing matched, because
+  /// a match that names no platform names none. A `??` over
+  /// [Candidate.platformName] would run past a matched row into the console
+  /// hint the spine gave it before its kind was corrected.
+  ///
+  /// Restricted to [WorkKind.game] on top of that, which the CSV column is not.
+  /// A card states its type and the other types have no platform at all, so a
+  /// hint surviving onto one would be the same invention one field over.
+  static String? _platform(ResolvedGame game) {
+    if (game.detection.workKind != WorkKind.game) return null;
+    final best = game.best;
+    final text = best == null ? game.detection.platformHint : best.platformName;
+    return text == null || text.isEmpty ? null : text;
+  }
+}
+
 /// Exporter registry for the UI/CLI.
+///
+/// Appended to rather than reordered: the key order is published -- the CLI's
+/// `Known:` line and the app's export sheet both read it -- so a new target
+/// goes last and the two that shipped keep their places.
 final exporters = <String, Exporter Function()>{
   'tonkatsu': TonkatsuExporter.new,
   'csv': CsvExporter.new,
+  'tonkatsu-cards': TonkatsuCardsExporter.new,
 };
