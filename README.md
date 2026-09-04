@@ -9,6 +9,17 @@
      The rule in full, what the marker names and why it is not a commit:
      CONTRIBUTING.md, "Translations". -->
 
+<!-- FIGURES - every figure on this page belongs to the model it was
+     measured on, and that is not always the model this project ships.
+     A region carrying such figures is bounded by a pair of HTML
+     comments, "measured-on: <model id>" and "/measured-on", invisible
+     on the rendered page. The test is
+     packages/shelfscan_core/test/figure_attribution_test.dart:
+     it counts the regions, requires each to name its model in the
+     visible text too, and fails when the shipped default id appears
+     inside a region marked as the historical one. Pointing a measured
+     sentence at whatever ships next is what it exists to catch. -->
+
 # shelfscan
 
 [![CI](https://github.com/shinKatana0/shelfscan/actions/workflows/ci.yml/badge.svg)](https://github.com/shinKatana0/shelfscan/actions/workflows/ci.yml)
@@ -61,7 +72,7 @@ than as a report of a working app.
   code carries a decoder on each platform, the Windows Imaging Component on
   Windows and the system codec on Android. There is no installer and no
   published binary — you build it from source ([Setup](#setup)).
-- **It is exactly as good as the vision model you supply, and the free one has
+- **It is exactly as good as the vision model you supply, and the free one has <!-- measured-on: qwen2.5vl:7b -->
   a known ceiling.** The local `qwen2.5vl:7b` reads a Latin-script
   spine well and does not read the printed *Switch 2* band at all — those
   cases come back hinted `PS2`. It *does* transcribe Japanese script at full
@@ -70,7 +81,7 @@ than as a report of a working app.
   A cloud model is not automatically better: `gpt-4.1-mini` reads none of
   those Japanese spines, which the local model does. Only
   `gpt-5.5` reads both the script and the band, and charges for it
-  ([the measured difference](#which-model-and-what-it-changes)).
+  ([the measured difference](#which-model-and-what-it-changes)). <!-- /measured-on -->
   Every one of those readings was taken on `qwen2.5vl:7b`, the built-in
   default until 2026-09-04. The default is now `qwen3-vl:8b-instruct`, and
   none of this was measured on it
@@ -305,6 +316,8 @@ every command, the export formats, and where your photos go.
 
 ## What to expect
 
+<!-- measured-on: qwen2.5vl:7b -->
+
 Measured on two real shelf photos with the local model `qwen2.5vl:7b`, which
 was the built-in default when they were taken:
 
@@ -325,6 +338,8 @@ was the built-in default when they were taken:
   with no platform and you set it at review.
 - **Model confidence is useless here** — the local model returns `1.0`
   for everything, including partial reads. Do not filter on it.
+
+<!-- /measured-on -->
 
 A run over the two photos above prints exactly what it could not read.
 *Illustrative output: the filenames and the figures in this block are made
@@ -351,6 +366,8 @@ and the runs behind them are in
 [`doc/measurements.md`](doc/measurements.md), "The second lever works" and "A
 bigger local model, measured and rejected".
 
+<!-- measured-on: qwen2.5vl:7b -->
+
 | | `qwen2.5vl:7b` (local) | `gpt-4.1-mini` | `gpt-5.5` |
 |---|---|---|---|
 | Cost | **$0** | your key | your key — about **$0.45** for a three-photo shelf scan |
@@ -358,6 +375,8 @@ bigger local model, measured and rejected".
 | Japanese-script spines | **read** at full resolution, with the platform wrong; omitted at low resolution, where they are illegible | **not read** — none of them | **read**, every one, on five runs of five, with the platform right |
 | The printed *Switch 2* band | **not read** — those cases come back hinted `PS2` | not read | **read per spine** — every `SWITCH 2` hint correct across the three full-resolution photographs, five runs each, and no false positive on a case whose band prints none. The third photograph contributes none: the frame cuts a column at its edge, and the cases in the cut print the band but are not read — so that tally counts hints given rather than bands present. At 1200×900 the band was checked on one photograph and every case in it is read correctly over five runs; that is a separate measurement |
 | Invention | none on either control set | misreads that glare-struck title on 3 of 5 low-resolution runs | one invented title, on 2 of 5 runs — the same spine twice, out of everything read across the three full-resolution photographs; none at all at 1200×900 |
+
+<!-- /measured-on -->
 
 **The local column is `qwen2.5vl:7b`, and it is not the built-in default any
 more.** The default became `qwen3-vl:8b-instruct` on 2026-09-04, and no figure
@@ -1077,6 +1096,8 @@ directory, never next to your original.
 
 ### What `--fallback` actually bought
 
+<!-- measured-on: qwen2.5vl:7b -->
+
 Measure before you turn it on. The one second reader measured here —
 `gemma3:12b` behind `qwen2.5vl:7b`, on the three 4000×3000 control photos
 — added 15 rows and took the run from 70 s to 146 s. Every one of those
@@ -1091,6 +1112,8 @@ added rows was checked against the photographs, and **every one was wrong**:
   unreadable.
 - **0** were an item the first model had missed — which is the entire
   reason to run a second one.
+
+<!-- /measured-on -->
 
 A wrong row can be rejected at review and a missing one cannot, so this
 is a trade rather than a disaster. But it is a **local** second reader
