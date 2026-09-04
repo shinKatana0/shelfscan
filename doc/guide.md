@@ -30,11 +30,16 @@ your shelf and hands the result to an app that does.
 There are three ways through, and the first step of the guide is really
 choosing between them:
 
-- **Keyless.** A local vision model and a CSV export. No registration
-  anywhere, nothing paid, no key. This is the default on Windows.
-- **Full.** The same scan plus an IGDB key, which is what makes `.xcoll`
-  possible — that format carries IGDB ids and nothing else, so an item with
-  no id cannot be in the file at all.
+- **Keyless.** A local vision model, a CSV export, and a Custom Cards export
+  that Tonkatsu Box imports — on a keyless run that one carries **every** row,
+  because every row is unmatched, each as a title and a kind and nothing else.
+  No registration anywhere, nothing paid, no key. This is the default on
+  Windows.
+- **Full.** The same scan plus a catalogue key, which is what makes `.xcoll`
+  possible — that format carries a catalogue id and a platform id and nothing
+  else, so an item with no id cannot be in the file at all. The Custom Cards
+  export is still there beside it and now carries only the leftovers, which on
+  a shelf that matched completely is none.
 - **The app.** The same pipeline behind a window: photos picked from a
   dialog, progress on a screen, each row approved or rejected on a review
   screen instead of by editing JSON, the export saved from a save dialog.

@@ -510,6 +510,7 @@ yourself. Which one you want:
 | IGDB ids (game rows) | no | yes |
 | TMDB ids (film and animation rows) | no | yes |
 | CSV export | yes | yes |
+| Custom Cards export (Tonkatsu) | yes — it carries **every** row, since every row is unmatched; each is a title and a kind and nothing else | yes, and it carries only what `.xcoll` left behind, which on a fully matched shelf is nothing |
 | `.xcoll` export | no (needs catalogue ids) | yes |
 | Registration | none | a Twitch application for IGDB, a TMDB account for films and animation — both free, and each one on its own is enough for its own rows |
 | Photos leave the machine | no further than your own Ollama server | only if you pick a cloud model — or a cloud `--fallback`, which uploads all of them |
