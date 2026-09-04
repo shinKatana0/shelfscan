@@ -1563,6 +1563,17 @@ Exception visionTruncatedFailure({
       causeIsUserSet: false,
     );
 
+/// Which of the three ways to the output cap a message is explaining (T-0464).
+///
+/// [silent] is the completion that never wrote a character, [loop] the one that
+/// wrote the same records until the budget ran out, [density] the honest answer
+/// that ran out of room. One value rather than the two independent flags the
+/// caller is given: [silent] and [loop] are mutually exclusive today -- an
+/// answer with no text has no records to repeat -- and it is reading them
+/// independently that let a silent answer answer `false` to "did it loop?" and
+/// take the density conclusion.
+enum _CapRoad { silent, loop, density }
+
 /// What a completion that stopped at the output cap means for the person who
 /// took the photograph.
 ///
@@ -1589,9 +1600,25 @@ Exception visionTruncatedFailure({
 /// worse than no cause. [looped] and [wroteNothing] cannot both be true -- an
 /// answer with no text has no records to repeat.
 ///
-/// **The advice is what the user can reach, which is one action of the two.**
-/// The photograph is theirs -- fewer spines on the density road, what is in
-/// the frame on the loop road. The cap is not: it is a constant in this build
+/// **There is a third road, and it borrowed the second's conclusion until
+/// T-0464.** [wroteNothing] chose the opening clause and nothing else, so an
+/// answer carrying no text fell through [looped]'s false arm and collected the
+/// density conclusion whole: one sentence said the model wrote nothing, then
+/// that the model id was fine, that the shelf held more than one answer can
+/// hold, and that fewer spines was the fix. Only the first clause was true,
+/// and the action offered cannot work -- a model that spends the budget
+/// reasoning spends it on any frame, however few spines are in it. That was
+/// reported live, on three photographs a different model read. So the road is
+/// picked once, ahead of every clause, and each clause switches on it
+/// exhaustively: a fourth condition then fails to compile rather than
+/// inheriting somebody else's conclusion, which is exactly how this one
+/// arrived.
+///
+/// **The advice is what the user can reach, and on one of the three roads it
+/// is not the photograph.** Framing on the loop road and fewer spines on the
+/// density road are theirs; on the silent road nothing about the frame is
+/// evidence, and what is left to change is the model id -- user-typed on both
+/// surfaces since T-0067. The cap is not: it is a constant in this build
 /// (`_maxOutputTokens` in openai_compatible_vision.dart, `_numPredict` in
 /// ollama_vision.dart, [_anthropicMaxOutputTokens] here), and neither the app
 /// nor the CLI exposes a control for any of the three, so recommending it
@@ -1608,26 +1635,54 @@ String visionTruncatedMessage({
   bool looped = false,
   bool hasKey = true,
 }) {
+  // One road, picked before any clause is written: reading the two flags
+  // independently in each clause is what let the silent road collect the
+  // density conclusion (T-0464).
+  final road = wroteNothing
+      ? _CapRoad.silent
+      : looped
+          ? _CapRoad.loop
+          : _CapRoad.density;
   final ceiling =
       cap == null ? 'its own output limit' : 'the $cap-token output cap';
-  final what = wroteNothing
-      ? 'and wrote no answer at all -- a reasoning model can spend the whole '
-          'budget thinking before it writes a character'
-      : 'so the answer breaks off part-way and is no longer the complete JSON '
-          'the rest of the scan reads';
-  // A keyless server has no key to clear the user of suspecting, and naming
-  // one there is the local path borrowing the cloud's vocabulary (T-0097).
-  final notAtFault = hasKey
-      ? 'The key, the model id and the photo file are all fine'
-      : 'Neither the model id nor the photo file is at fault';
-  final theirs = looped ? 'the framing' : 'fewer spines';
+  final what = switch (road) {
+    _CapRoad.silent =>
+      'and wrote no answer at all -- a reasoning model can spend the whole '
+          'budget thinking before it writes a character',
+    _CapRoad.loop || _CapRoad.density =>
+      'so the answer breaks off part-way and is no longer the complete JSON '
+          'the rest of the scan reads',
+  };
+  final notAtFault = switch (road) {
+    // The two forms below are both false here: the model id is the only thing
+    // this road has any evidence against, and the photograph has none.
+    _CapRoad.silent => 'Nothing here is evidence about the photograph',
+    // A keyless server has no key to clear the user of suspecting, and naming
+    // one there is the local path borrowing the cloud's vocabulary (T-0097).
+    _CapRoad.loop || _CapRoad.density => hasKey
+        ? 'The key, the model id and the photo file are all fine'
+        : 'Neither the model id nor the photo file is at fault',
+  };
+  final theirs = switch (road) {
+    _CapRoad.silent => 'the model',
+    _CapRoad.loop => 'the framing',
+    _CapRoad.density => 'fewer spines',
+  };
   final whose = cap == null
       ? 'That limit is the endpoint\'s own; this request carries no cap for it '
           'to raise.'
       : 'That cap is fixed in this build and neither the app nor the CLI has a '
           'control for it, so $theirs is the fix that is yours.';
-  final because = looped
-      ? 'and neither is the size of the shelf: the answer that was cut off is '
+  final because = switch (road) {
+    _CapRoad.silent =>
+      'and nothing was cut short: there is no answer at all, not a shortened '
+          'one. A model that reasons before it answers can spend an entire '
+          'output budget doing so on any frame, and this route asks for one '
+          'concise structured answer instead. Reach for a vision instruct '
+          'model: "qwen3-vl:8b-instruct" is one that has been tested here, and '
+          'other image-capable models that answer directly work here too.',
+    _CapRoad.loop =>
+      'and neither is the size of the shelf: the answer that was cut off is '
           'the same few entries written out over and over, not a long list '
           'that ran out of room. That happens when a frame holds narrow strips '
           'that look like a spine and carry nothing to read -- cases stacked '
@@ -1635,9 +1690,11 @@ String visionTruncatedMessage({
           'tell one from the next, so it enumerates them without end. Re-frame '
           'the shot so that only spines whose titles face the camera are in '
           'it, and keep edge-on stacks out of frame. Cutting this same shot '
-          'into sections will not help: every section still holds them.'
-      : 'there was more on that shelf than one answer can hold. Photograph it '
-          'in two or three sections and scan those instead.';
+          'into sections will not help: every section still holds them.',
+    _CapRoad.density =>
+      'there was more on that shelf than one answer can hold. Photograph it '
+          'in two or three sections and scan those instead.',
+  };
   return '$service stopped model "$model" at $ceiling $what. $notAtFault -- '
       '$because $whose';
 }
