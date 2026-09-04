@@ -173,9 +173,13 @@ void main() {
   });
 
   group('a series episode is not a film', () {
-    // T-0368 split this group in two. The fansub shape is anime and is now a
-    // row; the other two number an episode of a series whose KIND the name
-    // does not state, and this project has no `tv_show` to give them.
+    // T-0368 split this group in two. The fansub shape is an animated series
+    // and is now a row; the other two number an episode of a series whose KIND
+    // the name does not state, and this project has no `tv_show` to give them.
+    //
+    // `WorkKind.animationSeries` and not `WorkKind.anime` (T-0456): the
+    // grammar detects an episode, never a nationality, and the same
+    // convention carries Western cartoons.
     test('the season/episode shape still declines', () {
       expect(_decline('Tidewrack.Lament.S01E04.1080p.WEB-DL.mkv'),
           DeclineReason.seriesEpisode);
@@ -188,7 +192,7 @@ void main() {
           DeclineReason.seriesEpisode);
     });
 
-    test('the fansub shape is an anime series row', () {
+    test('the fansub shape is an animated series row', () {
       final row = _row('[SubGroup] Tidewrack Lament - 04 [1080p].mkv');
       expect(row.workKind, WorkKind.animationSeries);
       expect(row.rawTitle, 'Tidewrack Lament');

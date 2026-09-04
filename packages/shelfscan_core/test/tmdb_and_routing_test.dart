@@ -628,7 +628,7 @@ void main() {
       expect(t.sent, hasLength(1));
     });
 
-    test('an anime series row reaches the .xcoll file, which is the task',
+    test('an animated series row reaches the .xcoll file, which is the task',
         () async {
       final worker = TmdbResolverWorker.series(TmdbClient(
         token: _token,
@@ -642,7 +642,7 @@ void main() {
 
       final exporter = TonkatsuExporter();
       expect(exporter.canExport(resolved), isTrue,
-          reason: 'before T-0369 every anime row was unmatched, so this '
+          reason: 'before T-0369 every animation row was unmatched, so this '
               'clause refused it however well the person answered');
 
       final item = ((jsonDecode(exporter.export(_doc([resolved]))) as Map)
@@ -658,14 +658,16 @@ void main() {
     final films = TmdbResolverWorker.movies(TmdbClient(token: _token));
     final series = TmdbResolverWorker.series(TmdbClient(token: _token));
 
-    test('the film search answers the film kind and the anime FILM kind', () {
-      // An anime film IS a film in TMDB: that catalogue keeps no separate
-      // animation database, and what makes the row an anime is the number
-      // Tonkatsu writes in `platform_id`.
+    test('the film search answers the film kind and the ANIMATED film kind',
+        () {
+      // An animated film IS a film in TMDB: that catalogue keeps no separate
+      // animation database, and what separates the row from a live-action one
+      // is the number Tonkatsu writes in `platform_id`. Never
+      // `WorkKind.anime`, which TMDB does not answer at all (T-0456).
       expect(films.answers, {WorkKind.movie, WorkKind.animationFilm});
     });
 
-    test('the series search answers the anime series kind and nothing else',
+    test('the series search answers the animated series kind, nothing else',
         () {
       expect(series.answers, {WorkKind.animationSeries});
     });
@@ -674,14 +676,23 @@ void main() {
       expect(igdb.answers, {WorkKind.game});
     });
 
-    test('the ONE kind nothing claims is the unanswered anime kind', () {
-      // Not an omission: there is no endpoint for "one of the two", so a
-      // search would have to pick and would answer half of these rows with an
-      // id for the other sort of thing. `TonkatsuExporter` refuses the row
-      // for a reason a match would not change.
+    test('the two kinds nothing claims are unclaimed for different reasons',
+        () {
+      // Neither is an omission.
+      //
+      // [WorkKind.animation] is the film-or-series question unanswered: there
+      // is no endpoint for "one of the two", so a search would have to pick
+      // and would answer half of these rows with an id for the other sort of
+      // thing.
+      //
+      // [WorkKind.anime] is a type no catalogue here holds at all (T-0456).
+      // Upstream keys it by AniList or Kitsu and this project wires neither,
+      // and TMDB is not a near-enough answer -- a TMDB id under that
+      // `media_type` names a different work. `TonkatsuExporter` refuses both
+      // rows, for reasons a match would not change.
       final claimed = {...igdb.answers, ...films.answers, ...series.answers};
-      expect(
-          WorkKind.values.toSet().difference(claimed), {WorkKind.animation});
+      expect(WorkKind.values.toSet().difference(claimed),
+          {WorkKind.animation, WorkKind.anime});
     });
 
     test('registrationsOf reads the map off the catalogue, kind by kind', () {
@@ -780,9 +791,9 @@ void main() {
     });
 
     test('a THIRD catalogue is added without editing the router', () async {
-      // The acceptance criterion, as an assertion. Anime is registered the
-      // same way the other two are -- a map entry built by the shell -- and
-      // no line of `CatalogueRouter` knows the kind exists.
+      // The acceptance criterion, as an assertion. A third kind is registered
+      // the same way the other two are -- a map entry built by the shell --
+      // and no line of `CatalogueRouter` knows the kind exists.
       final router = CatalogueRouter(
         catalogues: {
           WorkKind.game: _Recording('igdb'),

@@ -295,12 +295,22 @@ void main() {
     });
 
     // T-0345 pinned the opposite here -- *nothing offers or implies anime* --
-    // and it was right on the day: no source emitted an anime row, so the
+    // and it was right on the day: no source emitted such a row, so the
     // word would have offered nothing. T-0368 turned the episodic decline
     // into rows the same day, and this pin has outlived its premise by
     // exactly that. What replaces it is the establishing run, in the shape
     // T-0344 used for films: the word is earned rather than asserted.
-    testWidgets('a folder of anime reaches review as an anime row',
+    //
+    // **What the row reads as changed with T-0456 and what it IS did not.**
+    // A fansub-shaped name states an episode of a named series and states
+    // nothing about where it was made -- a Western cartoon ships under the
+    // same convention -- so the source answers `WorkKind.animationSeries`,
+    // which is now labelled `Animated series`. `Anime` became a kind of its
+    // own the same day, upstream files it on a catalogue nothing here wires,
+    // and it is a value a person assigns at review. Routing this walk to it
+    // would take TMDB matching away from every row it guessed wrong, which
+    // is a capability traded for a guess.
+    testWidgets('a folder of anime reaches review as an animated series row',
         (tester) async {
       const anime = 'anime';
       final vision = await _pump(tester,
@@ -316,7 +326,7 @@ void main() {
 
       expect(vision.seen, isEmpty, reason: 'no photograph, no vision call');
       // One row for the series, not one per episode (T-0368).
-      expect(find.textContaining('- Anime series'), findsOneWidget);
+      expect(find.textContaining('- Animated series'), findsOneWidget);
     });
   });
 

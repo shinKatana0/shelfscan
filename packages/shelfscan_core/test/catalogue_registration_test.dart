@@ -124,9 +124,9 @@ void main() {
       expect(router.fallback, isA<SkipResolver>());
     });
 
-    test('the token registers the two ANSWERED anime kinds as well (T-0369)',
+    test('the token registers the two ANSWERED animation kinds too (T-0369)',
         () {
-      // The gap this task closed: T-0368 made an anime row answerable and
+      // The gap that task closed: T-0368 made an animation row answerable and
       // exportable, and no shell routed one anywhere, so every one of them
       // came back unmatched and `.xcoll` refused it by the base clause.
       final router = _routerFor({..._igdb, ..._token});
@@ -139,7 +139,7 @@ void main() {
       ]);
     });
 
-    test('and each anime kind on the TMDB endpoint that answers IT', () {
+    test('and each animation kind on the TMDB endpoint that answers IT', () {
       // The trap, as an assertion. Registering the film worker for a series
       // would answer a series with a MOVIE id -- same catalogue, same `tmdb:`
       // namespace, so decision 0016's check in `TonkatsuExporter` cannot see
@@ -152,15 +152,24 @@ void main() {
 
       expect(film.search, TmdbSearch.movie);
       expect(series.search, TmdbSearch.series);
-      // The film kind and the anime film kind are one worker, because an
-      // anime film is a film in TMDB.
+      // The film kind and the animated film kind are one worker, because an
+      // animated film is a film in TMDB.
       expect(identical(router.catalogues[WorkKind.movie], film), isTrue);
     });
 
-    test('the unanswered anime kind is registered in NO configuration', () {
-      // `WorkKind.animation` is the film-or-series question still open. There
-      // is no endpoint for "one of the two", and `TonkatsuExporter` refuses
-      // the row for a reason a match would not change.
+    // Two kinds, one assertion, two different reasons -- and both reasons are
+    // answers rather than omissions.
+    //
+    // `WorkKind.animation` is the film-or-series question still open: there is
+    // no endpoint for "one of the two", and `TonkatsuExporter` refuses the row
+    // for a reason a match would not change.
+    //
+    // `WorkKind.anime` is a type no catalogue here holds (T-0456). Upstream
+    // keys it by AniList or Kitsu (`docs/RCOLL_FORMAT.md`, `release/0.44`) and
+    // this project wires neither, so no credential a person can supply
+    // registers it -- which is why the empty environment is in the list beside
+    // the full one.
+    test('neither unlooked-up kind is registered in ANY configuration', () {
       const configurations = [
         <String, String>{},
         _igdb,
@@ -170,8 +179,10 @@ void main() {
       for (final env in configurations) {
         final resolver = resolverFor(env);
         if (resolver is! CatalogueRouter) continue;
-        expect(resolver.catalogues.containsKey(WorkKind.animation), isFalse,
-            reason: 'registered by $env');
+        for (final kind in [WorkKind.animation, WorkKind.anime]) {
+          expect(resolver.catalogues.containsKey(kind), isFalse,
+              reason: '${kind.key} registered by $env');
+        }
       }
     });
 
@@ -191,7 +202,7 @@ void main() {
       }
     });
 
-    test('one token, one client: the anime kinds add no credential', () {
+    test('one token, one client: the animation kinds add no credential', () {
       final router = _routerFor(_token);
       final workers = [
         for (final kind in [
