@@ -704,7 +704,7 @@ IGDB の失敗から復旧するのに再スキャンは不要です。資格情
 
 <!-- transcript: unknown-export-target -->
 
-    Unknown target "tonkatsu-box". Known: tonkatsu, csv
+    Unknown target "tonkatsu-box". Known: tonkatsu, csv, tonkatsu-cards
 
 **CSV を書き出した場合**、これが出ることもあります。該当するときだけで、普通の
 書き出しにはそういうセルはありません:

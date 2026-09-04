@@ -734,7 +734,7 @@ bash:
 
 <!-- transcript: unknown-export-target -->
 
-    Unknown target "tonkatsu-box". Known: tonkatsu, csv
+    Unknown target "tonkatsu-box". Known: tonkatsu, csv, tonkatsu-cards
 
 **Если вы экспортировали CSV**, вы можете увидеть ещё и это, и только когда оно
 применимо — в обычном экспорте такой ячейки нет:

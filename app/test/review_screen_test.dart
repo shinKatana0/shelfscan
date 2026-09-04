@@ -871,19 +871,37 @@ void main() {
 
   testWidgets('the primary export button carries the count and reaches every '
       'registered target (T-0118)', (tester) async {
-    final game = _game('MOOR',
-        best: _candidate(3, 'MOOR'), status: ReviewStatus.approved);
+    // Two rows, because the registry no longer holds two targets that carry
+    // the same one: `.xcoll` takes the matched row and the Custom Cards
+    // target takes exactly what `.xcoll` declines (T-0457). One row would
+    // make some target reach "nothing to export" and write no file, and this
+    // test would then be asserting about the document rather than the route.
     final saver = FakeExportSaver(
         outcome: const SaveOutcome.savedToFile(r'C:\shelf\shelf.csv'));
-    await _pump(tester, _doc([game]), saver);
+    await _pump(
+        tester,
+        _doc([
+          _game('MOOR',
+              best: _candidate(3, 'MOOR'), status: ReviewStatus.approved),
+          _game('DUSKHOLLOWE', status: ReviewStatus.approved),
+        ]),
+        saver);
 
-    expect(find.text('Export 1 item'), findsOneWidget);
+    expect(find.text('Export 2 items'), findsOneWidget);
 
-    // Over the registry, not a hand-written pair: a target added to
+    // Over the registry, not a hand-written list: a target added to
     // `exporters` that the surviving route cannot reach is the failure this
     // guards, and a literal list would not notice it.
     for (final target in exporters.keys) {
       await _tapExport(tester, target);
+      // Every target but csv leaves one of the two rows out, so it asks
+      // first. Confirming is not the subject here -- the drop dialog has its
+      // own group above -- but skipping it would stop the route at the
+      // dialog.
+      if (find.byKey(const Key('export-drop-confirm')).evaluate().isNotEmpty) {
+        await tester.tap(find.byKey(const Key('export-drop-confirm')));
+        await tester.pumpAndSettle();
+      }
     }
 
     expect(saver.calls.map((c) => c.extension),

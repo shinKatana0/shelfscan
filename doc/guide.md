@@ -740,7 +740,7 @@ The count is asked of the exporter rather than re-derived, so a summary saying
 
 <!-- transcript: unknown-export-target -->
 
-    Unknown target "tonkatsu-box". Known: tonkatsu, csv
+    Unknown target "tonkatsu-box". Known: tonkatsu, csv, tonkatsu-cards
 
 **If you exported CSV**, you may also see this, and only when it applies —
 an ordinary export has no such cell in it:
