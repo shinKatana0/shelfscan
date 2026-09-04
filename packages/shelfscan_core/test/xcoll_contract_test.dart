@@ -197,6 +197,34 @@ void main() {
             reason: 'the namespace has to agree with what the kind implies '
                 '(decision 0016)');
       });
+
+      test('${kind.key} refuses a non-integer id rather than converting it',
+          () {
+        // Upstream hashes a string key into `external_id` with FNV-1a and
+        // keeps the original beside it in `native_id`. This project holds
+        // only IGDB and TMDB ids, both integers, so there is no string key
+        // here to hash -- and inventing that conversion would put a number
+        // in the field that names nothing in either catalogue. The row is
+        // declined instead, and CSV carries it.
+        //
+        // `catalogue_identity_test.dart` asserts this for one film. Here it
+        // is driven off [WorkKind.values], so a further kind cannot arrive
+        // with the refusal answered for it by nobody.
+        final row = ResolvedGame(
+          detection: _detection(kind),
+          best: Candidate(
+            externalId: '${written.catalogue}:tt$_externalId',
+            title: 'The Glass Orrery',
+            score: 1.0,
+          ),
+          status: ReviewStatus.approved,
+        );
+        expect(row.best!.externalId, startsWith('${written.catalogue}:'),
+            reason: 'the catalogue is right; only the id shape is wrong');
+        expect(TonkatsuExporter().canExport(row), isFalse);
+        expect(CsvExporter().select(_document([row])), hasLength(1),
+            reason: 'declining is per target -- the row is not lost');
+      });
     });
   });
 
