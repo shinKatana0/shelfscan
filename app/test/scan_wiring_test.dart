@@ -218,10 +218,10 @@ void main() {
     });
 
     // T-0369. Until it, this shell registered the film kind and nothing else,
-    // so every anime row went to the fallback and came back unmatched -- the
-    // person could answer film-or-series at review and `.xcoll` still refused
-    // the row by the base clause.
-    test('the same token registers the two ANSWERED anime kinds', () {
+    // so every animation row went to the fallback and came back unmatched --
+    // the person could answer film-or-series at review and `.xcoll` still
+    // refused the row by the base clause.
+    test('the same token registers the two ANSWERED animation kinds', () {
       final router = ProviderPolicy.buildResolver(
           ProviderSettings(tmdbToken: 'tmdb-not-a-token')) as CatalogueRouter;
 
@@ -236,13 +236,23 @@ void main() {
       expect(film.search, TmdbSearch.movie);
       expect(series.search, TmdbSearch.series);
       expect(identical(router.catalogues[WorkKind.movie], film), isTrue);
-      // One client, one token: the anime kinds cost no second credential.
+      // One client, one token: the animation kinds cost no second credential.
       expect(identical(film.tmdb, series.tmdb), isTrue);
     });
 
-    test('the UNANSWERED anime kind is registered in no configuration', () {
-      // No endpoint answers "one of the two", and `TonkatsuExporter` refuses
-      // that row for a reason a match would not change.
+    // Two kinds nothing looks up, for two different reasons, and the CLI's
+    // `resolverFor` answers both the same way.
+    //
+    // `WorkKind.animation` is the film-or-series question still open: no
+    // endpoint answers "one of the two", and `TonkatsuExporter` refuses that
+    // row for a reason a match would not change.
+    //
+    // `WorkKind.anime` is a separate upstream type keyed by AniList or Kitsu
+    // (T-0456). No credential this app collects reaches either service, so
+    // the row stays keyless however much is stored -- and widening the TMDB
+    // registration to cover it would file a cartoon's id under the anime
+    // type, which names a different work.
+    test('neither unlooked-up kind is registered in any configuration', () {
       final settings = [
         ProviderSettings(igdbClientId: 'id', igdbClientSecret: 'secret'),
         ProviderSettings(tmdbToken: 'tmdb-not-a-token'),
@@ -254,7 +264,10 @@ void main() {
 
       for (final s in settings) {
         final router = ProviderPolicy.buildResolver(s) as CatalogueRouter;
-        expect(router.catalogues.containsKey(WorkKind.animation), isFalse);
+        for (final kind in [WorkKind.animation, WorkKind.anime]) {
+          expect(router.catalogues.containsKey(kind), isFalse,
+              reason: '${kind.key} registered by $s');
+        }
       }
     });
 

@@ -319,6 +319,28 @@ void main() {
       expect(find.textContaining('not in .xcoll'), findsNothing);
     });
 
+    testWidgets('an anime row is refused for the run, not for itself (T-0456)',
+        (tester) async {
+      // The third clause and not the first: `film or series?` is about a
+      // question this kind is never asked, and `tap to pick a match` would
+      // invite a tap that cannot work -- no candidate on the row can reach
+      // `.xcoll`, because no catalogue here answers the type at all. So the
+      // row takes the clause a whole keyless run takes, which is true of it
+      // and says where the row still goes.
+      await _pump(
+          tester,
+          _doc([
+            _row('TIDEWRACK LAMENT',
+                workKind: WorkKind.anime,
+                candidates: [_tmdb(770003, 'Tidewrack Lament')]),
+          ]));
+
+      expect(find.textContaining('not in .xcoll -- csv carries it'),
+          findsOneWidget);
+      expect(find.textContaining('film or series?'), findsNothing);
+      expect(find.textContaining('tap to pick a match'), findsNothing);
+    });
+
     testWidgets('an answered animation row with no match asks for the tap',
         (tester) async {
       // It is refused for the ordinary reason now, so it takes the ordinary

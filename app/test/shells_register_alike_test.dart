@@ -76,7 +76,7 @@ void main() {
       // The registration is derived from the catalogue's own `answers`, never
       // typed beside it. `{WorkKind.animationSeries: TmdbResolverWorker
       // .movies(c)}` is the one-line mistake this task exists to make
-      // unwritable -- an anime series answered with a film's id, under the
+      // unwritable -- an animated series answered with a film's id, under the
       // same `tmdb:` namespace that decision 0016's export check compares.
       final asMapKey = RegExp(r'WorkKind\.\w+\s*:');
 
