@@ -2341,8 +2341,19 @@ Future<void> _export(List<String> args) async {
   // that says "exported N" while the file holds fewer is worse than no
   // summary at all.
   final written = exporter.select(doc).length;
-  File(outPath).writeAsStringSync(exporter.export(doc));
-  stdout.writeln('Exported $written of $approved approved game(s) -> $outPath');
+  // Nothing to export is not a failure, so the exit code stays 0 and only the
+  // file goes: for a target whose consumer refuses the empty form, what was
+  // left behind would be rejected with a message naming the wrong problem
+  // (T-0460). The count is said either way.
+  if (written == 0 && !exporter.emptyFileIsUsable) {
+    stdout.writeln('No file written: the $target target carries 0 of '
+        '$approved approved game(s), and the import it is written for '
+        'refuses a file with no items in it.');
+  } else {
+    File(outPath).writeAsStringSync(exporter.export(doc));
+    stdout.writeln(
+        'Exported $written of $approved approved game(s) -> $outPath');
+  }
   if (written < approved) {
     // The reason is the exporter's, like the count above it: three targets
     // leave a row out for three different reasons, and the one sentence this

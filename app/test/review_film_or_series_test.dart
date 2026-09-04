@@ -335,7 +335,7 @@ void main() {
                 candidates: [_tmdb(770003, 'Tidewrack Lament')]),
           ]));
 
-      expect(find.textContaining('not in .xcoll -- csv carries it'),
+      expect(find.textContaining('not in .xcoll -- cards/csv carry it'),
           findsOneWidget);
       expect(find.textContaining('film or series?'), findsNothing);
       expect(find.textContaining('tap to pick a match'), findsNothing);

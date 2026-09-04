@@ -70,10 +70,16 @@ const _noXcollKindClause = 'not in .xcoll -- film or series?';
 /// file will not take it. Neither reason is one the reader can act on: a film
 /// row is refused by the whole run rather than by anything about itself, and
 /// an empty candidate list is a search that has already happened. Meanwhile
-/// `.xcoll` refusing a row, read alone, says the row is lost -- csv carries
-/// it, which is the claim [_keylessBanner] already makes unconditionally for
-/// a whole run of such rows. 31 characters.
-const _noXcollCsvClause = 'not in .xcoll -- csv carries it';
+/// `.xcoll` refusing a row, read alone, says the row is lost -- both of the
+/// other two targets carry it, which is the claim [_keylessBanner] already
+/// makes unconditionally for a whole run of such rows. 35 characters.
+///
+/// `cards` and not the registry key `tonkatsu-cards` (T-0460): the key does
+/// not fit beside `csv` inside the 36 measured above, and one word has to
+/// serve all three sentences and the export sheet, whose button reads
+/// `Export: tonkatsu-cards` and holds it. Named first because it is the one
+/// of the two that imports into the app this row was refused by.
+const _noXcollCsvClause = 'not in .xcoll -- cards/csv carry it';
 
 /// Which of the three a refused row gets.
 ///
@@ -599,7 +605,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
       Detection detection) async {
     final title = detection.rawTitle;
     final unmatched = 'Added "$title" with no IGDB match -- it exports to '
-        'csv, not to .xcoll.';
+        'cards or csv, not to .xcoll.';
 
     final resolver = widget.resolver;
     final unresolved = ResolvedGame(detection: detection);
@@ -786,8 +792,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
         icon: Icons.link_off,
         dense: true,
         title: 'Keyless run -- nothing was looked up',
-        subtitle: 'Every row is the title as it was read. Export CSV; '
-            '.xcoll has no ids to carry.',
+        subtitle: 'Every row is the title as it was read. Export cards or '
+            'csv; .xcoll has no ids to carry.',
       );
 
   Widget _runBanner({

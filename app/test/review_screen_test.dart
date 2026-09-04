@@ -265,7 +265,8 @@ void main() {
       await _pump(tester, doc, FakeExportSaver());
 
       expect(
-          find.text('? - raw: "WORN LABEL" - not in .xcoll -- csv carries it'),
+          find.text('? - raw: "WORN LABEL" - '
+              'not in .xcoll -- cards/csv carry it'),
           findsOneWidget);
     });
 
@@ -280,7 +281,7 @@ void main() {
 
       expect(
           find.text('raw: "TIDEWRACK" - Film - '
-              'not in .xcoll -- csv carries it'),
+              'not in .xcoll -- cards/csv carry it'),
           findsOneWidget);
       expect(find.textContaining('PS4'), findsNothing);
       expect(find.textContaining('? - '), findsNothing);
@@ -303,7 +304,7 @@ void main() {
 
       expect(
           find.text('PS5 - raw: "HOLLOW PINE 2" - '
-              'not in .xcoll -- csv carries it - '
+              'not in .xcoll -- cards/csv carry it - '
               'note: "label worn, partially occluded"'),
           findsOneWidget);
     });
@@ -313,7 +314,7 @@ void main() {
 
       expect(
           find.text('PS4 - raw: "HOLLOW PINE 2" - '
-              'not in .xcoll -- csv carries it'),
+              'not in .xcoll -- cards/csv carry it'),
           findsOneWidget);
       expect(find.textContaining('note:'), findsNothing);
     });
@@ -337,7 +338,7 @@ void main() {
       expect(find.byIcon(Icons.edit_note), findsOneWidget);
       expect(
           find.text('PS4 - added by hand - '
-              'not in .xcoll -- csv carries it - '
+              'not in .xcoll -- cards/csv carry it - '
               'note: "logo-only spine, no text to read"'),
           findsOneWidget);
     });
@@ -377,7 +378,7 @@ void main() {
 
       expect(
           find.text('PS4 - raw: "JP SPINE" - '
-              'not in .xcoll -- csv carries it'),
+              'not in .xcoll -- cards/csv carry it'),
           findsOneWidget);
       // In the negative, because the defect is an instruction: no later
       // moment disproves one, and only its absence says it is gone.
@@ -428,7 +429,7 @@ void main() {
       ]);
       await _pump(tester, doc, FakeExportSaver());
 
-      expect(find.textContaining('not in .xcoll -- csv carries it'),
+      expect(find.textContaining('not in .xcoll -- cards/csv carry it'),
           findsOneWidget);
       // In the negative as well: the row asked for a tap that could not
       // change its outcome, and only the absence of the invitation says the
@@ -457,7 +458,7 @@ void main() {
 
       expect(find.textContaining('not in .xcoll -- tap to pick a match'),
           findsOneWidget);
-      expect(find.textContaining('csv carries it'), findsNothing);
+      expect(find.textContaining('cards/csv carry it'), findsNothing);
     });
 
     testWidgets('a row that can export carries no such clause', (tester) async {
@@ -624,14 +625,21 @@ void main() {
       expect(find.textContaining('not in .xcoll'), findsNothing);
     });
 
-    testWidgets('the run states it above the list, and names the export that '
-        'works', (tester) async {
+    testWidgets('the run states it above the list, and names the exports '
+        'that work', (tester) async {
       await _pump(tester, unmatchedShelf(), FakeExportSaver(), keyless: true);
 
       final banner = find.byKey(const Key('keyless-run-banner'));
       expect(banner, findsOneWidget);
+      // Both of them, and by equality: a keyless run is exactly the run in
+      // which every row reaches the cards target as well (T-0460), and a
+      // banner naming one destination over rows naming two is the mismatch
+      // T-0230 removed, one target later.
       expect(
-        find.descendant(of: banner, matching: find.textContaining('CSV')),
+        find.descendant(
+            of: banner,
+            matching: find.text('Every row is the title as it was read. '
+                'Export cards or csv; .xcoll has no ids to carry.')),
         findsOneWidget,
       );
       // It may not promise keyless detection, and it may not promise
@@ -1033,7 +1041,13 @@ void main() {
       expect(doc.games.single.best, isNull);
       expect(doc.games.single.candidates, isEmpty);
       expect(doc.games.single.status, ReviewStatus.pending);
-      expect(find.textContaining('no IGDB match'), findsOneWidget);
+      // By equality, for T-0460's reason: this sentence is said at the moment
+      // a person types the row in, and it is where they find out the row has
+      // somewhere to go.
+      expect(
+          find.text('Added "Nocturne 5 Gold" with no IGDB match -- it exports '
+              'to cards or csv, not to .xcoll.'),
+          findsOneWidget);
     });
 
     testWidgets('a failing IGDB lookup still keeps the typed item',
