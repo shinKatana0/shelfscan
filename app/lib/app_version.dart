@@ -34,4 +34,4 @@
 /// so if you do not.
 library;
 
-const appVersion = '0.3.1+4';
+const appVersion = '0.4.0+5';
