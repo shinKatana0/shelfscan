@@ -226,6 +226,11 @@ Platform boundary rules:
 
 - New vision backend: implement `VisionProvider`, wire it in the CLI/app.
 - New export target: implement `Exporter`, register it in `exporters`.
+  What the Tonkatsu integration depends on, and a smaller `{name, type}`
+  boundary the upstream maintainer has proposed for it, are audited in
+  [doc/integrations/tonkatsu-handoff.md](doc/integrations/tonkatsu-handoff.md).
+  That note is a design track and settles nothing: `.xcoll` is still the
+  contract, and nothing upstream has agreed to the smaller one.
 - New detection source — anything that names a work without being
   photographed:
   implement `DetectionSource` and add a `SourceRun` to the list
