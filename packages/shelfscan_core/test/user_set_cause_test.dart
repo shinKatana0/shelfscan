@@ -16,6 +16,14 @@ import 'dart:io';
 import 'package:shelfscan_core/shelfscan_core.dart';
 import 'package:test/test.dart';
 
+/// One record written out until the budget was gone: the loop road (T-0427).
+///
+/// Invented, like every fixture here, and the repetition is the whole of it --
+/// what `answerRepeatsItself` reads is exact repetition of a whole record.
+const _record = '{"raw_title":"Silt Harbour","platform_hint":"SWITCH",'
+    '"media_type":"cartridge","confidence":0.9}';
+final _looping = '{"items":[${List.filled(40, _record).join(',')}';
+
 /// The answer each builder gives, per input that changes it.
 ///
 /// Built by calling the real builders, never by constructing the exception by
@@ -79,8 +87,12 @@ final _answered = <String, Map<String, ({Object failure, bool? userSet})>>{
       userSet: null,
     ),
   },
-  // T-0111. The sentence names the key, the model id and the photo file as all
-  // fine, and the cap is a constant neither surface exposes.
+  // T-0111, and one builder with both answers since T-0465. On two of the three
+  // roads the sentence names the key, the model id and the photo file as all
+  // fine and the cap is a constant neither surface exposes. On the third it
+  // says the opposite -- no evidence about the photograph, and a vision
+  // instruct model as the thing to reach for -- so that row answers true, for
+  // the reason `visionWrongShapeFailure`'s second row answers false.
   'visionTruncatedFailure': {
     'the output cap is not a Settings field': (
       failure: visionTruncatedFailure(
@@ -91,7 +103,17 @@ final _answered = <String, Map<String, ({Object failure, bool? userSet})>>{
           body: '{}'),
       userSet: false,
     ),
-    'nor is it when the request carried no cap': (
+    'nor is a frame the model enumerated without end': (
+      failure: visionTruncatedFailure(
+          service: 'Ollama',
+          model: 'qwen2.5vl:7b',
+          cap: 8192,
+          answer: _looping,
+          body: '{}',
+          hasKey: false),
+      userSet: false,
+    ),
+    'but a completion that wrote nothing is the model id (T-0465)': (
       failure: visionTruncatedFailure(
           service: 'Ollama',
           model: 'qwen2.5vl:7b',
@@ -99,7 +121,7 @@ final _answered = <String, Map<String, ({Object failure, bool? userSet})>>{
           answer: '',
           body: '{}',
           hasKey: false),
-      userSet: false,
+      userSet: true,
     ),
   },
   // T-0142. Both branches end on the model id and the backend.
@@ -236,6 +258,50 @@ void main() {
               'over statusCode could have produced this column');
       expect(byStatus[404], {true},
           reason: 'and the statuses that do agree still agree');
+    });
+  });
+
+  // T-0465. The table above pins the answers; this pins what the defect
+  // actually was, which no value in that table can express: a flag decided by
+  // one reading of the answer sitting under a sentence decided by another. So
+  // each case asserts the sentence it got FIRST -- a fixture that stopped
+  // taking its road would otherwise flip this group green for the wrong
+  // reason -- and only then what the flag says about it.
+  group('the Settings answer agrees with the sentence it sits under', () {
+    final roads = <String, ({String answer, String conclusion, bool userSet})>{
+      'silent': (
+        answer: '',
+        conclusion: 'Nothing here is evidence about the photograph',
+        userSet: true,
+      ),
+      'loop': (
+        answer: _looping,
+        conclusion: 'it enumerates them without end',
+        userSet: false,
+      ),
+      'density': (
+        answer: '{"items":[',
+        conclusion: 'there was more on that shelf than one answer can hold',
+        userSet: false,
+      ),
+    };
+
+    roads.forEach((road, expected) {
+      test('the $road road', () {
+        final failure = visionTruncatedFailure(
+            service: 'Ollama',
+            model: 'qwen2.5vl:7b',
+            cap: 8192,
+            answer: expected.answer,
+            body: '{}') as VisionApiException;
+
+        expect(failure.message, contains(expected.conclusion),
+            reason: 'this fixture no longer takes the $road road, so the flag '
+                'below is being checked against a sentence it is not under');
+        expect(failure.causeIsUserSet, expected.userSet,
+            reason: 'the $road sentence and the Open settings button under it '
+                'disagree');
+      });
     });
   });
 
