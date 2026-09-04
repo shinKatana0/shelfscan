@@ -207,6 +207,14 @@ List<File> _shippedDart() => [
 RegExp _asStringLiteral(String value) =>
     RegExp("['\"]${RegExp.escape(value)}['\"]");
 
+/// The same literal on its own `const <name> = '<value>';` line, which is what
+/// declaring it looks like. Every other occurrence in shipped code is a second
+/// copy, whatever it is spelled beside.
+RegExp _asConstDeclaration(String value) =>
+    RegExp(r"const\s+\w+\s*=\s*"
+        "['\"]${RegExp.escape(value)}['\"]"
+        r"\s*;");
+
 /// A statement of a default in prose: the file, the phrase the sentence opens
 /// with, and what it has to name. Three lines from the anchor, because
 /// `.env.example` wraps its sentence and README's CLI quote sits under it.
@@ -426,35 +434,55 @@ void main() {
     }
   });
 
+  // Until T-0466 this asked for ONE shipped file holding the literal, which
+  // is the same question only while no two constants share a value. The
+  // default model became testedOllamaInstructModel's id that day, and two
+  // files declare that string deliberately and independently (vision.dart
+  // says why). So the question is asked one level down, where the defect
+  // actually lives: an occurrence that is NOT a declaration is a copy, and a
+  // copy is what drifts. A second declaration is a decision with a name and a
+  // doc comment on it; an inlined field hint or a retyped pull command is not.
   group('the local defaults are written once', () {
     for (final (name, value) in const [
       ('defaultOllamaUrl', defaultOllamaUrl),
       ('defaultOllamaModel', defaultOllamaModel),
     ]) {
-      test('$name is a literal in one shipped file, the one declaring it', () {
+      test('$name is written in shipped code only where it is declared', () {
         final files = _shippedDart();
         expect(files, hasLength(greaterThan(10)),
             reason: 'the file walk found almost nothing, so the search below '
                 'would pass on an empty repository');
 
-        final copies = files
-            .where((file) =>
-                _asStringLiteral(value).hasMatch(file.readAsStringSync()))
-            .map((file) => file.path.replaceAll('\\', '/'))
-            .toList();
+        final inlined = <String>[];
+        final declaring = <String>[];
+        for (final file in files) {
+          final text = file.readAsStringSync();
+          final path = file.path.replaceAll('\\', '/');
+          if (_asStringLiteral(value).allMatches(text).length !=
+              _asConstDeclaration(value).allMatches(text).length) {
+            inlined.add(path);
+          }
+          if (RegExp('const $name' r'\s*=').hasMatch(text)) {
+            declaring.add(path);
+          }
+        }
 
-        expect(copies, hasLength(1),
+        expect(inlined, isEmpty,
             reason: 'since T-0082 this string is what clearing the Ollama '
                 'field in Settings means, and the field hint is the string '
-                'itself, so a second copy changes what clearing it does: '
-                '$copies');
+                'itself, so a copy of it that is not a declaration changes '
+                'what clearing that field does: $inlined');
+        expect(declaring, hasLength(1),
+            reason: 'exactly one shipped file declares $name: $declaring');
         // fail() rather than expect(): a matcher against the file's text
         // prints the whole file as its Actual and buries the sentence that
         // says what is wrong (T-0324).
-        if (!File(copies.single).readAsStringSync().contains('const $name')) {
-          fail('${copies.single}: a source scan found no `const $name` in the '
-              'one shipped file holding $value, so the constant has been '
-              'inlined there rather than referenced.');
+        if (!_asConstDeclaration(value)
+            .hasMatch(File(declaring.single).readAsStringSync())) {
+          fail('${declaring.single}: it declares `const $name` and $value is '
+              'not the literal beside it, so the constant names something '
+              'else now and every sentence quoting it has moved without '
+              'saying so.');
         }
       });
     }

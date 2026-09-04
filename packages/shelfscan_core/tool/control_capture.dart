@@ -60,6 +60,26 @@ const captureFormat = 1;
 const hiRes = 'CONTROL-HIRES';
 const lowRes = 'CONTROL-LOWRES';
 
+/// The model the control sets are DEFINED on, stated rather than inherited
+/// (T-0466).
+///
+/// Every figure in `doc/control-set.md` and [manifestPath] was measured on
+/// this model, so it is part of what the control is -- a capture taken under
+/// another one is a different control that happens to share a file name, which
+/// is why [CaptureKey.fileName] carries the model tag.
+///
+/// It was `defaultOllamaModel` until the default moved, and that inheritance
+/// was a trap rather than a shortcut: the day the shipped default changed,
+/// [wantedKey] began asking for a file name nothing had ever written, `status`
+/// answered [Verdict.absent] for a capture sitting on disk, and the next
+/// person was sent to buy the vision pass this whole tool exists to stop them
+/// buying.
+///
+/// `SHELFSCAN_OLLAMA_MODEL` still wins: capturing under another model
+/// deliberately is something to be able to do, and the file name is what keeps
+/// the two apart.
+const controlSetModel = 'qwen2.5vl:7b';
+
 /// FNV-1a over the UTF-8 bytes, as eight hex digits.
 ///
 /// Not sha256: that would mean a `crypto` dependency for a check whose entire
@@ -394,7 +414,7 @@ CaptureKey wantedKey(String controlSet, Map<String, String> section,
     provider: 'ollama',
     model: env['SHELFSCAN_OLLAMA_MODEL']?.trim().isNotEmpty == true
         ? env['SHELFSCAN_OLLAMA_MODEL']!.trim()
-        : defaultOllamaModel,
+        : controlSetModel,
     ollamaUrl: env['SHELFSCAN_OLLAMA_URL']?.trim().isNotEmpty == true
         ? env['SHELFSCAN_OLLAMA_URL']!.trim()
         : defaultOllamaUrl,

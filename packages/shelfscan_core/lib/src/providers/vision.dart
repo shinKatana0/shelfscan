@@ -1576,10 +1576,19 @@ Exception visionTruncatedFailure({
 /// an allowlist, because the compatibility policy in ollama_vision.dart reads
 /// the server's own capability metadata and never a model id.
 ///
+/// Since T-0466 the two hold the same string, because the owner ruled that
+/// this is the id that ships. They stay two constants and neither reads the
+/// other: "what ships" and "what has been tested" answer different questions,
+/// and the day one moves the other has to be argued rather than dragged along.
+/// Nothing cited from here -- the silent road's advice, `ollamaModelAdvice` --
+/// becomes a claim about the default by that coincidence.
+///
 /// One literal, in the library both sentences naming it can reach: this file's
 /// silent-road message and `ollamaModelAdvice`, whose library imports this
 /// one. Two copies of a recommended id would drift exactly as two copies of a
-/// default did, which is what `documented_lists_test.dart` already fails on.
+/// default did, which is what `documented_lists_test.dart` fails on: it allows
+/// this constant and [defaultOllamaModel] to declare one string, and no third
+/// place in shipped code to write it at all.
 const testedOllamaInstructModel = 'qwen3-vl:8b-instruct';
 
 /// Which of the three ways to the output cap a message is explaining (T-0464).

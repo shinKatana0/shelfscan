@@ -24,8 +24,9 @@ import 'package:shelfscan_core/shelfscan_core.dart';
 import 'package:test/test.dart';
 
 /// Measured: `/api/chat` for a tag that is not pulled. It echoes the model
-/// back, which is the evidence the message keys on.
-const _notPulled = '{"error":"model \'qwen2.5vl:7b\' not found"}';
+/// back, which is the evidence the message keys on -- so the id in it is
+/// the one the provider below asks for, or the answer is the other 404.
+const _notPulled = '{"error":"model \'$defaultOllamaModel\' not found"}';
 
 /// Measured: the same request one path segment off the server root. Plain
 /// text, from Ollama's own router, and it names no model.
@@ -163,9 +164,9 @@ void main() {
     test('names the model and the pull that fixes it', () async {
       final message = await _messageFor(_notPulled, 404);
 
-      expect(message, contains('"qwen2.5vl:7b"'));
+      expect(message, contains('"$defaultOllamaModel"'));
       expect(message, contains('not pulled'));
-      expect(message, contains('ollama pull qwen2.5vl:7b'));
+      expect(message, contains('ollama pull $defaultOllamaModel'));
       _readsAsASentence(message);
     });
 
@@ -215,7 +216,7 @@ void main() {
       final message = await _messageFor(_undecodableImage, 400);
 
       expect(message, contains('not the model id'));
-      expect(message, contains('"qwen2.5vl:7b"'));
+      expect(message, contains('"$defaultOllamaModel"'));
     });
 
     test('the encoded body is still there for a bug report', () async {
@@ -338,7 +339,7 @@ void main() {
     test('a model that is not pulled reaches the summary intact', () async {
       final summary = await summaryFor(_notPulled, 404);
 
-      expect(summary, contains('ollama pull qwen2.5vl:7b'));
+      expect(summary, contains('ollama pull $defaultOllamaModel'));
       _readsAsASentence(summary);
     });
   });

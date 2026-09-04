@@ -108,6 +108,39 @@ void main() {
           '.qwen2.5vl-7b.np1.json');
     });
 
+    // The one failure here that costs real money, and it is invisible until
+    // someone runs a scan: the model tag is in the file name, so a tool that
+    // inherited the shipped default started looking for a name nothing had
+    // ever written the day that default moved -- ABSENT for a capture sitting
+    // on disk, and the next person buys the vision pass again (T-0466).
+    //
+    // The tag is spelled out rather than built from the constant on purpose.
+    // What must not move is the identity already on disk and already written
+    // into doc/control-set.md; a test that composed it from whatever the
+    // constant says would follow the constant wherever it went.
+    test('an unset environment resolves the capture already on disk', () {
+      final key = wantedKey('CONTROL-TEST', _section, const {});
+
+      expect(key.model, controlSetModel);
+      expect(key.fileName, endsWith('.qwen2.5vl-7b.npunset.json'));
+    });
+
+    test('the control set model is not read from the shipped default', () {
+      // Discriminating only while the two ids differ, which they do since
+      // T-0466. If they are ever made equal again the test above stops
+      // proving which of the two wantedKey read, and this says so instead of
+      // passing quietly.
+      expect(controlSetModel, isNot(defaultOllamaModel));
+    });
+
+    test('an explicit SHELFSCAN_OLLAMA_MODEL still wins', () {
+      final key = wantedKey('CONTROL-TEST', _section,
+          const {'SHELFSCAN_OLLAMA_MODEL': 'invented-vl:3b'});
+
+      expect(key.model, 'invented-vl:3b');
+      expect(key.fileName, contains('.invented-vl-3b.'));
+    });
+
     test('records OLLAMA_NUM_PARALLEL as unset when the client cannot see it',
         () {
       expect(wantedKey('CONTROL-TEST', _section, const {}).numParallel,

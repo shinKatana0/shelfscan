@@ -232,7 +232,7 @@ void main() {
       expect(
           message,
           contains('Ollama at http://localhost:11434 stopped model '
-              '"qwen2.5vl:7b" at the 8192-token output cap so the answer '
+              '"$defaultOllamaModel" at the 8192-token output cap so the answer '
               'breaks off part-way and is no longer the complete JSON the '
               'rest of the scan reads. Neither the model id nor the photo '
               'file is at fault -- there was more on that shelf than one '

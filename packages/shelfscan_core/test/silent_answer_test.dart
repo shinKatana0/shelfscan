@@ -172,7 +172,7 @@ void main() {
       expect(
           message,
           contains('Ollama at http://localhost:11434 stopped model '
-              '"qwen2.5vl:7b" at the 8192-token output cap and wrote no '
+              '"$defaultOllamaModel" at the 8192-token output cap and wrote no '
               'answer at all -- a reasoning model can spend the whole budget '
               'thinking before it writes a character. Nothing here is '
               'evidence about the photograph -- and nothing was cut short: '
@@ -205,7 +205,7 @@ void main() {
       expect(
           message,
           contains('Ollama at http://localhost:11434 stopped model '
-              '"qwen2.5vl:7b" at the 8192-token output cap so the answer '
+              '"$defaultOllamaModel" at the 8192-token output cap so the answer '
               'breaks off part-way and is no longer the complete JSON the '
               'rest of the scan reads. Neither the model id nor the photo '
               'file is at fault -- and neither is the size of the shelf: the '

@@ -20,10 +20,22 @@ import 'vision.dart';
 /// in Settings, whose `hintText` is the string itself -- so a drifted copy
 /// would change what clearing that field does and say so in the hint.
 ///
-/// `documented_lists_test.dart` fails on a second literal in code and on
-/// `.env.example` or README.md stating a default these no longer hold.
+/// `documented_lists_test.dart` fails on a literal of either value written
+/// anywhere but its own `const` line, and on `.env.example` or README.md
+/// stating a default these no longer hold.
+///
+/// **The model is the owner's ruling of 2026-09-04 (T-0466), and it brings
+/// none of this project's figures with it.** Every quality figure here -- the
+/// tables in README.md and doc/guide.md, doc/measurements.md, the control sets
+/// -- was measured on `qwen2.5vl:7b`, the default until that date, and stays
+/// attached to it. What is known about the id below is
+/// [testedOllamaInstructModel]'s one comparison and nothing else.
+///
+/// It holds the same string as that constant and is not the same decision:
+/// what ships by default and what has been tested here move independently, so
+/// neither constant reads the other.
 const defaultOllamaUrl = 'http://localhost:11434';
-const defaultOllamaModel = 'qwen2.5vl:7b';
+const defaultOllamaModel = 'qwen3-vl:8b-instruct';
 
 /// Any fixed value would do; this one is the date it was chosen (T-0053).
 const _defaultSeed = 20260814;
