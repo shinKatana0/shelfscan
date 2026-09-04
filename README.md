@@ -506,10 +506,9 @@ field, before you scan rather than after.
 
 ### What this release is, and is not
 
-**It is a `0.x` build and GitHub labels it a pre-release**, which is deliberate
-and not modesty: the two file formats this program writes can still change
-shape, so a review document written by one version is not promised to load in
-the next. The reasoning is
+**It is a `0.x` build**, which is deliberate and not modesty: the two file
+formats this program writes can still change shape, so a review document
+written by one version is not promised to load in the next. The reasoning is
 [decision 0014](doc/decisions/0014-stay-in-0-x-until-the-two-file-formats-stop-moving.md).
 
 **Windows x64 is the only build published.** There is no installer, no Android
