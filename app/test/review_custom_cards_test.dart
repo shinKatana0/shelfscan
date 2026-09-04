@@ -159,4 +159,25 @@ void main() {
     ]);
     expect(find.textContaining('Saved 2 items'), findsOneWidget);
   });
+
+  /// The app's half of T-0460, and it needed no guard: the screen has always
+  /// refused to save a file with nothing in it, for every target. The CLI
+  /// wrote one, which for this target is a file upstream's parser refuses as
+  /// `emptyFile` before it looks at a row -- so what is pinned here is that
+  /// the two shells now agree, and that they agree by the app never having
+  /// had the defect.
+  testWidgets('a shelf it carries nothing from is never saved at all',
+      (tester) async {
+    final saver = _FakeSaver();
+    await _pump(tester, _doc([_row('MOSSGRAVE FERRY', best: _match())]), saver);
+    await _openSheet(tester);
+
+    await tester.tap(find.byKey(const Key('export-sheet-tonkatsu-cards')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('export-drop-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(saver.saves, isEmpty);
+    expect(find.textContaining('Nothing to export'), findsOneWidget);
+  });
 }
