@@ -81,9 +81,20 @@ import '../tool/control_capture.dart';
 /// `CHANGELOG.md` is that case: its model entry carries no figure of its own,
 /// and the one number in it -- the pull size -- is a property of the shipped
 /// default and true of it.
+///
+/// The translations carry the same tables and the same figures, and the
+/// marker travels into them unchanged: it is an HTML comment in Latin
+/// characters, so it needs no translating and moves no translated sentence.
+/// They hold fewer regions than the English only because they are `STALE` and
+/// two English sections have no counterpart in them -- `doc/guide.md`'s
+/// density ceiling is the one that matters here.
 const _expected = <String, int>{
   'README.md': 4,
+  'README.ru.md': 4,
+  'README.ja.md': 4,
   'doc/guide.md': 4,
+  'doc/guide.ru.md': 3,
+  'doc/guide.ja.md': 3,
   'CHANGELOG.md': 0,
 };
 
