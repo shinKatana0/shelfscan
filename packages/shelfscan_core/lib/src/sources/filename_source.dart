@@ -131,13 +131,22 @@ abstract final class DeclineReason {
   /// series; the paragraph that predicted otherwise -- *a row for a series is
   /// not one row (T-0163)* -- was wrong, and [_parseSeriesName] says why.
   ///
+  /// **[WorkKind.animationSeries] and not [WorkKind.anime], which became a
+  /// separate kind with T-0456.** The shape detects an episode, never a
+  /// nationality, and a Western cartoon ships under the same convention. The
+  /// two are different types upstream, and only the one registered here is
+  /// answered by a catalogue this project wires -- so routing these rows to
+  /// `anime` would take TMDB matching away from every one of them, which is a
+  /// capability traded for a guess. `anime` is a value a person assigns at
+  /// review.
+  ///
   /// What still declines under this exact string is the scene series shape,
   /// `S01E04`, `1x04` and a spelt `Season 2`. It is still true of them: they
   /// number an episode and they are not a film. What they do NOT say is which
-  /// kind of series, and this project has a kind for an anime series and none
-  /// for a live-action one -- Tonkatsu's fourth spelling, `tv_show`, has no
-  /// [WorkKind] yet. Answering `animation` to `S01E04` would file every TV
-  /// release as anime in somebody else's collection, and decision 0015 is
+  /// kind of series, and this project has a kind for an ANIMATED series and
+  /// none for a live-action one -- Tonkatsu's `tv_show` has no [WorkKind]
+  /// yet. Answering `animation` to `S01E04` would file every live-action TV
+  /// release as a cartoon in somebody else's collection, and decision 0015 is
   /// explicit that where the grammar settles nothing the source declines
   /// instead of guessing. So the half that is still a decline is the half the
   /// grammar genuinely cannot answer, and it is one `tv_show` kind away from
@@ -972,9 +981,15 @@ bool _looksEpisodic(String raw) =>
 /// three shapes number an episode of a series of unstated kind and go on
 /// declining ([DeclineReason.seriesEpisode]).
 ///
+/// What it settles is that the name numbers an episode, which is the whole of
+/// what it may claim: the kind it answers is [WorkKind.animationSeries], and
+/// [WorkKind.anime] is a different upstream type nothing here infers
+/// (T-0456).
+///
 /// Deliberately NOT widened to "a bracket group beside any episode marker":
 /// [_bracketGroups] matches parentheses too, so that reading turns
-/// `Some Show (2019) S01E04` into anime on the strength of a year.
+/// `Some Show (2019) S01E04` into an animated series on the strength of a
+/// year.
 bool _looksFansubEpisode(String raw) =>
     _bracketGroups.hasMatch(raw) && _dashEpisode.hasMatch(raw);
 

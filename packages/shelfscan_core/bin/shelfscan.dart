@@ -1840,7 +1840,8 @@ void _sayTmdbAttribution(Map<String, String> env) {
 /// and the first live film searches", whose closing limits are the rest of it:
 /// public release names, one machine, one evening. So registering the branch
 /// is what puts a film in front of a film catalogue; how well it is answered
-/// there is unmeasured, and nothing has been run over anime or at any scale.
+/// there is unmeasured, and nothing has been run over animation or at any
+/// scale.
 ///
 /// **The same token registers the two animation kinds a person can answer, on
 /// the two different TMDB endpoints they belong to (T-0369).** An animated
