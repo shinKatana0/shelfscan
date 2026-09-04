@@ -109,6 +109,16 @@ done
 # none of them -- which is the case where the directory most needs finding.
 echo "LOGS: $LOGDIR"
 
+# One field per line, and never two: `git rev-parse` writes a partial answer to
+# stdout BEFORE failing -- an unborn HEAD answers the word `HEAD` and exits
+# 128 -- so an inline `|| echo unknown` yields both, and the record stops being
+# readable line by line. The value is taken only when git exited 0.
+_gitfield() {
+  _v=$(git -C "$ROOT" "$@" 2>/dev/null) || _v=
+  [ -n "$_v" ] || _v=unknown
+  echo "$_v"
+}
+
 # A log cannot name its own run: the core log holds no path at all, and only
 # `flutter test` names a worktree. This is what turns "is this evidence mine?"
 # from an mtime guess into a read. It stays beside the logs, outside the
@@ -118,9 +128,9 @@ echo "LOGS: $LOGDIR"
   echo "root     $ROOT"
   echo "started  $_stamp"
   echo "pid      $$"
-  echo "head     $(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
-  echo "branch   $(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
-  echo "worktree $(git -C "$ROOT" rev-parse --show-toplevel 2>/dev/null || echo unknown)"
+  echo "head     $(_gitfield rev-parse HEAD)"
+  echo "branch   $(_gitfield rev-parse --abbrev-ref HEAD)"
+  echo "worktree $(_gitfield rev-parse --show-toplevel)"
 } >"$LOGDIR/run.info"
 
 # An interrupted run must not read as a finished one. Two signals, because a
