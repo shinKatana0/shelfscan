@@ -12,7 +12,11 @@
 /// the sentence blames rather than what the transport answered. The fourth
 /// sentence (T-0111) is the contrast and is deliberately in this file: it says
 /// the key, the model id and the photo are all fine, so it must still offer
-/// nothing.
+/// nothing -- on the two of its three roads that say that. The third (T-0464)
+/// says the opposite under the same builder and the same status: no evidence
+/// about the photograph, and a model id to change. It offers the route with
+/// the rest (T-0465), which is what makes this file's split a property of the
+/// sentence rather than of the builder.
 library;
 
 import 'package:flutter/material.dart';
@@ -33,6 +37,25 @@ Object _truncated() => visionTruncatedFailure(
       model: 'claude-not-a-model',
       cap: 4096,
       answer: '{"items":[{"raw_title":"Vex"',
+      body: '{"stop_reason":"max_tokens"}',
+    );
+
+/// The same builder on its other two roads (T-0464), which the screen has to
+/// tell apart because their sentences end in different places.
+Object _truncatedSilent() => visionTruncatedFailure(
+      service: 'Anthropic',
+      model: 'claude-not-a-model',
+      cap: 4096,
+      answer: '',
+      body: '{"stop_reason":"max_tokens"}',
+    );
+
+Object _truncatedLooping() => visionTruncatedFailure(
+      service: 'Anthropic',
+      model: 'claude-not-a-model',
+      cap: 4096,
+      answer: '{"items":[${List.filled(40, '{"raw_title":"Silt Harbour",'
+          '"platform_hint":"SWITCH","confidence":0.9}').join(',')}',
       body: '{"stop_reason":"max_tokens"}',
     );
 
@@ -125,7 +148,7 @@ void main() {
     expect(_route, findsOneWidget);
   });
 
-  testWidgets('a 200 stopped at the output cap still offers nothing (T-0111)',
+  testWidgets('a 200 whose answer ran out of room offers nothing (T-0111)',
       (tester) async {
     await _pumpScan(tester, _truncated());
 
@@ -138,6 +161,34 @@ void main() {
     expect(status, contains('The key, the model id and the photo file are all '
         'fine'));
     expect(status, contains('Photograph it in two or three sections'));
+    expect(_route, findsNothing);
+  });
+
+  testWidgets('a 200 that wrote nothing at all offers the route (T-0465)',
+      (tester) async {
+    // One builder, one status, the opposite answer -- and the sentence is the
+    // argument again: this road clears the photograph of carrying any
+    // evidence and ends on the model id, which is a Settings field on both
+    // surfaces. Offering nothing under it was the sentence and the button
+    // disagreeing, which is the defect T-0169 exists to prevent.
+    await _pumpScan(tester, _truncatedSilent());
+
+    final status = _statusText(tester);
+    expect(status, contains('wrote no answer at all'));
+    expect(status, contains('Nothing here is evidence about the photograph'));
+    expect(status, contains('Reach for a vision instruct model'));
+    expect(_route, findsOneWidget);
+  });
+
+  testWidgets('a 200 that repeated itself to the cap offers nothing (T-0427)',
+      (tester) async {
+    // The third road, and the one the flag must NOT follow: the remedy here
+    // is the framing, so the button would take back what the sentence said.
+    await _pumpScan(tester, _truncatedLooping());
+
+    final status = _statusText(tester);
+    expect(status, contains('it enumerates them without end'));
+    expect(status, contains('Re-frame the shot'));
     expect(_route, findsNothing);
   });
 

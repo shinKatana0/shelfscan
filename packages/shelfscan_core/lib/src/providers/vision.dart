@@ -1520,13 +1520,21 @@ List<String> _jsonRecords(String text) {
 /// read it as a rejection. [body] keeps the raw answer out of the message,
 /// exactly as it does for a non-2xx.
 ///
-/// **The one of the four 200s that answers [UserSetCause] `false`** (T-0169),
-/// and its own sentence is the argument: the key, the model id and the photo
-/// file are all named as fine, the cap is a constant in this build that
-/// neither surface exposes, and the fix offered -- sectioning on one road,
-/// framing on the other -- is about the photograph. Nothing in Settings
-/// changes any of that, so the shortcut its three neighbours get would lead
-/// nowhere here.
+/// **[UserSetCause] is answered per road, and only the silent one says yes**
+/// (T-0169, T-0465). On the loop and density roads the sentence is the whole
+/// argument for `false`: the key, the model id and the photo file are all
+/// named as fine, the cap is a constant in this build that neither surface
+/// exposes, and the fix offered -- sectioning on one, framing on the other --
+/// is about the photograph. The silent road's sentence says the opposite: it
+/// clears the photograph of carrying any evidence and ends on the model id,
+/// which is user-typed on both surfaces since T-0067, so there the shortcut
+/// leads exactly where the sentence points. The rule did not move; the third
+/// road's sentence did, under a flag written when there were two.
+///
+/// The answer is read off the [_CapRoad] the sentence is built from, never
+/// recomputed from [answer] here. Two independent notions of "it wrote
+/// nothing" is precisely how a clause and its neighbour came to disagree in
+/// T-0464.
 ///
 /// [answer] is read, not just measured for emptiness: [answerRepeatsItself]
 /// decides which of the two causes the message states, and doing it here is
@@ -1548,20 +1556,24 @@ Exception visionTruncatedFailure({
   required String answer,
   required String body,
   bool hasKey = true,
-}) =>
-    VisionApiException(
-      visionTruncatedMessage(
-        service: service,
-        model: model,
-        cap: cap,
-        wroteNothing: answer.trim().isEmpty,
-        looped: answerRepeatsItself(answer),
-        hasKey: hasKey,
-      ),
-      statusCode: 200,
-      body: body,
-      causeIsUserSet: false,
-    );
+}) {
+  final wroteNothing = answer.trim().isEmpty;
+  final looped = answerRepeatsItself(answer);
+  final road = _CapRoad.of(wroteNothing: wroteNothing, looped: looped);
+  return VisionApiException(
+    visionTruncatedMessage(
+      service: service,
+      model: model,
+      cap: cap,
+      wroteNothing: wroteNothing,
+      looped: looped,
+      hasKey: hasKey,
+    ),
+    statusCode: 200,
+    body: body,
+    causeIsUserSet: road == _CapRoad.silent,
+  );
+}
 
 /// A local vision model measured to answer this route directly (T-0464).
 ///
@@ -1600,7 +1612,22 @@ const testedOllamaInstructModel = 'qwen3-vl:8b-instruct';
 /// answer with no text has no records to repeat -- and it is reading them
 /// independently that let a silent answer answer `false` to "did it loop?" and
 /// take the density conclusion.
-enum _CapRoad { silent, loop, density }
+enum _CapRoad {
+  silent,
+  loop,
+  density;
+
+  /// The one expression that tells the three apart, shared by the sentence and
+  /// by [visionTruncatedFailure]'s [UserSetCause] answer (T-0465): a flag that
+  /// says whether Settings can help has to be decided by whatever chose the
+  /// sentence it sits under, or the two drift the way the clauses did.
+  static _CapRoad of({required bool wroteNothing, required bool looped}) =>
+      wroteNothing
+          ? silent
+          : looped
+              ? loop
+              : density;
+}
 
 /// What a completion that stopped at the output cap means for the person who
 /// took the photograph.
@@ -1666,11 +1693,7 @@ String visionTruncatedMessage({
   // One road, picked before any clause is written: reading the two flags
   // independently in each clause is what let the silent road collect the
   // density conclusion (T-0464).
-  final road = wroteNothing
-      ? _CapRoad.silent
-      : looped
-          ? _CapRoad.loop
-          : _CapRoad.density;
+  final road = _CapRoad.of(wroteNothing: wroteNothing, looped: looped);
   final ceiling =
       cap == null ? 'its own output limit' : 'the $cap-token output cap';
   final what = switch (road) {
