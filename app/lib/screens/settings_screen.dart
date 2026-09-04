@@ -330,6 +330,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: const InputDecoration(
                 labelText: 'Vision model',
                 hintText: defaultOllamaModel,
+                // Where a user choosing a model already is, which is why it is
+                // here and not in a note above the section (T-0464). The text
+                // is the CLI banner's, from one constant: two wordings of what
+                // makes a model work here would drift, and this one is a claim
+                // about a measurement.
+                helperText: ollamaModelAdvice,
+                helperMaxLines: 8,
               ),
             ),
 

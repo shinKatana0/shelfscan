@@ -243,6 +243,25 @@ built-in defaults are `qwen2.5vl:7b` at `http://localhost:11434`, and both are
 overridable with `SHELFSCAN_OLLAMA_MODEL` and `SHELFSCAN_OLLAMA_URL`. Expect
 about **25 s per 4000×3000 photo** on a machine that fits the model.
 
+**Which model — shelfscan needs an image-capable one, and it checks.**
+
+- Before a scan starts, the server is asked what the model you named can do.
+  One question per run, not one per photograph. A model the server says
+  cannot accept an image stops the run with that sentence, instead of failing
+  once per photo with whatever the server happens to say at the time.
+- Being multimodal is not by itself a good fit. This route wants one concise
+  structured answer per photograph, and a model that reasons before it
+  answers can spend its whole output budget thinking and write no answer at
+  all.
+- `qwen3.5:9b` did exactly that on the run this was reported from, on every
+  photograph of it. `qwen3-vl:8b-instruct` read all three of those
+  photographs.
+- So a model the server says reasons first gets a warning and the run goes
+  ahead anyway. Nothing here changes the model id you typed, and a server too
+  old to answer the question, or one that does not answer it, changes nothing
+  about the run at all.
+- Other image-capable models work and are simply not validated here.
+
 ### Setting up a cloud backend
 
 PowerShell:

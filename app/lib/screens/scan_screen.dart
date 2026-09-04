@@ -35,6 +35,7 @@ class ScanScreen extends StatefulWidget {
     this.aliases,
     this.debugVisionProvider,
     this.debugVisionProviderBuilder,
+    this.debugModelReport,
     this.debugHeicDecoder,
     this.debugFolderReader,
     this.debugLibraryReader,
@@ -67,6 +68,16 @@ class ScanScreen extends StatefulWidget {
   @visibleForTesting
   final VisionProvider Function(void Function(String note) onNote)?
       debugVisionProviderBuilder;
+
+  /// Test seam: what the local server says about the configured model, instead
+  /// of asking it (T-0464).
+  ///
+  /// Same reason as [debugFolderReader] -- a real request never completes in
+  /// `testWidgets`'s fake async -- and the same production rule: null there,
+  /// where `readOllamaModelReport` is the only source of an answer.
+  @visibleForTesting
+  final Future<OllamaModelReport> Function(OllamaVisionProvider provider)?
+      debugModelReport;
 
   /// Test seam: a HEIC decoder to use instead of the platform's, so a widget
   /// test can make a chosen file fail without a real codec.
@@ -611,6 +622,45 @@ class _ScanScreenState extends State<ScanScreen> {
   void _addScanWarning(ScanWarning warning) =>
       setState(() => _warnings.add(warning));
 
+  /// The pre-flight the local backend gets, and whether the run may go on
+  /// (T-0464).
+  ///
+  /// Once per run and before the first photograph: the question is about the
+  /// model rather than about any photograph, so a run of three photographs
+  /// asks it once. Only a real [OllamaVisionProvider] is asked, which is also
+  /// what keeps an injected test provider off the network.
+  ///
+  /// A stated absence of `vision` is the only answer that stops the run, and
+  /// it stops it here rather than once per photograph. The sentence goes where
+  /// the blocker's does and offers the Settings route with it, because it ends
+  /// on the model id and that is a field on that screen (T-0169's rule, one
+  /// surface over).
+  ///
+  /// Everything else runs. A `thinking` model is a warning in the run's own
+  /// list -- [Severity.failure], like the endpoint notes beside it, because
+  /// this too is something the run wanted and may not get. A server that said
+  /// nothing usable is not a question this build gets to answer, and a probe
+  /// that could not ask never fails a scan that would otherwise have run.
+  Future<bool> _localModelCanRead(VisionProvider vision) async {
+    if (vision is! OllamaVisionProvider) return true;
+    final report = await (widget.debugModelReport?.call(vision) ??
+        readOllamaModelReport(baseUrl: vision.baseUrl, model: vision.model));
+    if (!mounted) return false;
+    final refusal = ollamaModelRefusal(
+        baseUrl: vision.baseUrl, model: vision.model, report: report);
+    if (refusal != null) {
+      setState(() {
+        _status = refusal;
+        _statusOffersSettings = true;
+      });
+      return false;
+    }
+    final warning = ollamaModelWarning(
+        baseUrl: vision.baseUrl, model: vision.model, report: report);
+    if (warning != null) _addWarning(warning);
+    return true;
+  }
+
   Future<void> _runScan() async {
     // The new scan wins if it is confirmed: the user asked for it by name,
     // and the alternative -- refusing to scan until the old review is dealt
@@ -646,18 +696,19 @@ class _ScanScreenState extends State<ScanScreen> {
       // the whole difference between the two inputs, made structural rather
       // than promised. `resolveOnly` has no vision worker, so it provably
       // cannot make a call.
-      final orchestrator = _photos.isEmpty
+      final vision = _photos.isEmpty
+          ? null
+          : widget.debugVisionProvider ??
+              widget.debugVisionProviderBuilder?.call(_addWarning) ??
+              ProviderPolicy.build(_settings, onRequestAdjusted: _addWarning);
+      if (vision != null && !await _localModelCanRead(vision)) return;
+      final orchestrator = vision == null
           ? Orchestrator.resolveOnly(resolverWorker: resolver)
           : Orchestrator(
               // No `secondReader:`, and no setting that could ask for one
               // (T-0061): one vision call per photo, so a local run sends no
               // photo anywhere. Measurement and reasoning on ProviderPolicy.
-              visionWorker: VisionWorker(
-                widget.debugVisionProvider ??
-                    widget.debugVisionProviderBuilder?.call(_addWarning) ??
-                    ProviderPolicy.build(_settings,
-                        onRequestAdjusted: _addWarning),
-              ),
+              visionWorker: VisionWorker(vision),
               resolverWorker: resolver,
               visionConcurrency:
                   ProviderPolicy.visionConcurrency(_settings.backend),

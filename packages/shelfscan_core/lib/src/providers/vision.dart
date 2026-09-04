@@ -1563,6 +1563,25 @@ Exception visionTruncatedFailure({
       causeIsUserSet: false,
     );
 
+/// A local vision model measured to answer this route directly (T-0464).
+///
+/// It read all three photographs of the one run this was reported on, where a
+/// model that reasons before it answers read none of them. That is the whole
+/// of the evidence -- one machine, one run, three photographs, one comparison
+/// -- so nothing here claims it is better than anything, only that it was
+/// tested.
+///
+/// **Not a default and not a list.** [defaultOllamaModel] is a separate
+/// decision and this constant states nothing about it; nor is this the head of
+/// an allowlist, because the compatibility policy in ollama_vision.dart reads
+/// the server's own capability metadata and never a model id.
+///
+/// One literal, in the library both sentences naming it can reach: this file's
+/// silent-road message and `ollamaModelAdvice`, whose library imports this
+/// one. Two copies of a recommended id would drift exactly as two copies of a
+/// default did, which is what `documented_lists_test.dart` already fails on.
+const testedOllamaInstructModel = 'qwen3-vl:8b-instruct';
+
 /// Which of the three ways to the output cap a message is explaining (T-0464).
 ///
 /// [silent] is the completion that never wrote a character, [loop] the one that
@@ -1679,7 +1698,8 @@ String visionTruncatedMessage({
           'one. A model that reasons before it answers can spend an entire '
           'output budget doing so on any frame, and this route asks for one '
           'concise structured answer instead. Reach for a vision instruct '
-          'model: "qwen3-vl:8b-instruct" is one that has been tested here, and '
+          'model: "$testedOllamaInstructModel" is one that has been tested '
+          'here, and '
           'other image-capable models that answer directly work here too.',
     _CapRoad.loop =>
       'and neither is the size of the shelf: the answer that was cut off is '

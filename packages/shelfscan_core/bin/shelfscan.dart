@@ -1407,6 +1407,12 @@ Never _usage() {
       'name, and free tiers are commonly funded by training on what is\n'
       'submitted to them.\n'
       '\n'
+      // Interpolated rather than retyped, for the reason the notice below is:
+      // the app's model field says this same sentence, and a second copy
+      // wrapped to this banner's width would be a second text to keep in step.
+      // It prints as one long line and the terminal wraps it.
+      'Choosing a local model: $ollamaModelAdvice\n'
+      '\n'
       'SHELFSCAN_VISION_TIMEOUT=<seconds> bounds ONE vision call, per photo,\n'
       'whichever provider reads it. Unset is ${visionCallTimeout.inSeconds} s,'
       ' which no model\n'
@@ -1619,6 +1625,38 @@ void _endpointNote(String note) => stderr.writeln('WARN: $note');
 void _scanWarning(ScanWarning warning) => stderr.writeln(
     '${warning.severity == Severity.exclusion ? 'NOTE' : 'WARN'}: '
     '${warning.message}');
+
+/// The one pre-flight that asks the local server anything (T-0464).
+///
+/// Once per run and before stage 1, whatever the photo count: the question is
+/// about the model, not about any photograph, so three photos must not make
+/// three requests. Only the primary provider is asked -- a local `--fallback`
+/// is a second model and would be a second request, and what a fallback reads
+/// is not what a run is refused for.
+///
+/// A stated absence of `vision` is the only thing that stops the run, and it
+/// exits 2 on the same pre-flight footing as the configuration refusals above:
+/// nothing has been spent yet, and the alternative is one failure per
+/// photograph saying whatever the server happened to say. Everything else
+/// runs. A probe that could not get an answer is not a scan that failed --
+/// `readOllamaModelReport` never throws, and a server that answers the chat
+/// route while refusing the manifest one still scans.
+Future<void> _checkLocalModelOrExit(VisionProvider provider) async {
+  if (provider is! OllamaVisionProvider) return;
+  final report = await readOllamaModelReport(
+      baseUrl: provider.baseUrl, model: provider.model);
+  final refusal = ollamaModelRefusal(
+      baseUrl: provider.baseUrl, model: provider.model, report: report);
+  if (refusal != null) {
+    stderr.writeln(refusal);
+    exit(2);
+  }
+  final warning = ollamaModelWarning(
+      baseUrl: provider.baseUrl, model: provider.model, report: report);
+  // The same channel and the same word as every other thing a run wanted and
+  // did not get; the model is not changed for the user, only named to them.
+  if (warning != null) stderr.writeln('WARN: $warning');
+}
 
 String _samplingNote(AnthropicVisionProvider provider) =>
     provider.temperature == null
@@ -2023,8 +2061,11 @@ Future<void> _scan(List<String> args) async {
         '${photos.length} extra call(s).');
   }
 
+  final provider = _makeProvider(args);
+  await _checkLocalModelOrExit(provider);
+
   final orchestrator = Orchestrator(
-    visionWorker: VisionWorker(_makeProvider(args), secondReader: fallback),
+    visionWorker: VisionWorker(provider, secondReader: fallback),
     resolverWorker: _makeResolver(args),
     // Local models process one image at a time anyway; avoid queue pileup.
     visionConcurrency:
