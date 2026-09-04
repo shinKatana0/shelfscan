@@ -26,7 +26,8 @@ another and anime in a third go through a single dedupe instead of three
 review files nobody can reconcile.
 Everything from one run lands in a single review file you confirm by
 hand, and out of that comes `.xcoll` for Tonkatsu Box — which fetches covers
-and metadata itself from the ids in it — or generic CSV for CLZ Games and most
+and metadata itself from the ids in it — a Custom Cards file for the same app
+carrying the rows that matched nothing, or generic CSV for CLZ Games and most
 other collection managers.
 
 It owns **no catalog UI and no database**: recognition and export, nothing
@@ -81,9 +82,12 @@ than as a report of a working app.
 - **Platform is often blank.** Disc cases carry a band the model reads; a stack
   of Switch cartridges does not, so those rows arrive with no platform and you
   set it at review.
-- **The Tonkatsu `.xcoll` export needs IGDB ids**, so it needs an IGDB
-  credential. Without one the run still works and exports CSV
-  ([Path A](#path-a--keyless)).
+- **The Tonkatsu `.xcoll` export needs catalogue ids**, so it needs a
+  credential for the catalogue a row belongs to. Without one the run still
+  works, and the rows it cannot carry leave through the Custom Cards export and
+  through CSV instead ([Path A](#path-a--keyless)). A Custom Card is a title and
+  a kind and no more: the receiving app stores it as a custom item and fetches
+  no cover and no metadata for it.
 - **Only one path is verified end to end.** Photographs → `.xcoll` → an import
   into Tonkatsu Box: every approved item arrived, covers and metadata fetched
   by the importer, every platform id correct, including Nintendo Switch 2
@@ -146,7 +150,8 @@ disagrees with empties the query, which is then retried without it — and where
 that retry cannot tell two films of the same title apart, the row is left for
 you rather than picked. What that establishes is that the path works end to
 end. It is not a measurement of how well TMDB answers real release names across
-a collection, and nothing here has run it over anime or at any scale.
+a collection, and nothing here has run it over an animation row or at any
+scale.
 
 **The token goes wherever you are running from.** In the CLI it is the
 environment variable `SHELFSCAN_TMDB_TOKEN`, listed in `.env.example`; in the
@@ -177,19 +182,49 @@ into a catalog app here**, so that half is written and tested rather than
 verified, like every other disk-source export. The full account is in
 [the guide](doc/guide.md#it-reads-films-too-now-and-that-widens-the-contract-rather-than-fixing-it).
 
-**Anime is a kind now, and no anime row has ever matched anything.** A video
-named the fansub way — `[Group] Title - 04 [1080p].mkv` — comes back as an
-anime series row, and the review screen offers the value on any row, with
-*film or series* asked after it. `S01E04` and `1x04` are still declined
-deliberately: they say *series* without saying which kind, and answering would
-file every television release as anime. Both answered kinds go to TMDB — an
-anime film through the film search, an anime series through the tv search —
-and `.xcoll` takes either. **What has never happened is the match.** The tv
-search has not been called against the live service by anything, ever; the
-live searches described above were films. So that path is written and tested
-and nothing more. A row left at plain `Anime`, with film-or-series
-unanswered, is still refused by `.xcoll` outright rather than given an
-invented one.
+**Animation and anime are two different kinds, and only one of them is looked
+up.** That is the receiving app's distinction, not an invention here. Its own
+source says it in two sentences: `animation` is *"animated movies and series
+(Pixar, Disney) … not anime, which is AniList"*, and `anime` is *"Japanese
+anime on its own Anime model backed by AniList — not animation, which is TMDB
+cartoons"* (`packages/core/lib/models/media_type.dart`, `release/0.44`).
+
+- **Animation** is a TMDB cartoon or animated series. An animated film goes to
+  TMDB's film search, an animated series to its tv search, and `.xcoll` takes
+  either — as an `animation` item whose `platform_id` is `0` for a film and
+  `1` for a series. A row left at plain `Animation`, with film-or-series
+  unanswered, is refused by `.xcoll` outright rather than given an invented `0`.
+- **Anime** is a separate type upstream, keyed by AniList or Kitsu and carrying
+  no `platform_id` at all. **Nothing here queries AniList or Kitsu**, so an
+  anime row is never matched and never reaches `.xcoll`. It leaves through the
+  Custom Cards export and through CSV, carrying the title and the kind and
+  nothing else. Nothing infers the kind either: no name says *Japanese*, so
+  `Anime` is a value a person sets at review.
+
+A video named the fansub way — `[Group] Title - 04 [1080p].mkv` — therefore
+comes back as an **animated series** row rather than an anime one, because the
+grammar detects an episode and never a nationality, and a Western cartoon ships
+under the same convention. `S01E04` and `1x04` are still declined deliberately:
+they say *series* without saying which kind. **What has never happened is the
+match.** The tv search has not been called against the live service by
+anything, ever; the live searches described above were films. So that path is
+written and tested and nothing more.
+
+**What this project resolves, and against what:**
+
+| kind | catalogue | what `.xcoll` gets |
+|---|---|---|
+| Game | IGDB | `game` + an IGDB id + a platform id |
+| Film | TMDB, film search | `movie` + a TMDB id, no platform key |
+| Animated film | TMDB, film search | `animation` + a TMDB id + `platform_id` `0` |
+| Animated series | TMDB, tv search | `animation` + a TMDB id + `platform_id` `1` |
+| Animation, film-or-series unanswered | none — the question is open | nothing; the row is left out and named |
+| Anime | none here | nothing; it leaves through Custom Cards and CSV |
+
+Upstream accepts more catalogues than these for those types, and several of
+them need no registration. This project queries none of them and is not adding
+any; the longer account of why is in
+[doc/integrations/tonkatsu-handoff.md](doc/integrations/tonkatsu-handoff.md).
 
 The operational half — what a run prints, and why reading names for three kinds
 of thing makes this command's safety contract weaker rather than stronger — is
@@ -228,7 +263,7 @@ disk instead of a photo — is [Setup](#setup) and [Commands](#commands).
 | Photos, cloud model | **your own key, your own bill.** Measured with `gpt-5.5` at the vendor's listed rates on 2026-08-16: a three-photo 4000×3000 shelf scan costs about **$0.45** ($0.38–$0.46; a two-photo 1200×900 scan is $0.20–$0.27). |
 | Installed games, GOG Galaxy library | **$0.** No model and no key; Galaxy's library is read from a file on your own machine, and nothing is fetched from any store. |
 | IGDB ids (and with them `.xcoll`) | **$0**, but it needs a free Twitch application you register yourself ([Path B](#path-b--bring-your-own-keys)). |
-| Film and anime ids (and with them their `.xcoll` rows) | **$0**, but it needs a free TMDB account you register yourself ([Path B](#path-b--bring-your-own-keys)). |
+| Film and animation ids (and with them their `.xcoll` rows) | **$0**, but it needs a free TMDB account you register yourself ([Path B](#path-b--bring-your-own-keys)). |
 
 **Bring your own keys.** This project ships no credentials and runs no proxy;
 there is no shared key hidden in the binary and nothing to sign up for to use
@@ -239,9 +274,10 @@ a file inside the repository.
 project's own, no cache. The only things ever sent anywhere are the photographs
 you scan — to the vision model *you* configured, and to nothing else — and the
 title strings the resolve stage sends to a catalogue: to IGDB for game rows, to
-TMDB for film and anime rows. Neither catalogue is ever sent an image. What else
-leaves is the credential each one takes — your Twitch client id and secret to
-`id.twitch.tv` for an access token, your TMDB token to TMDB with every search —
+TMDB for film and animation rows. Neither catalogue is ever sent an image.
+What else leaves is the credential each one takes — your Twitch client id and
+secret to `id.twitch.tv` for an access token, your TMDB token to TMDB with
+every search —
 and a catalogue you hold no credential for is not contacted at all. Exactly
 what goes where is [Where your photos go](#where-your-photos-go), and it is
 worth reading before you pick a cloud endpoint.
@@ -472,10 +508,10 @@ yourself. Which one you want:
 |---|---|---|
 | Vision | local Ollama, on your machine | local Ollama, or a cloud model with your key |
 | IGDB ids (game rows) | no | yes |
-| TMDB ids (film and anime rows) | no | yes |
+| TMDB ids (film and animation rows) | no | yes |
 | CSV export | yes | yes |
 | `.xcoll` export | no (needs catalogue ids) | yes |
-| Registration | none | a Twitch application for IGDB, a TMDB account for films and anime — both free, and each one on its own is enough for its own rows |
+| Registration | none | a Twitch application for IGDB, a TMDB account for films and animation — both free, and each one on its own is enough for its own rows |
 | Photos leave the machine | no further than your own Ollama server | only if you pick a cloud model — or a cloud `--fallback`, which uploads all of them |
 
 ### Path A — keyless
@@ -560,7 +596,10 @@ Exported 0 of 18 approved game(s) -> shelf.xcoll
 ```
 
 CSV has no such requirement: it keeps the titles and platforms the
-vision model read, with an empty `external_id` column.
+vision model read, with an empty `external_id` column. Neither has
+`tonkatsu-cards`, which carries exactly the rows `.xcoll` cannot and imports
+into the same app as custom cards — a title and a kind, with no cover and no
+catalogue metadata behind them ([Supported targets](#supported-targets)).
 
 ### Path B — bring your own keys
 
@@ -578,8 +617,8 @@ through Twitch, so the credentials come from a Twitch application:
    `http://localhost` is fine.
 3. Take the client id and generate a client secret.
 
-**TMDB (film and anime ids).** Film and anime rows are looked up in a film
-catalogue rather than in IGDB, and that takes a credential of its own: the
+**TMDB (film and animation ids).** Film and animation rows are looked up in a
+film catalogue rather than in IGDB, and that takes a credential of its own: the
 API Read Access Token from https://www.themoviedb.org/settings/api — not
 the v3 *API Key*, which TMDB accepts only as a query parameter and would
 therefore sit in every URL an error or a log quotes. Without it those rows
@@ -600,7 +639,7 @@ is read:
 | Variable | Used for |
 |---|---|
 | `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | the resolve stage for game rows (unmatched without them) |
-| `SHELFSCAN_TMDB_TOKEN` | the resolve stage for film and anime rows (unmatched without it) |
+| `SHELFSCAN_TMDB_TOKEN` | the resolve stage for film and animation rows (unmatched without it) |
 | `ANTHROPIC_API_KEY` | `--provider anthropic` or `--fallback anthropic` |
 | `SHELFSCAN_ANTHROPIC_MODEL` | optional; blank uses the built-in default. Naming a model also stops shelfscan stating a temperature, since the newer Claude families reject one — so record which model any numbers came from |
 | `SHELFSCAN_OPENAI_BASE_URL`, `SHELFSCAN_OPENAI_MODEL`, `SHELFSCAN_OPENAI_API_KEY` | `--provider openai` or `--fallback openai`; all three are required, nothing is defaulted |
@@ -836,16 +875,64 @@ to read.
 
 ## Supported targets
 
-| Target     | Format         | How to import                                  | Needs IGDB ids |
-|------------|----------------|------------------------------------------------|----------------|
-| `tonkatsu` | `.xcoll` light | Tonkatsu Box → Import → Import Collection      | yes            |
-| `csv`      | generic CSV    | Import dialog of most collection managers      | no             |
+| Target            | Format          | How to import                              | Needs a catalogue id |
+|-------------------|-----------------|--------------------------------------------|----------------------|
+| `tonkatsu`        | `.xcoll` light  | Tonkatsu Box → Import → Import Collection  | yes                  |
+| `tonkatsu-cards`  | Custom Cards JSON | Tonkatsu Box → Settings → *Custom cards*   | no                   |
+| `csv`             | generic CSV     | Import dialog of most collection managers  | no                   |
 
-The `.xcoll` light format carries IGDB ids and platform ids only —
+The `.xcoll` light format carries catalogue ids and platform ids only —
 Tonkatsu Box fetches titles and covers itself on import. An item with no
 resolved match has nothing to put in it, so `export --target tonkatsu`
 leaves such items out and reports how many. CSV carries the text, so it
 takes them either way.
+
+### The two Tonkatsu paths, and what the second one is not
+
+The two Tonkatsu targets **partition** one review file. A row with a match the
+light format can carry goes to `.xcoll`; every other approved row goes to
+Custom Cards, and no row goes to both. So a shelf that resolved unevenly is two
+files and two imports rather than one file and a list of losses:
+
+```
+dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu -o shelf.xcoll
+dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu-cards -o shelf-cards.json
+```
+
+**A Custom Card is a name, not an identity, and that is the whole difference.**
+It carries the title and the kind, plus the raw title as read and the platform
+where this project holds one honestly. The receiving app stores it as a custom
+item: **no catalogue entry, no cover, no metadata, no description, no genres**.
+Nothing later refetches or updates it. Do not expect the `.xcoll` experience
+from it — expect the row to exist, spelled the way you approved it, instead of
+being dropped.
+
+**It needs no credential at all**, which is the part that matters for
+[Path A](#path-a--keyless): the rows it carries are exactly the ones nothing
+matched, so a wholly keyless run has a Tonkatsu import of its own for the first
+time. `.xcoll` still needs the ids and still gets none on such a run.
+
+**`cover` is the one field this project refuses on principle.** The Custom
+Cards format accepts a cover, and only as an `http(s)` URL; the only image here
+is a photograph on your own disk, so no export ever writes that key.
+
+**Nothing was removed to make room for any of this.** Every provider, every
+lookup and both existing exports behave exactly as they did — the registry was
+appended to, and `.xcoll` and CSV write the same bytes for the same document.
+
+**`version: 2` is pinned on purpose, and the reason is compatibility rather
+than age.** Tonkatsu Box writes v3 and accepts v2 on import; v3's difference is
+that `user_rating` became a one-decimal number instead of an integer, a field
+this project never writes — and older builds reject a v3 file cleanly. So a
+`version: 2` file is read by more installations than a v3 one and loses nothing
+this project could have put in it. The reference is `docs/RCOLL_FORMAT.md` in
+`hacan359/tonkatsu_box`, branch `release/0.44`.
+
+A smaller handover — a name and a type, with the receiving app doing its own
+catalogue resolution — **is being evaluated and is not supported**: nothing
+upstream has agreed to it, and `.xcoll` remains the contract. The audit and the
+open questions are in
+[doc/integrations/tonkatsu-handoff.md](doc/integrations/tonkatsu-handoff.md).
 
 ### CSV columns
 
@@ -965,7 +1052,7 @@ directory, never next to your original.
   secret go to `id.twitch.tv` for an access token. Without those
   credentials game rows go unmatched and neither service is contacted at
   all.
-- **TMDB (the resolve stage, film and anime rows):** receives the title
+- **TMDB (the resolve stage, film and animation rows):** receives the title
   strings those rows were read as — and the release year, when the file
   name carried one — never an image, and your own API Read Access Token
   goes to TMDB with every search. Without it those rows go unmatched and
@@ -1008,10 +1095,11 @@ app/                       # Flutter shell: Windows (built and run), Android (ne
 
 ## How it works
 
-sources → dedupe → IGDB resolver workers (parallel, fuzzy matching +
-[regional aliases](#regional-titles-the-alias-table)) → review file →
-exporter. Photographs are one source among four and take one extra stage of
-their own: vision workers, in parallel, one call per photo per model.
+sources → dedupe → catalogue resolver workers (parallel, fuzzy matching +
+[regional aliases](#regional-titles-the-alias-table)), routed by the kind of
+each row → review file → exporter. Photographs are one source among four and
+take one extra stage of their own: vision workers, in parallel, one call per
+photo per model.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the diagrams and the platform
 boundary, and [doc/decisions/](doc/decisions/) for why the non-obvious pieces

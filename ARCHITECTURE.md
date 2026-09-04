@@ -7,7 +7,9 @@ physical shelf — and, since T-0155 and T-0179, what is already on the machine
 — into an importable collection file for existing collection managers. The
 shelf was games alone until T-0162; a disk source now answers films and
 animation series too, and decision 0015 makes the kind a property of the row
-rather than of the run.
+rather than of the run. Animation and anime are two upstream types rather than
+one: the animation kinds are TMDB cartoons carrying a film-or-series
+`platform_id`, and `anime` is a separate type nothing here looks up.
 It deliberately owns **no catalog UI and no database** — those belong to the
 target apps (Tonkatsu Box, CLZ, ...).
 
@@ -25,6 +27,7 @@ flowchart LR
   assemble["Stage 4 ASSEMBLE"]
   review{{"Human review"}}
   tonkatsu["shelf.xcoll"]
+  cards["shelf-cards.json"]
   csv["shelf.csv"]
 
   photos --> vision --> dedupe
@@ -34,6 +37,7 @@ flowchart LR
   source --> dedupe
   dedupe --> resolve --> assemble --> review
   review --> tonkatsu
+  review --> cards
   review --> csv
 ```
 
@@ -76,8 +80,11 @@ pick `SkipResolver` only when no catalogue is configured at all, and it
 returns every detection unmatched — the same shape a failed resolution
 degrades to, so review and both exporters handle it unchanged. Configure some
 but not all, and they pick a `CatalogueRouter` with `SkipResolver` behind it:
-a run holding a TMDB token and no IGDB pair looks its film and anime rows up
-and leaves its game rows unmatched (T-0387).
+a run holding a TMDB token and no IGDB pair looks its film and animation rows
+up and leaves its game rows unmatched (T-0387). No catalogue here answers
+`WorkKind.anime`: upstream keys that type on AniList or Kitsu and this project
+queries neither, so such a row is always unmatched and leaves through the
+Custom Cards target or CSV.
 
 Design rules:
 
@@ -128,7 +135,8 @@ packages/shelfscan_core/
     │   ├── gog_library.dart   # GOG Galaxy library row (owned, not installed)
     │   └── gog_metadata.dart  # goggame-*.info (GoG install) -> Detection
     ├── exporters/
-    │   └── exporters.dart     # Exporter base + tonkatsu (.xcoll) + csv
+    │   └── exporters.dart     # Exporter base + tonkatsu (.xcoll) +
+    │                          #   tonkatsu-cards (Custom Cards JSON) + csv
     ├── photo_format.dart      # what bytes ARE; naming them is not decoding them
     ├── title_key.dart         # the normalization dedupe and the resolver share
     ├── http_timeout.dart      # every outbound call is bounded, in one place
@@ -222,10 +230,22 @@ Platform boundary rules:
    writer pins `version: 2`; upstream format changes get a new writer,
    not a mutation.
 
+   **The pin is a compatibility choice, not a lag.** Upstream writes v3 and
+   accepts v2 on import; v3's difference is that `user_rating` became a
+   one-decimal number rather than an integer, a field this project never
+   writes, and older builds reject a v3 file cleanly. So v2 is read by strictly
+   more installations and costs this project nothing. Reference:
+   `docs/RCOLL_FORMAT.md` in `hacan359/tonkatsu_box`, branch `release/0.44`.
+   That is the sentence that stops the next reader modernising the number.
+
 ## Extension points
 
 - New vision backend: implement `VisionProvider`, wire it in the CLI/app.
-- New export target: implement `Exporter`, register it in `exporters`.
+- New export target: implement `Exporter`, register it in `exporters`. Three
+  are registered: `tonkatsu` (`.xcoll` light), `tonkatsu-cards` (the Custom
+  Cards JSON the same importer reads, carrying exactly the rows `.xcoll`
+  declines) and `csv`. The registry's key order is published -- both shells
+  read it -- so a fourth is appended rather than inserted.
   What the Tonkatsu integration depends on, and a smaller `{name, type}`
   boundary the upstream maintainer has proposed for it, are audited in
   [doc/integrations/tonkatsu-handoff.md](doc/integrations/tonkatsu-handoff.md).

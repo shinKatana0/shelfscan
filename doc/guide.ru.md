@@ -717,6 +717,7 @@ bash:
 ## Шаг 7 — Экспорт
 
     dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu -o shelf.xcoll
+    dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu-cards -o shelf-cards.json
     dart run shelfscan_core:shelfscan export collection.review.json --target csv -o shelf.csv
 
 Все три — файл проверки, `--target` и `-o` — обязательны; без любого из них
