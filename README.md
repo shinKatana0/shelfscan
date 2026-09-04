@@ -62,7 +62,7 @@ than as a report of a working app.
   Windows and the system codec on Android. There is no installer and no
   published binary — you build it from source ([Setup](#setup)).
 - **It is exactly as good as the vision model you supply, and the free one has
-  a known ceiling.** The default local `qwen2.5vl:7b` reads a Latin-script
+  a known ceiling.** The local `qwen2.5vl:7b` reads a Latin-script
   spine well and does not read the printed *Switch 2* band at all — those
   cases come back hinted `PS2`. It *does* transcribe Japanese script at full
   resolution; at low resolution it omits the Japanese spines, which is the
@@ -71,6 +71,10 @@ than as a report of a working app.
   those Japanese spines, which the local model does. Only
   `gpt-5.5` reads both the script and the band, and charges for it
   ([the measured difference](#which-model-and-what-it-changes)).
+  Every one of those readings was taken on `qwen2.5vl:7b`, the built-in
+  default until 2026-09-04. The default is now `qwen3-vl:8b-instruct`, and
+  none of this was measured on it
+  ([what is known about it](#which-model-and-what-it-changes)).
 - **Human review is not optional, and confidence will not do it for you.** The
   local model returns `1.0` for everything, including partial reads. Every item
   passes your eye before export; that is where the remaining fifth gets fixed
@@ -237,7 +241,7 @@ CLI alone needs no Flutter), [Ollama](https://ollama.com), and a ~6 GB model
 download.
 
 ```
-ollama pull qwen2.5vl:7b
+ollama pull qwen3-vl:8b-instruct
 
 cd packages/shelfscan_core
 dart pub get
@@ -301,8 +305,8 @@ every command, the export formats, and where your photos go.
 
 ## What to expect
 
-Measured on two real shelf photos with the default local model
-(`qwen2.5vl:7b`):
+Measured on two real shelf photos with the local model `qwen2.5vl:7b`, which
+was the built-in default when they were taken:
 
 - **~80–83% of items come out correct end to end**, ~93% on
   Latin-script titles. Every item passes human review before export, and
@@ -347,13 +351,24 @@ and the runs behind them are in
 [`doc/measurements.md`](doc/measurements.md), "The second lever works" and "A
 bigger local model, measured and rejected".
 
-| | `qwen2.5vl:7b` (local, default) | `gpt-4.1-mini` | `gpt-5.5` |
+| | `qwen2.5vl:7b` (local) | `gpt-4.1-mini` | `gpt-5.5` |
 |---|---|---|---|
 | Cost | **$0** | your key | your key — about **$0.45** for a three-photo shelf scan |
 | Latin-script spines | ~93% correct | comparable detection counts, photo by photo | comparable or slightly higher; reads a glare-struck title `gpt-4.1-mini` misreads |
 | Japanese-script spines | **read** at full resolution, with the platform wrong; omitted at low resolution, where they are illegible | **not read** — none of them | **read**, every one, on five runs of five, with the platform right |
 | The printed *Switch 2* band | **not read** — those cases come back hinted `PS2` | not read | **read per spine** — every `SWITCH 2` hint correct across the three full-resolution photographs, five runs each, and no false positive on a case whose band prints none. The third photograph contributes none: the frame cuts a column at its edge, and the cases in the cut print the band but are not read — so that tally counts hints given rather than bands present. At 1200×900 the band was checked on one photograph and every case in it is read correctly over five runs; that is a separate measurement |
 | Invention | none on either control set | misreads that glare-struck title on 3 of 5 low-resolution runs | one invented title, on 2 of 5 runs — the same spine twice, out of everything read across the three full-resolution photographs; none at all at 1200×900 |
+
+**The local column is `qwen2.5vl:7b`, and it is not the built-in default any
+more.** The default became `qwen3-vl:8b-instruct` on 2026-09-04, and no figure
+in this table — or anywhere else in this repository — was measured on it.
+What is known about it is one comparison, on one machine, on one reported run:
+it read all three photographs of that run, where a reasoning-heavy multimodal
+model read none of them. It is an image-capable instruct model that answered
+where the other spent its whole output budget without writing anything, and
+that is the whole of the case for it. Nothing here says it is faster, better,
+or as measured. If you want the figures above, name `qwen2.5vl:7b` yourself —
+in Settings, or in `SHELFSCAN_OLLAMA_MODEL`.
 
 Two things this table is not. It is **not** "cloud is better": the free local
 model reads those Japanese spines and one of the two paid ones does not, so
@@ -457,7 +472,8 @@ one; what it cannot do until you choose a backend in Settings is scan. The
 three choices are the same ones the CLI has:
 
 - **Local** — an [Ollama](https://ollama.com) server that you install and run,
-  with the vision model pulled once (`ollama pull qwen2.5vl:7b`, about 6 GB).
+  with the vision model pulled once (`ollama pull qwen3-vl:8b-instruct`,
+  about 6 GB).
   This is what Windows starts on. It needs no account and no key, and your
   photographs go no further than that server. [Path A](#path-a--keyless) below
   is the whole of the setup.
@@ -523,7 +539,7 @@ No account, no key, nothing to configure. This is the default on Windows.
    model (~6 GB):
 
    ```
-   ollama pull qwen2.5vl:7b
+   ollama pull qwen3-vl:8b-instruct
    ```
 
 2. Put your shelf photos in a folder and scan it:
@@ -535,7 +551,7 @@ No account, no key, nothing to configure. This is the default on Windows.
    ```
 
    The run announces both of its choices: `Vision: local Ollama
-   (qwen2.5vl:7b)` and `IGDB credentials not set -- resolve stage will be
+   (qwen3-vl:8b-instruct)` and `IGDB credentials not set -- resolve stage will be
    skipped, games stay unresolved`. That second line is not an error.
 
    **A folder straight off your phone works.** JPEG, PNG and WebP are read

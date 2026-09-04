@@ -219,6 +219,13 @@ bigger local model, measured and rejected".
 | invented titles at 1200×900 | none | one, on 3 of 5 runs | none over 5 runs |
 | cost | **$0** | paid | ~**$0.45** for a three-photo shelf |
 
+**The local column is `qwen2.5vl:7b`, and since 2026-09-04 it is not the
+built-in default.** The default is `qwen3-vl:8b-instruct`, and none of the
+figures above — or anywhere on this page — were measured on it. Name
+`qwen2.5vl:7b` in `SHELFSCAN_OLLAMA_MODEL`, or in the app's Vision model
+field, if you want them. What is known about the default is in the next
+section.
+
 Two things worth taking from that table, because both are easy to assume the
 other way round:
 
@@ -239,9 +246,16 @@ shelf has no Switch 2 band on it, local costs nothing and gives up little.
 ### Setting up the local model
 
 Install Ollama, pull a vision model, and leave the server running. The
-built-in defaults are `qwen2.5vl:7b` at `http://localhost:11434`, and both are
-overridable with `SHELFSCAN_OLLAMA_MODEL` and `SHELFSCAN_OLLAMA_URL`. Expect
-about **25 s per 4000×3000 photo** on a machine that fits the model.
+built-in defaults are `qwen3-vl:8b-instruct` at `http://localhost:11434`, and
+both are overridable with `SHELFSCAN_OLLAMA_MODEL` and `SHELFSCAN_OLLAMA_URL`.
+`qwen2.5vl:7b` answers a 4000×3000 photo in about **25 s** on a machine that
+fits it; how long the default takes on yours has not been measured here.
+
+**The default changed on 2026-09-04 and none of this page's figures changed
+with it.** Everything measured here was taken on `qwen2.5vl:7b`, which was the
+default until that date. The only thing anyone here has observed of
+`qwen3-vl:8b-instruct` is the comparison in the next list, and it is not a
+claim that it is faster, better, or as well measured.
 
 **Which model — shelfscan needs an image-capable one, and it checks.**
 
@@ -255,7 +269,9 @@ about **25 s per 4000×3000 photo** on a machine that fits the model.
   all.
 - `qwen3.5:9b` did exactly that on the run this was reported from, on every
   photograph of it. `qwen3-vl:8b-instruct` read all three of those
-  photographs.
+  photographs. That is why it is the default: an image-capable instruct model
+  that answered where a reasoning-heavy one wrote nothing. One machine, one
+  run, one comparison, and no other measurement of it exists here.
 - So a model the server says reasons first gets a warning and the run goes
   ahead anyway. Nothing here changes the model id you typed, and a server too
   old to answer the question, or one that does not answer it, changes nothing
@@ -295,7 +311,7 @@ counts as unset everywhere, deliberately.
 
 **The model is not pulled:**
 
-    Ollama at http://localhost:11434 has no model "qwen2.5vl:7b" (HTTP 404) -- it is not <...>
+    Ollama at http://localhost:11434 has no model "qwen3-vl:8b-instruct" (HTTP 404) -- it is not <...>
 
 **Ollama is running but not answering.** A different failure with a different
 fix, so it is a different message. It ends on the diagnosis: a wedged model
@@ -476,7 +492,7 @@ mixes sources has to be **one** run, and this is the command that does it.
 
 The provider it chose, so a run can never be misattributed afterwards:
 
-    Vision: local Ollama (qwen2.5vl:7b)
+    Vision: local Ollama (qwen3-vl:8b-instruct)
 
 Then the stages, one line per stage and one per item, and any warning on
 stderr:
