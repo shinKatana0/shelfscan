@@ -246,3 +246,28 @@ for the per-run hint, and whether the CSV export grows a column for the kind.
 
 The row-identity question has since been decided, in
 [0016](0016-a-row-is-identified-by-the-catalogue-that-answered.md).
+
+## Overtaken in one respect — 2026-09-04, T-0456
+
+This record is kept as written. One sentence in it is no longer true, and it is
+named here rather than edited out, because what the record got wrong is part of
+what it is for.
+
+Under *Consequences*, the 2026-08-22 correction concludes that **"`anime` was a
+value no importer knows"**, on the evidence that the published collections seen
+at the time wrote `game`, `movie`, `tv_show` and `animation`. Reading the
+importer's own source settled it the other way: `anime` is one of its
+`MediaType` values, distinct from `animation`, and the two are documented
+against each other — `animation` is a TMDB cartoon carrying a film-or-series
+`platform_id`, `anime` is a separate type backed by AniList or Kitsu with no
+`platform_id` at all (`packages/core/lib/models/media_type.dart`,
+`release/0.44`).
+
+So the instruction the paragraph gives — verify the spelling against the
+importer before writing a second kind — was right, and the answer it recorded
+was drawn from exported files rather than from the type. What follows for this
+project is not a reversal of the decision: the kind is still a property of the
+row. `anime` is now a fourth kind of its own, the three animation kinds keep
+the values they wrote, and **nothing here looks an anime row up**, because this
+project queries neither of the two catalogues that answer that type. Such a row
+is declined by `.xcoll` and leaves through the Custom Cards export or CSV.

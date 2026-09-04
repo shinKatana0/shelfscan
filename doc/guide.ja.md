@@ -687,6 +687,7 @@ IGDB の失敗から復旧するのに再スキャンは不要です。資格情
 ## 手順 7 — 書き出す
 
     dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu -o shelf.xcoll
+    dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu-cards -o shelf-cards.json
     dart run shelfscan_core:shelfscan export collection.review.json --target csv -o shelf.csv
 
 レビューファイル、`--target`、`-o` の三つはすべて必須で、どれか一つでも欠ければ

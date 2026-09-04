@@ -30,11 +30,16 @@ your shelf and hands the result to an app that does.
 There are three ways through, and the first step of the guide is really
 choosing between them:
 
-- **Keyless.** A local vision model and a CSV export. No registration
-  anywhere, nothing paid, no key. This is the default on Windows.
-- **Full.** The same scan plus an IGDB key, which is what makes `.xcoll`
-  possible — that format carries IGDB ids and nothing else, so an item with
-  no id cannot be in the file at all.
+- **Keyless.** A local vision model, a CSV export, and a Custom Cards export
+  that Tonkatsu Box imports — on a keyless run that one carries **every** row,
+  because every row is unmatched, each as a title and a kind and nothing else.
+  No registration anywhere, nothing paid, no key. This is the default on
+  Windows.
+- **Full.** The same scan plus a catalogue key, which is what makes `.xcoll`
+  possible — that format carries a catalogue id and a platform id and nothing
+  else, so an item with no id cannot be in the file at all. The Custom Cards
+  export is still there beside it and now carries only the leftovers, which on
+  a shelf that matched completely is none.
 - **The app.** The same pipeline behind a window: photos picked from a
   dialog, progress on a screen, each row approved or rejected on a review
   screen instead of by editing JSON, the export saved from a save dialog.
@@ -570,6 +575,17 @@ the same order, so rows stay scannable:
   so the row is not mistaken for one whose branding was illegible;
 - **`note: "..."`**, if there is one.
 
+**The kind of work is on the row too, and there are four of them:** Game,
+Film, Animation and Anime. The first three are looked up — games in IGDB,
+films and animations in TMDB — and picking Animation asks one more question,
+*film or series*, because the receiving app tells those apart by a number and
+nothing here can guess it. **Anime is the fourth and it is looked up nowhere.**
+Upstream keys that type on AniList or Kitsu, this project queries neither, so
+an anime row stays unmatched however many credentials you hold, and its own row
+says where it goes instead. It is a value you set: no file name says
+*Japanese*, and a fansub-shaped name comes back as an **animated series**
+rather than as anime for exactly that reason.
+
 A **pencil icon** on the left marks an item you typed rather than one read off
 a photo — so you do not waste time re-checking your own input against a
 photograph.
@@ -612,9 +628,18 @@ Three kinds of row land there: a title IGDB has no candidate for, a title
 whose candidates all scored below the auto-match threshold and that you never
 picked from, and an item you typed by hand while the resolver was unavailable.
 
-**CSV carries all of them**, as long as the row has a non-blank title. That is
-the fallback, and it is why keyless use is a real path rather than a crippled
-one.
+**Two exports carry all of them**, as long as the row has a non-blank title.
+CSV is one, and the other imports into the same app the `.xcoll` was for:
+`tonkatsu-cards` writes a Custom Cards file holding exactly the rows `.xcoll`
+declined — no overlap, so the two Tonkatsu files together are the whole of
+what you approved. That is the fallback, and it is why keyless use is a real
+path rather than a crippled one.
+
+**A card is a name, not an identity.** It carries the title and the kind, and
+the app stores it as a custom item: no catalogue entry behind it, no cover, no
+fetched metadata, nothing that later refetches. Do not expect the `.xcoll`
+experience from it — expect the row to be there, spelled the way you approved
+it, instead of dropped. It needs no credential of any sort.
 
 **On a keyless run every row is one of these**, so the app says it once above
 the list instead of on each row: a mark that is on everything locates nothing,
@@ -723,6 +748,7 @@ thousands of lines a real scan writes. And the path errors mirror the scan's:
 ## Step 7 — Export
 
     dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu -o shelf.xcoll
+    dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu-cards -o shelf-cards.json
     dart run shelfscan_core:shelfscan export collection.review.json --target csv -o shelf.csv
 
 All three of the review file, `--target` and `-o` are required; leaving one
@@ -734,7 +760,26 @@ up, not measured off any shelf.*
       4 left out: the tonkatsu target carries only items with a resolved IGDB match.
 
 The count is asked of the exporter rather than re-derived, so a summary saying
-"exported 45" while the file holds 41 cannot happen.
+"exported 45" while the file holds 41 cannot happen. Each target says why it
+left rows out in its own words, so the sentence you get names that target's
+reason rather than one hardcoded for all of them.
+
+**The four the `tonkatsu` line left out are what the second Tonkatsu target is
+for.** `tonkatsu-cards` carries exactly the rows `.xcoll` declined and no
+others — the two partition what you approved — so the pair of files together
+is the whole of it. Run both and import both: the `.xcoll` first, the cards
+file after it, as a second pass.
+
+**What you get from the second pass is smaller, and it is worth knowing which
+half.** A Custom Card carries the title and the kind, plus the raw title as
+read where it differs and the platform on a game row. The app stores it as a
+custom item: no catalogue entry behind it, no cover, no metadata, and nothing
+that later refetches. What it needs is nothing — no credential of any kind —
+which is why a wholly keyless run now has a Tonkatsu import at all.
+
+**A cards export that would carry nothing writes no file**, and says which
+target and why. An empty array is a whole-file error to the import, so handing
+one over would fail on a message naming the wrong problem.
 
 **An unknown target names the ones that exist:**
 
@@ -771,8 +816,20 @@ risk, and a split within one platform family read off the cases.
 
 The `.xcoll` format belongs to the Tonkatsu Box project, not to this one. It
 is treated as an external contract and pinned; its reference lives with that
-project, cited in the doc comment on `TonkatsuExporter` in
+project (`docs/RCOLL_FORMAT.md` in `hacan359/tonkatsu_box`, branch
+`release/0.44`) and is cited in the doc comment on `TonkatsuExporter` in
 `packages/shelfscan_core/lib/src/exporters/exporters.dart`.
+
+**Why `version: 2` when the app writes 3.** Not lag — reach. The current build
+writes v3 and accepts v2 on import; v3's difference is that `user_rating`
+became a one-decimal number rather than an integer, and that is a field this
+project never writes, so v3 would buy nothing here. What it would cost is
+readers: older builds reject a v3 file cleanly. A `version: 2` file is
+therefore read by strictly more installations and loses nothing.
+
+**And the second pass has no version at all.** The Custom Cards file is a bare
+JSON array of cards — no envelope, no version, no timestamp — so the same
+review document renders to the same bytes every time.
 
 **One thing that looks like a bug and is not.** A game you own on two consoles
 arrives as two entries — one title on Switch 2 and on PS5, or another as itself
@@ -917,8 +974,10 @@ same route, which is a statement about the wiring and not about the result.
 
 **No film reaches the games catalogue, in any configuration.** Both shells now
 build one resolver per kind rather than one resolver: game rows to IGDB, film
-rows to TMDB, and a kind nobody registered a catalogue for is left unresolved
-rather than sent to whichever catalogue happens to be configured. Until T-0308
+and animation rows to TMDB, and a kind nobody registered a catalogue for — an
+anime row, or an animation whose film-or-series question is still open — is
+left unresolved rather than sent to whichever catalogue happens to be
+configured. Until T-0308
 a film row in a run with IGDB credentials was searched among games, and a film
 whose title is also a game's — an adaptation shares its title almost by
 definition — could come back holding that game's canonical title, platform and
@@ -933,8 +992,9 @@ disagrees with is worse than no year — it empties the answer — so a query th
 comes back with nothing is retried without it; and where that retry cannot tell
 two films of the same title apart, the row is left for you rather than picked.
 That is the whole of what anyone here has seen. **It is not a measurement of
-how well TMDB answers real release names**, nothing has been run over anime or
-over a collection, and *review every row* still means what it says.
+how well TMDB answers real release names**, nothing has been run over an
+animation row or over a collection, and *review every row* still means what it
+says. Anime rows are not in that sentence at all: nothing looks them up.
 
 **And what a film that resolved exports as.** `.xcoll` takes it as a `movie`
 item carrying the film catalogue's id and no `platform_id` key at all — a film

@@ -18,7 +18,64 @@ is the authority behind it.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **A second Tonkatsu export, for the rows the first one cannot carry.**
+  `--target tonkatsu-cards` writes a Custom Cards JSON file that the same app
+  imports, and it takes exactly the rows `.xcoll` declines — the two targets
+  partition one review document and no row goes to both. A card carries the
+  title, the kind, the raw title as read where it differs, and the platform on
+  a game row; **it is a name and not an identity.** The receiving app stores it
+  as a custom item, so there is no catalogue entry behind it, no cover and no
+  fetched metadata, and nothing later refetches it. It needs **no credential at
+  all**, which is what it changes for a keyless run: a shelf that matched
+  nothing now has a Tonkatsu import of its own rather than only a CSV. `cover`
+  is refused under every condition — the format accepts only an `http(s)` URL,
+  and the only image here is a photograph on your own disk. **Nothing has been
+  imported into Tonkatsu Box through this path**; the file is written against
+  the parser's rules read at `release/0.44`, which is written and tested rather
+  than verified.
+- **A file the import would refuse outright is not written.** An empty Custom
+  Cards array is a whole-file error upstream, so a `tonkatsu-cards` export that
+  carries nothing now writes no file and says which target and why, instead of
+  handing over a file that fails on a message naming the wrong problem.
+  `.xcoll` and CSV are unchanged and still write their empty forms.
+
+### Changed
+- **Anime is a kind of its own, and it is looked up nowhere.** The receiving
+  app has two types where this project had one: `animation` is a TMDB cartoon
+  or animated series carrying a film-or-series `platform_id`, and `anime` is a
+  separate type backed by AniList or Kitsu with no `platform_id` at all. This
+  project queries neither of those catalogues, so an **anime row is never
+  matched and never reaches `.xcoll`** — it leaves through the Custom Cards
+  export and through CSV, carrying the title and the kind. It is a value a
+  person sets at review; nothing infers it, because a name says *episode* and
+  never *Japanese*, and a Western cartoon ships under the same convention.
+  **This supersedes the 0.2.0 entry** that said an anime film goes to TMDB's
+  film search and an anime series to its tv search: that is what the animation
+  kinds do, and filing an anime row under `animation` would put a TMDB show
+  where the anime belongs.
+- **The three animation kinds are relabelled and nothing else about them
+  moved.** Review now shows *Animation*, *Animated film* and *Animated series*
+  where it showed anime wording. Every exported byte is the same: the value
+  each kind writes into a file did not change, only what a person is shown.
+- **A row that reaches no `.xcoll` says where it does go.** The review screen
+  named CSV alone, and no Tonkatsu import reads CSV. The row clause, the
+  keyless banner and the manual-add message now name **cards** beside it, which
+  is the word on the export button that carries them.
+- **The dropped-rows sentence is the exporter's own.** Each target now says why
+  it left rows out instead of one hardcoded sentence naming IGDB for all of
+  them. `tonkatsu` and `csv` print exactly what they printed before.
+
+### Documentation
+- **What this integration depends on is written down**, in
+  [`doc/integrations/tonkatsu-handoff.md`](doc/integrations/tonkatsu-handoff.md):
+  one row per external lookup, and the finding that none of them exists only to
+  satisfy the Tonkatsu export — both catalogues feed the review screen a person
+  is required to pass. The same page is the design note for a smaller
+  name-plus-type handover the upstream maintainer has proposed. **It is being
+  evaluated and is not supported**: nothing upstream has agreed to it, `.xcoll`
+  is still the contract, and the page ends in questions rather than in a
+  decision.
 
 ## [0.3.1] - 2026-08-28
 
