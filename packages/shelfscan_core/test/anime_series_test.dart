@@ -1,5 +1,5 @@
-/// An anime series: the row a name can answer, and the question only a person
-/// can (T-0368, decision 0015, decision 0016).
+/// An animated series: the row a name can answer, and the question only a
+/// person can (T-0368, decision 0015, decision 0016).
 ///
 /// Three things are pinned here, and the middle one is the finding.
 ///
@@ -7,7 +7,15 @@
 /// fansub-shaped name numbers an episode of a named series, so it yields one
 /// [WorkKind.animationSeries] row; a scene-shaped one numbers an episode of a
 /// series of unstated kind and goes on declining, because this project has a
-/// kind for an anime series and none for a live-action one.
+/// kind for an animated series and none for a live-action one.
+///
+/// **The kind it answers is [WorkKind.animationSeries] and not
+/// [WorkKind.anime], and T-0456 left that alone deliberately.** The two are
+/// different upstream types (`media_type.dart`, `release/0.44`) and the
+/// grammar tells them apart in no way at all: it detects an episode, never a
+/// nationality, and a Western cartoon released under the same convention hits
+/// it identically. Rerouting these rows to `anime` would take TMDB matching
+/// away from every one of them, which is a capability traded for a guess.
 ///
 /// **N episodes are one row, and it is not [ResolvedGame.parts].** Every
 /// episode parses to the same title with the same absent hint, which is the
@@ -81,7 +89,7 @@ void main() {
     });
 
     test('and carries no platform hint, the way a film does not', () {
-      // Null and `PC` are different answers, and an anime has no platform for
+      // Null and `PC` are different answers, and a series has no platform for
       // the same reason a film has none: the gate has nothing to gate.
       expect(_row('[SubGroup] Tidewrack Lament - 04 [1080p].mkv').platformHint,
           isNull);
@@ -114,9 +122,9 @@ void main() {
     }
 
     // The scene series shape says series and not which KIND of series.
-    // Answering `animation` to it would file every television release as
-    // anime in somebody else's collection, and decision 0015 says a source
-    // declines where the grammar settles nothing.
+    // Answering `animation` to it would file every live-action television
+    // release as a cartoon in somebody else's collection, and decision 0015
+    // says a source declines where the grammar settles nothing.
     test('the scene series shape', () {
       expect(decline('Tidewrack.Lament.S01E04.1080p.WEB-DL.mkv'),
           DeclineReason.seriesEpisode);
@@ -142,7 +150,7 @@ void main() {
 
     test('a bracket group beside a YEAR is not a fansub name', () {
       // `_bracketGroups` matches parentheses too, so the wider reading of the
-      // rule would make a parenthesised year evidence of anime.
+      // rule would make a parenthesised year evidence of a fansub name.
       final row = _row('Pale Anchor (1999) 1080p BluRay.mkv');
       expect(row.workKind, WorkKind.movie);
     });
@@ -257,7 +265,8 @@ void main() {
       }
     });
 
-    test('a document written before the answer existed is still an anime', () {
+    test('a document written before the answer existed is still animation',
+        () {
       // There is no installed base (decision 0014), but the legacy spelling
       // is the honest landing place for a row nobody answered rather than a
       // guess at which of the two it was.
@@ -283,7 +292,7 @@ void main() {
 
   group('the exporter carries an answered row and refuses an unanswered one',
       () {
-    test('an anime film is media_type animation, platform_id 0', () {
+    test('an animated film is media_type animation, platform_id 0', () {
       expect(_items(_document([_resolved(WorkKind.animationFilm)])).single, {
         'media_type': 'animation',
         'external_id': 770001,
@@ -291,7 +300,7 @@ void main() {
       });
     });
 
-    test('an anime series is the same media_type, platform_id 1', () {
+    test('an animated series is the same media_type, platform_id 1', () {
       expect(_items(_document([_resolved(WorkKind.animationSeries)])).single, {
         'media_type': 'animation',
         'external_id': 770001,
@@ -299,7 +308,7 @@ void main() {
       });
     });
 
-    test('an unanswered anime row is still refused', () {
+    test('an unanswered animation row is still refused', () {
       final row = _resolved(WorkKind.animation);
       expect(TonkatsuExporter().canExport(row), isFalse);
       expect(_items(_document([row])), isEmpty);
@@ -314,14 +323,15 @@ void main() {
     // The half that moved WITH `_platformId`, and the reason it had to. The
     // comment on `_catalogue` said `null for a kind this target declines
     // anyway`, which stopped being true the moment a row could be answered.
-    // Left alone, an answered anime row would have been refused for a second
-    // reason wearing the first one's clothes.
-    test('an answered anime row is identified by TMDB, not by nothing', () {
+    // Left alone, an answered animation row would have been refused for a
+    // second reason wearing the first one's clothes.
+    test('an answered animation row is identified by TMDB, not by nothing',
+        () {
       expect(TonkatsuExporter().canExport(_resolved(WorkKind.animationSeries)),
           isTrue);
     });
 
-    test('a games-catalogue id under an anime kind is refused', () {
+    test('a games-catalogue id under an animation kind is refused', () {
       // Decision 0016's namespace check: the id must come from the catalogue
       // the kind's `media_type` implies.
       expect(

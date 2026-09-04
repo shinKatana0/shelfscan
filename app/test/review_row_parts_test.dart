@@ -206,8 +206,9 @@ void main() {
           _doc([_row('LANTERN COAST', workKind: WorkKind.animation)]));
 
       // The label, and never the wire value: `animation` is the word the
-      // export file uses and the row is read by the person holding the box.
-      expect(find.textContaining('Anime'), findsOneWidget);
+      // export file uses, three kinds share it there, and the row is read by
+      // the person holding the box.
+      expect(find.textContaining('Animation'), findsOneWidget);
       expect(find.textContaining('animation'), findsNothing);
     });
 
@@ -222,7 +223,7 @@ void main() {
       expect(find.text('Kind of work'), findsOneWidget);
       expect(find.text('Game'), findsOneWidget);
       expect(find.text('Film'), findsOneWidget);
-      expect(find.text('Anime'), findsOneWidget);
+      expect(find.text('Animation'), findsOneWidget);
     });
 
     testWidgets('the sheet marks the kind the row is currently on',
@@ -270,7 +271,7 @@ void main() {
       expect(find.text('LANTERN COAST'), findsOneWidget);
       expect(find.textContaining('kind corrected -- nothing looks it up'),
           findsOneWidget);
-      expect(find.textContaining('Anime'), findsOneWidget);
+      expect(find.textContaining('Animation'), findsOneWidget);
       // The clause said `will be looked up again` until T-0311 and nothing
       // ever did (`needsReresolution` has no reader). Pinned in the negative
       // as well as the positive, because the defect is a promise: it reads

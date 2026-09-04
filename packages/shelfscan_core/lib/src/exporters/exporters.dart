@@ -91,16 +91,16 @@ enum _PlatformId {
   /// **What narrowed, T-0368.** This was every animation row, because nothing
   /// upstream could tell the two apart. Now a fansub-shaped file name answers
   /// `series` on its own and a person answers either at review, so what is
-  /// left here is the one honest gap: a row corrected to `Anime` and left
+  /// left here is the one honest gap: a row corrected to `Animation` and left
   /// there. The refusal is the same refusal and it is still true of that row;
   /// what changed is that it is no longer the only thing an animation row can
   /// be.
   undecidable(null),
 
-  /// An anime film (T-0162).
+  /// An animated film (T-0162).
   film(0),
 
-  /// An anime series (T-0162).
+  /// An animated series (T-0162).
   series(1);
 
   const _PlatformId(this.literal);
@@ -190,7 +190,10 @@ class TonkatsuExporter extends Exporter {
   /// catalogue client that already exists. An answered one exports like any
   /// other row (T-0368).
   ///
-  /// A row whose id this target cannot fill is refused by [_externalId].
+  /// A row whose id this target cannot fill is refused by [_externalId]. Two
+  /// routes reach that: a match from a catalogue the kind does not imply, and
+  /// -- since T-0456 -- [WorkKind.anime], for which this project holds no
+  /// catalogue at all.
   ///
   /// Either way the shells name what an export drops, so the row is visibly
   /// excluded rather than silently mis-filed.
@@ -228,11 +231,20 @@ class TonkatsuExporter extends Exporter {
   /// declines.** They said `null` while no animation row could be exported at
   /// all, under the comment *null for a kind this target declines anyway* --
   /// which stopped being true the moment a row could be answered (T-0368).
-  /// Leaving it would have refused an answered anime row for a second reason
-  /// dressed as the first: the row would look like one whose catalogue nobody
-  /// has chosen, when Tonkatsu files anime under a TMDB id and T-0162 measured
-  /// it. [_PlatformId.undecidable] is what refuses the unanswered row, and it
-  /// is the only thing that should.
+  /// Leaving it would have refused an answered animation row for a second
+  /// reason dressed as the first: the row would look like one whose catalogue
+  /// nobody has chosen, when Tonkatsu files `animation` under a TMDB id and
+  /// T-0162 measured it. [_PlatformId.undecidable] is what refuses the
+  /// unanswered row, and it is the only thing that should.
+  ///
+  /// **[WorkKind.anime] answers null, and that is the opposite case (T-0456).**
+  /// Upstream's `anime` takes an AniList or a Kitsu id (`RCOLL_FORMAT.md`,
+  /// "Source Values", `release/0.44`) and no catalogue this project wires
+  /// answers either. So there is no id here that could honestly fill the
+  /// field, [_externalId] returns null, and [canExport] declines the row --
+  /// the same visible decline a film row gets in a run with no TMDB token.
+  /// Widening this to `tmdbCatalogue` would file a cartoon's id under the
+  /// anime type, which is a different work rather than a loose match.
   static String? _catalogue(WorkKind kind) => switch (kind) {
         WorkKind.game => igdbCatalogue,
         WorkKind.movie => tmdbCatalogue,
@@ -240,20 +252,29 @@ class TonkatsuExporter extends Exporter {
         WorkKind.animationFilm ||
         WorkKind.animationSeries =>
           tmdbCatalogue,
+        WorkKind.anime => null,
       };
 
   /// What Tonkatsu's item for this kind puts in `platform_id`.
   ///
-  /// A switch with no default, so a fourth [WorkKind] cannot reach the writer
+  /// A switch with no default, so a further [WorkKind] cannot reach the writer
   /// without someone answering this for it -- the export string is the half of
   /// a new kind that is easiest to add and forget, because a wrong one still
-  /// produces a well-formed file.
+  /// produces a well-formed file. T-0456 added the fifth and this is where the
+  /// compiler asked.
+  ///
+  /// [WorkKind.anime] is [_PlatformId.absent] and not [_PlatformId.film]:
+  /// upstream's anime item carries no `platform_id` at all, so a `0` there
+  /// would be the exact lie [_PlatformId.undecidable] refuses one kind over.
+  /// The row is declined anyway, by [_catalogue] having no id for it, but the
+  /// two refusals are about different fields and each states its own.
   static _PlatformId _platformId(WorkKind kind) => switch (kind) {
         WorkKind.game => _PlatformId.fromMatch,
         WorkKind.movie => _PlatformId.absent,
         WorkKind.animation => _PlatformId.undecidable,
         WorkKind.animationFilm => _PlatformId.film,
         WorkKind.animationSeries => _PlatformId.series,
+        WorkKind.anime => _PlatformId.absent,
       };
 
   /// What the exported items were actually read from.

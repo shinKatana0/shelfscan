@@ -122,12 +122,18 @@ enum MediaType {
 /// separate now, so an identifier is free to read naturally and the file
 /// moves only when [wire] is edited.
 ///
-/// Checked against Tonkatsu's own published collections (T-0162), which is the
-/// verification decision 0015 asked the first task adding a second kind to do.
-/// The four spellings that repository publishes are `game`, `movie`, `tv_show`
-/// and `animation`; three of them are here, and `animation` covers an anime
-/// film and an anime series alike, which Tonkatsu tells apart by `platform_id`
-/// rather than by the kind.
+/// Checked against Tonkatsu's own published collections (T-0162) and against
+/// its `packages/core/lib/models/media_type.dart` and `docs/RCOLL_FORMAT.md`
+/// at `release/0.44` (T-0456) -- the verification decision 0015 asked the
+/// first task adding a second kind to do.
+///
+/// **`animation` and `anime` are two of that enum's types, not two names for
+/// one.** `animation` is a TMDB cartoon and states film-or-series in
+/// `platform_id` (`0` / `1`); `anime` is Japanese anime on AniList or Kitsu,
+/// on its own model, with no `platform_id` at all. Upstream says so in both
+/// doc comments, each naming the other. This file called all three animation
+/// kinds `Anime` until T-0456, so a person who owned an anime was offered a
+/// control that filed it under the cartoon type with a TMDB id.
 ///
 /// `game` is still the only value round-tripped through the importer (T-0009);
 /// the others are verified against the format's own files rather than against
@@ -149,24 +155,41 @@ enum WorkKind {
   /// at all -- both are the exporter's business, not this enum's.
   movie('movie', 'movie', 'Film'),
 
-  /// An anime whose film-or-series question is still open.
+  /// An animation whose film-or-series question is still open.
   ///
-  /// What a person reaches by correcting a row to `Anime` and stopping there,
-  /// and what a document written before the other two existed reads back as.
-  /// `TonkatsuExporter` declines it, because the number separating it from its
-  /// two siblings is the one thing that target's item needs and nobody has
-  /// supplied.
-  animation('animation', 'animation', 'Anime'),
+  /// What a person reaches by correcting a row to `Animation` and stopping
+  /// there, and what a document written before the other two existed reads
+  /// back as. `TonkatsuExporter` declines it, because the number separating it
+  /// from its two siblings is the one thing that target's item needs and
+  /// nobody has supplied.
+  animation('animation', 'animation', 'Animation'),
 
-  /// An anime film: `platform_id` `0` (T-0162).
-  animationFilm('animation_film', 'animation', 'Anime film'),
+  /// An animated film: `platform_id` `0` (T-0162).
+  animationFilm('animation_film', 'animation', 'Animated film'),
 
-  /// An anime series: `platform_id` `1` (T-0162).
+  /// An animated series: `platform_id` `1` (T-0162).
   ///
   /// The one animation kind a source answers on its own. A fansub-shaped file
   /// name numbers an episode of a named series, which settles for that name
-  /// the question the other two leave to the person.
-  animationSeries('animation_series', 'animation', 'Anime series');
+  /// the question the other two leave to the person -- and settles nothing
+  /// about nationality, which is why it does not answer [anime].
+  animationSeries('animation_series', 'animation', 'Animated series'),
+
+  /// Japanese anime, which upstream files on its own model backed by AniList
+  /// or Kitsu -- not [animation], which is that importer's TMDB cartoon
+  /// (`media_type.dart`, `release/0.44`).
+  ///
+  /// An item of this type takes an AniList or Kitsu id and carries no
+  /// `platform_id`, so no catalogue this project wires can fill it: a TMDB id
+  /// written under this `media_type` would not be a loose match but a
+  /// different work. `TonkatsuExporter` therefore declines the row, through
+  /// the same named refusal a film row gets in a run with no TMDB token, and
+  /// CSV carries it as the title and kind it is.
+  ///
+  /// A kind a person assigns at review. Nothing infers it: no source here can
+  /// tell an anime from a cartoon released the same way, and guessing would
+  /// take TMDB matching away from every row it guessed wrong.
+  anime('anime', 'anime', 'Anime');
 
   const WorkKind(this.key, this.wire, this.label);
 
@@ -179,31 +202,40 @@ enum WorkKind {
 
   /// The `media_type` string Tonkatsu writes for this kind. The only value in
   /// this file an EXTERNAL format reads, and the one of the two that may
-  /// repeat -- that importer files an anime film and an anime series alike.
+  /// repeat -- that importer files an animated film and an animated series
+  /// alike.
   final String wire;
 
   /// What a person is shown. Never [wire]: the file format is somebody else's
-  /// vocabulary and a review row is read by the owner of the shelf, who calls
-  /// an anime an anime whatever the importer files it under.
+  /// vocabulary, three kinds share one value in it, and a review row is read
+  /// by the owner of the shelf rather than by an importer.
   final String label;
 
-  /// The three kinds a person names, before any refinement of one of them.
+  /// The kinds a person names, before any refinement of one of them.
   ///
   /// [animationFilm] and [animationSeries] are refinements of [animation]
   /// rather than siblings of [game] and [movie]: they answer a second question
-  /// only an anime row is asked. A picker over [values] would put that
+  /// only an animation row is asked. A picker over [values] would put that
   /// question to every row on the screen instead.
-  static const named = <WorkKind>[game, movie, animation];
+  ///
+  /// [anime] is a fourth entry rather than a fourth state of [animation]: it
+  /// is a separate type upstream, it is never asked film-or-series, and the
+  /// two are exactly what T-0456 stopped conflating.
+  static const named = <WorkKind>[game, movie, animation, anime];
 
   /// The three states of the one kind whose target item needs an answer this
   /// pipeline does not always have.
+  ///
+  /// [anime] is not one of them. Its item states no film-or-series bit at all,
+  /// so there is no second question to be in a state about.
   static const animations = <WorkKind>{
     animation,
     animationFilm,
     animationSeries
   };
 
-  /// Whether this kind is an anime, in any of its three states.
+  /// Whether this kind is an animation, in any of its three states. False for
+  /// [anime], which is a different type and is asked nothing further.
   bool get isAnimation => animations.contains(this);
 
   /// Which of [named] this kind is one of -- itself, for all but the two

@@ -98,6 +98,7 @@ void main() {
         WorkKind.animation: 'animation',
         WorkKind.animationFilm: 'animation',
         WorkKind.animationSeries: 'animation',
+        WorkKind.anime: 'anime',
       });
     });
 
@@ -112,19 +113,25 @@ void main() {
         WorkKind.animation: 'animation',
         WorkKind.animationFilm: 'animation_film',
         WorkKind.animationSeries: 'animation_series',
+        WorkKind.anime: 'anime',
       });
       expect(WorkKind.values.map((k) => k.key).toSet(),
           hasLength(WorkKind.values.length),
           reason: 'a review.json key is unique or the round trip is lossy');
     });
 
+    // The labels T-0456 corrected. `animation` is upstream's TMDB cartoon and
+    // `anime` is its own AniList type (`media_type.dart`, `release/0.44`), so
+    // the three kinds whose `media_type` is `animation` may not be called
+    // Anime -- the word belongs to the kind that now holds it.
     test('and shows a person a different word', () {
       expect({for (final kind in WorkKind.values) kind: kind.label}, {
         WorkKind.game: 'Game',
         WorkKind.movie: 'Film',
-        WorkKind.animation: 'Anime',
-        WorkKind.animationFilm: 'Anime film',
-        WorkKind.animationSeries: 'Anime series',
+        WorkKind.animation: 'Animation',
+        WorkKind.animationFilm: 'Animated film',
+        WorkKind.animationSeries: 'Animated series',
+        WorkKind.anime: 'Anime',
       });
       for (final kind in WorkKind.values) {
         expect(kind.label, isNot(kind.wire), reason: 'a label is not a value');
@@ -237,6 +244,50 @@ void main() {
       });
       expect(row.mediaType, MediaType.cartridge);
       expect(row.workKind, WorkKind.animation);
+    });
+  });
+
+  // The half T-0456 had to prove before it could relabel anything: a document
+  // written by an earlier build has to come back as the kinds it was saved
+  // with. `key` and `wire` did not move on any existing kind -- only `label`
+  // did -- and this is the assertion that says so from the outside, over
+  // spellings typed out by hand rather than read off the enum.
+  group('a document written before the fourth kind existed is unchanged', () {
+    // The five `work_kind` spellings any earlier document can hold. Literals
+    // on purpose: derived from `WorkKind.key` they would follow a rename
+    // silently, which is exactly the failure being guarded.
+    const before = {
+      'game': WorkKind.game,
+      'movie': WorkKind.movie,
+      'animation': WorkKind.animation,
+      'animation_film': WorkKind.animationFilm,
+      'animation_series': WorkKind.animationSeries,
+    };
+
+    before.forEach((written, kind) {
+      test('"$written" still loads as $kind', () {
+        final row = Detection.fromJson(
+            {'raw_title': 'HOLLOWMERE', 'work_kind': written});
+        expect(row.workKind, kind);
+        // And writes itself back the same way, which is what makes a
+        // hand-edited file survive a load and a save.
+        expect(row.toJson()['work_kind'], written == 'game' ? isNull : written);
+      });
+    });
+
+    test('a whole document round-trips through save and load unchanged', () {
+      final doc = _document([
+        for (final kind in WorkKind.values) _row(workKind: kind),
+      ]);
+      final written = jsonEncode(doc.toJson());
+      final reloaded = ReviewDocument.fromJson(
+          jsonDecode(written) as Map<String, dynamic>);
+
+      expect([for (final g in reloaded.games) g.detection.workKind],
+          WorkKind.values);
+      expect(jsonEncode(reloaded.toJson()), written,
+          reason: 'a lossy round trip here destroys the answer the review '
+              'step exists to collect');
     });
   });
 

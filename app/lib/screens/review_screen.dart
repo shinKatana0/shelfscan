@@ -49,8 +49,9 @@ const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 /// the owner ruled that the person decides -- and the row was tappable all
 /// along, so the clause needed no instruction added to it and no character
 /// changed. It also stopped being every animation row: it is shown only where
-/// the answer is still missing, which is a row corrected to `Anime` and left
-/// there.
+/// the answer is still missing, which is a row corrected to `Animation` and
+/// left there. Never an `Anime` row (T-0456): that kind states no
+/// film-or-series bit at all, so this question is not one it is asked.
 const _noXcollKindClause = 'not in .xcoll -- film or series?';
 
 /// The same slot again for a row no pick can rescue, whatever its kind.
@@ -77,8 +78,9 @@ const _noXcollCsvClause = 'not in .xcoll -- csv carries it';
 /// Which of the three a refused row gets.
 ///
 /// By kind, the way `TonkatsuExporter` chooses what it writes for one, and
-/// exhaustive for the same reason its switch is: a fourth [WorkKind] cannot
-/// arrive without someone answering what its refused row says.
+/// exhaustive for the same reason its switch is: a further [WorkKind] cannot
+/// arrive without someone answering what its refused row says. T-0456 added
+/// the fifth and this is where the compiler asked.
 ///
 /// The invitation is guarded rather than fixed to a kind, so a row that does
 /// carry a match this file would take goes back to inviting the tap with no
@@ -89,6 +91,14 @@ const _noXcollCsvClause = 'not in .xcoll -- csv carries it';
 /// series is settled such a row is refused, if at all, for the same reasons a
 /// film row is, so it takes the same two clauses and gains no wording of its
 /// own.
+///
+/// [WorkKind.anime] is outside the first case and always inside the guard
+/// (T-0456). No catalogue here answers AniList or Kitsu, so no candidate on
+/// the row can reach this file and the guard takes every such row to
+/// [_noXcollCsvClause] -- refused for the whole run's reasons rather than for
+/// anything about itself, which is what that clause already says. It is
+/// listed in the last case for exhaustiveness only; a guarded case answers
+/// no kind on its own.
 String _noXcollClauseFor(ResolvedGame game) =>
     switch (game.detection.workKind) {
       WorkKind.animation => _noXcollKindClause,
@@ -96,7 +106,8 @@ String _noXcollClauseFor(ResolvedGame game) =>
       WorkKind.game ||
       WorkKind.movie ||
       WorkKind.animationFilm ||
-      WorkKind.animationSeries =>
+      WorkKind.animationSeries ||
+      WorkKind.anime =>
         _noXcollClause,
     };
 
@@ -1201,8 +1212,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
         // cost the whole list a word to say nothing. The value is always
         // visible and always correctable in the row's sheet, and a row whose
         // kind was corrected says so through the clause below (0015).
-        // [WorkKind.label], never the wire value: `animation` is Tonkatsu's
-        // word for the file and nobody's word for the thing on the shelf.
+        // [WorkKind.label], never the wire value: three kinds share one
+        // `media_type`, so the file's own word cannot tell a person which of
+        // them their row is.
         if (game.detection.workKind != WorkKind.game)
           game.detection.workKind.label,
         // Ahead of the status: this is what the row IS, and the box is the
@@ -1625,9 +1637,10 @@ class _RowSheet extends StatelessWidget {
           // one place the value is always readable.
           //
           // Over [WorkKind.named] and not [WorkKind.values] since T-0368: the
-          // two answered animation kinds are a refinement of `Anime` rather
-          // than two more entries here, so this list is the three it has
-          // always been and only an anime row is offered the fourth tile.
+          // two answered animation kinds are a refinement of `Animation`
+          // rather than two more entries here, so only an animation row is
+          // offered the film-or-series pair below. `Anime` is a fourth tile
+          // and not a refinement of anything (T-0456).
           ListTile(
             title: const Text('Kind of work'),
             // The cost sentence is T-0311's, unchanged. What T-0317 adds is
@@ -1657,23 +1670,23 @@ class _RowSheet extends StatelessWidget {
                   : Icons.radio_button_unchecked),
               title: Text(kind.label),
               // The kind ALREADY on the row pops that row's own value and not
-              // the group's, so tapping `Anime` on a row that is already an
-              // anime series is the no-op `correctWorkKind` promises rather
-              // than a move back to the unanswered kind -- which would throw
-              // away the person's film-or-series answer and its match.
+              // the group's, so tapping `Animation` on a row that is already
+              // an animated series is the no-op `correctWorkKind` promises
+              // rather than a move back to the unanswered kind -- which would
+              // throw away the person's film-or-series answer and its match.
               onTap: () => Navigator.of(context).pop(_CorrectKind(
                   kind == game.detection.workKind.asNamed
                       ? game.detection.workKind
                       : kind)),
             ),
           // The second question, and ONLY on the rows that are asked it
-          // (T-0368). Tonkatsu states film-or-series for an anime in
+          // (T-0368). Tonkatsu states film-or-series for an `animation` in
           // `platform_id`, so `TonkatsuExporter` cannot carry the row until
           // somebody answers, and the owner's ruling is that the somebody is
           // the person holding the object -- the same answer they gave about
-          // the row unit for a box. A game and a film are asked nothing new:
-          // the list above is the three kinds it always was, and this block
-          // does not exist on their sheets.
+          // the row unit for a box. A game, a film and an anime are asked
+          // nothing new: this block does not exist on their sheets, and an
+          // anime item states no such bit at all (T-0456).
           if (game.detection.workKind.isAnimation) ...[
             const ListTile(
               title: Text('Film or series'),
@@ -1682,8 +1695,9 @@ class _RowSheet extends StatelessWidget {
               // are two different TMDB searches, so a match taken under one is
               // not an answer under the other.
               subtitle: Text(
-                  'An anime is filed as one or the other, and .xcoll cannot '
-                  'take the row until it is. Changing it clears the match.'),
+                  'An animation is filed as one or the other, and .xcoll '
+                  'cannot take the row until it is. Changing it clears the '
+                  'match.'),
             ),
             for (final kind in const [
               WorkKind.animationFilm,
