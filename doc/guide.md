@@ -15,6 +15,17 @@
      two agree again. That file also lists the output blocks it does NOT pin,
      and why. -->
 
+<!-- FIGURES - every figure on this page belongs to the model it was
+     measured on, and that is not always the model this project ships.
+     A region carrying such figures is bounded by a pair of HTML
+     comments, "measured-on: <model id>" and "/measured-on", invisible
+     on the rendered page. The test is
+     packages/shelfscan_core/test/figure_attribution_test.dart:
+     it counts the regions, requires each to name its model in the
+     visible text too, and fails when the shipped default id appears
+     inside a region marked as the historical one. Pointing a measured
+     sentence at whatever ships next is what it exists to catch. -->
+
 # shelfscan — one complete run
 
 This page walks one run from nothing to a collection imported into Tonkatsu
@@ -105,6 +116,8 @@ spines. A column the frame cuts off is still read, and the fragments it
 produces are honest partial reads rather than inventions — but they are
 fragments, so it is cheaper to include the whole column.
 
+<!-- measured-on: qwen2.5vl:7b -->
+
 **But do not put the whole shelf in one frame — that is the other lever, and
 it runs the opposite way.** Resolution is free; spines per frame are not. The
 local `qwen2.5vl:7b` was measured against synthetic shelves of increasing
@@ -123,6 +136,8 @@ density, and there are two thresholds on the way up:
   scan declines whole rather than putting invented-looking rows in your review
   list. Both failures name the shelf and tell you to photograph it in
   sections; this is why.
+
+<!-- /measured-on -->
 
 **So: two or three sections rather than one wide shot.** It costs one extra
 vision call per section and nothing else — the sections go through one dedupe,
@@ -211,6 +226,8 @@ photographs by eye rather than against another JSON file. Numbers and full
 caveats: [`measurements.md`](measurements.md), "The second lever works" and "A
 bigger local model, measured and rejected".
 
+<!-- measured-on: qwen2.5vl:7b -->
+
 | | local `qwen2.5vl:7b` | `gpt-4.1-mini` | `gpt-5.5` |
 |---|---|---|---|
 | hi-res detections | the baseline | fewer | slightly more, and it wanders by photo |
@@ -218,6 +235,8 @@ bigger local model, measured and rejected".
 | printed Switch 2 band | **not read** — hints those cases `PS2` | not read | read per spine, every hint correct across the three full-resolution photographs, five runs each; measured separately at 1200×900, every case correct on the one photograph there where the band was checked |
 | invented titles at 1200×900 | none | one, on 3 of 5 runs | none over 5 runs |
 | cost | **$0** | paid | ~**$0.45** for a three-photo shelf |
+
+<!-- /measured-on -->
 
 **The local column is `qwen2.5vl:7b`, and since 2026-09-04 it is not the
 built-in default.** The default is `qwen3-vl:8b-instruct`, and none of the
@@ -247,9 +266,11 @@ shelf has no Switch 2 band on it, local costs nothing and gives up little.
 
 Install Ollama, pull a vision model, and leave the server running. The
 built-in defaults are `qwen3-vl:8b-instruct` at `http://localhost:11434`, and
-both are overridable with `SHELFSCAN_OLLAMA_MODEL` and `SHELFSCAN_OLLAMA_URL`.
+both are overridable with `SHELFSCAN_OLLAMA_MODEL` and `SHELFSCAN_OLLAMA_URL`. <!-- measured-on: qwen2.5vl:7b -->
 `qwen2.5vl:7b` answers a 4000×3000 photo in about **25 s** on a machine that
 fits it; how long the default takes on yours has not been measured here.
+
+<!-- /measured-on -->
 
 **The default changed on 2026-09-04 and none of this page's figures changed
 with it.** Everything measured here was taken on `qwen2.5vl:7b`, which was the
@@ -313,12 +334,16 @@ counts as unset everywhere, deliberately.
 
     Ollama at http://localhost:11434 has no model "qwen3-vl:8b-instruct" (HTTP 404) -- it is not <...>
 
+<!-- measured-on: qwen2.5vl:7b -->
+
 **Ollama is running but not answering.** A different failure with a different
 fix, so it is a different message. It ends on the diagnosis: a wedged model
 runner stalls exactly like this, `qwen2.5vl:7b` answers a 4000×3000 photo in
 about 25 s here, so check the server is alive with `ollama ps` before assuming
 the model is merely slow — a model too large for the machine is the one case
 measured here that legitimately takes minutes.
+
+<!-- /measured-on -->
 
 If that is your case, raise the per-call bound:
 `SHELFSCAN_VISION_TIMEOUT=<seconds>`, which bounds **one** vision call, per
