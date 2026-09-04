@@ -25,10 +25,11 @@
 # naming anything. That is why green here requires the verdict line AND exit 0,
 # never either on its own.
 #
-# What is retained: the reporter logs, written outside the repository. They
-# hold reporter output only -- no `--verbose`, no environment -- but they do
-# carry absolute paths of the machine that ran them, so they are a scratch file
-# to read and not an artefact to commit or paste.
+# What is retained: the reporter logs, written outside the repository, in a
+# directory this run created and owns (see `--log-dir` below). They hold
+# reporter output only -- no `--verbose`, no environment -- but they do carry
+# absolute paths of the machine that ran them, so they are a scratch file to
+# read and not an artefact to commit or paste.
 #
 # No `set -e`: every exit code here is data.
 
@@ -37,8 +38,9 @@ set -u
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 BOUND=${SHELFSCAN_SUITE_BOUND:-900}
 RERUN_BOUND=${SHELFSCAN_RERUN_BOUND:-300}
-LOGDIR=
+LOGPARENT=
 SUITES=
+VERDICT=
 
 usage() {
   cat <<'USAGE'
@@ -46,7 +48,9 @@ usage: sh tool/check-suites.sh [--bound S] [--rerun-bound S] [--log-dir DIR] [co
 
   --bound S         wall-clock bound per suite run, seconds (default 900)
   --rerun-bound S   wall-clock bound per single-file re-run (default 300)
-  --log-dir DIR     where the logs go (default: a fresh dir under TMPDIR)
+  --log-dir DIR     PARENT of this run's log directory (default: TMPDIR).
+                    The run creates a fresh subdirectory of DIR and writes
+                    only there; DIR itself is never written to or cleared.
   core | app        run only that suite; default is both
 
 exit: 0 green | 1 a real failure | 3 a host died, every named file green alone
@@ -58,15 +62,71 @@ while [ $# -gt 0 ]; do
   case $1 in
     --bound) BOUND=$2; shift 2 ;;
     --rerun-bound) RERUN_BOUND=$2; shift 2 ;;
-    --log-dir) LOGDIR=$2; shift 2 ;;
+    --log-dir) LOGPARENT=$2; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     core|app) SUITES="$SUITES $1"; shift ;;
     *) echo "check-suites: unknown argument: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
 [ -n "$SUITES" ] || SUITES="core app"
-[ -n "$LOGDIR" ] || LOGDIR="${TMPDIR:-/tmp}/shelfscan-suites-$$"
-mkdir -p "$LOGDIR" || exit 2
+[ -n "$LOGPARENT" ] || LOGPARENT="${TMPDIR:-/tmp}"
+
+# The run owns its directory, and `--log-dir` names its PARENT (T-0463).
+#
+# Measured 2026-09-04: one scratchpad is handed to every worker in a session,
+# so a run was pointed at a directory that already held an earlier run's
+# `app.log` and `app.did-not-complete` -- green, complete, and about another
+# worktree. core.log is written first and app.log second, so a run stopped
+# between the two leaves the previous run's app evidence standing, and a
+# reader doing exactly what the convention asks reports somebody else's green.
+# A fresh directory per run removes the inheritance rather than labelling it.
+#
+# Why this name cannot collide, which a branch name could not promise -- two
+# clones can sit on a branch of the same name, and a re-run collides with
+# itself. Three reasons, and only the third has to hold:
+#   1. `$$` is unique among the processes alive at this instant.
+#   2. The UTC stamp separates two runs whose pid value was recycled between
+#      them.
+#   3. `mkdir` WITHOUT `-p` is atomic and fails if the name already exists, so
+#      a collision is detected rather than assumed away and the counter walks
+#      to a free name. Whatever this run writes into, this run created.
+# Nothing here removes anything: the parent may be shared with a live worker.
+_stamp=$(date -u +%Y%m%dT%H%M%SZ 2>/dev/null) || _stamp=unstamped
+mkdir -p "$LOGPARENT" || exit 2
+_n=1
+while :; do
+  LOGDIR="$LOGPARENT/shelfscan-suites-$_stamp-$$-$_n"
+  mkdir "$LOGDIR" 2>/dev/null && break
+  _n=$((_n + 1))
+  if [ "$_n" -gt 64 ]; then
+    echo "check-suites: no free run directory under $LOGPARENT" >&2
+    exit 2
+  fi
+done
+# Named so a reader who passed --log-dir DIR and finds nothing in DIR is not
+# left guessing. The per-suite `log PATH` lines below carry it too, but the
+# first of those is up to $BOUND seconds away and an interrupted run may print
+# none of them -- which is the case where the directory most needs finding.
+echo "LOGS: $LOGDIR"
+
+# A log cannot name its own run: the core log holds no path at all, and only
+# `flutter test` names a worktree. This is what turns "is this evidence mine?"
+# from an mtime guess into a read. It stays beside the logs, outside the
+# repository, like everything else this script writes.
+{
+  echo "logdir   $LOGDIR"
+  echo "root     $ROOT"
+  echo "started  $_stamp"
+  echo "pid      $$"
+  echo "head     $(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
+  echo "branch   $(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
+  echo "worktree $(git -C "$ROOT" rev-parse --show-toplevel 2>/dev/null || echo unknown)"
+} >"$LOGDIR/run.info"
+
+# An interrupted run must not read as a finished one. Two signals, because a
+# reader may look for either: `run-incomplete` is present until the script
+# reaches its own end, and `verdict` is written there as the last act.
+: >"$LOGDIR/run-incomplete"
 
 TRIPPED=124   # what `timeout` returns for the same event
 
@@ -219,9 +279,12 @@ for s in $SUITES; do
 done
 
 case $WORST in
-  0) echo "PREFLIGHT: GREEN" ;;
-  1) echo "PREFLIGHT: NOT GREEN -- a real failure" ;;
-  3) echo "PREFLIGHT: HOLD -- a test host died; every named file is green alone" ;;
-  4) echo "PREFLIGHT: HOLD -- the wall-clock bound tripped; nothing was judged" ;;
+  0) VERDICT="PREFLIGHT: GREEN" ;;
+  1) VERDICT="PREFLIGHT: NOT GREEN -- a real failure" ;;
+  3) VERDICT="PREFLIGHT: HOLD -- a test host died; every named file is green alone" ;;
+  4) VERDICT="PREFLIGHT: HOLD -- the wall-clock bound tripped; nothing was judged" ;;
 esac
+echo "$VERDICT"
+{ echo "$VERDICT"; echo "exit $WORST"; } >"$LOGDIR/verdict"
+rm -f "$LOGDIR/run-incomplete"
 exit $WORST
