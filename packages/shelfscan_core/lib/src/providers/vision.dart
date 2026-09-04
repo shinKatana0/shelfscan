@@ -1537,9 +1537,9 @@ List<String> _jsonRecords(String text) {
 /// T-0464.
 ///
 /// [answer] is read, not just measured for emptiness: [answerRepeatsItself]
-/// decides which of the two causes the message states, and doing it here is
-/// what gives all three providers the discrimination for nothing -- each
-/// already hands its truncated text to this constructor.
+/// tells the loop road from the density one, and doing it here is what gives
+/// all three providers the discrimination for nothing -- each already hands
+/// its truncated text to this constructor.
 ///
 /// Deliberately NOT retryable, and the arithmetic is the opposite of a 429's. A
 /// retry is not hopeless -- T-0120 measured one `CONTROL-HIRES` photo through
