@@ -65,6 +65,23 @@ abstract class Exporter {
   String get leftOutReason =>
       'carries only items with a resolved IGDB match.';
 
+  /// Whether the file this writes when [select] returns nothing is one the
+  /// target's consumer can read.
+  ///
+  /// True for both targets that shipped, and the default for that reason: a
+  /// `.xcoll` whose `items` array is empty is a well-formed collection and a
+  /// CSV of its header row alone is a well-formed CSV. Each has been written
+  /// on an empty selection since there were exporters, and each goes on being
+  /// written byte for byte.
+  ///
+  /// [TonkatsuCardsExporter] is the one target whose consumer refuses the
+  /// empty form outright -- read at `release/0.44`, and it is the parser's
+  /// first act rather than a per-row issue. A shell reads this to decide
+  /// whether to write the file at all: a file the importer rejects with a
+  /// message naming the wrong problem is worse than no file, and the run has
+  /// already said how many rows it carried (T-0460).
+  bool get emptyFileIsUsable => true;
+
   /// Cells of the file this would write that a spreadsheet reads as a
   /// formula rather than as text.
   ///
@@ -554,6 +571,12 @@ class TonkatsuCardsExporter extends Exporter {
   @override
   String get leftOutReason => 'carries only what .xcoll cannot -- an item with '
       'a resolved match belongs in that file instead.';
+
+  /// An empty array is `CustomCardsParseErrorCode.emptyFile` upstream, raised
+  /// before any row is looked at (`custom_cards_parser.dart`, `release/0.44`),
+  /// so `[]` is a whole-file failure there and not an import of nothing.
+  @override
+  bool get emptyFileIsUsable => false;
 
   /// The rows the other Tonkatsu target leaves behind, and only those.
   ///
