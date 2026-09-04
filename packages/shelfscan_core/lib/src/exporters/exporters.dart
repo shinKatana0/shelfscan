@@ -65,6 +65,23 @@ abstract class Exporter {
   String get leftOutReason =>
       'carries only items with a resolved IGDB match.';
 
+  /// Why this target carried none of the marked rows, as the app says it --
+  /// the tail of `Nothing to export: ...`.
+  ///
+  /// [leftOutReason] one level further: that one explains a row this target
+  /// declined beside rows it took, this one explains a selection that came
+  /// back empty. Same contract as [canExport] and for the same reason, the
+  /// shells narrate and the exporter owns the rule -- a copy of it on the
+  /// screen is a copy that rots, and this is the third member added after the
+  /// first one did.
+  ///
+  /// The default is the sentence the screen shipped with, and it is
+  /// [TonkatsuExporter]'s answer: an item of that file is a pair of ids, so a
+  /// row nothing resolved has none. It was every target's answer until here,
+  /// and for [TonkatsuCardsExporter] it stated the exact inverse of the
+  /// reason.
+  String get carriedNothingReason => 'no approved item has a resolved match.';
+
   /// Whether the file this writes when [select] returns nothing is one the
   /// target's consumer can read.
   ///
@@ -367,6 +384,13 @@ class CsvExporter extends Exporter {
   bool canExport(ResolvedGame game) =>
       game.best != null || game.detection.rawTitle.trim().isNotEmpty;
 
+  /// Names the rule above rather than a match, because a match is not what
+  /// this target needs: it takes text, and refuses a row only where there is
+  /// no text to write and nothing matched to name it either.
+  @override
+  String get carriedNothingReason =>
+      'no approved item has a title or a match for csv to write.';
+
   /// The columns every export has carried since T-0012.
   ///
   /// `source_photo` keeps T-0052's meaning exactly -- the photo a title was
@@ -571,6 +595,21 @@ class TonkatsuCardsExporter extends Exporter {
   @override
   String get leftOutReason => 'carries only what .xcoll cannot -- an item with '
       'a resolved match belongs in that file instead.';
+
+  /// The inverse of the default, and it points at the other file.
+  ///
+  /// This target takes what [TonkatsuExporter] leaves behind, so it comes back
+  /// empty when nothing was left behind -- which on a fully matched shelf is
+  /// the best outcome there is. The default sentence said the rows had no
+  /// match, when having one is exactly why they are not here; a person told
+  /// that goes looking for a resolution failure that did not happen. So this
+  /// says what is true of the leftovers rather than of the matches -- [_card]
+  /// refuses a leftover it cannot build, and that empties this file too --
+  /// and then names the target the rows did go to, because exporting that one
+  /// is the whole of what is left to do.
+  @override
+  String get carriedNothingReason =>
+      'no approved item was left over for cards -- export .xcoll instead.';
 
   /// An empty array is `CustomCardsParseErrorCode.emptyFile` upstream, raised
   /// before any row is looked at (`custom_cards_parser.dart`, `release/0.44`),

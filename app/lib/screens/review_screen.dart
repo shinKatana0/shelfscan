@@ -375,9 +375,14 @@ class _ReviewScreenState extends State<ReviewScreen> {
     if (dropped.isNotEmpty && !await _confirmDrop(target, dropped)) return;
 
     if (count == 0) {
+      // The first half is about the document and is true of every target; the
+      // second is about this one, so it is asked of the exporter like
+      // `canExport` above. One literal here answered for all three, and for
+      // the target whose subject is the rows with no match it said the
+      // opposite of the reason (T-0462).
       _tell(marked.isEmpty
           ? 'Nothing to export: no item is approved yet.'
-          : 'Nothing to export: no approved item has a resolved match.');
+          : 'Nothing to export: ${exporter.carriedNothingReason}');
       return;
     }
 
