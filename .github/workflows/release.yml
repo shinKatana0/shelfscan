@@ -152,10 +152,16 @@ jobs:
       # keeping first-party: pinning a major tag of somebody else's action
       # still follows wherever that tag is moved to.
       #
-      # `--prerelease` for the whole of 0.x, which is where decision 0014 keeps
-      # this project until the two file formats it writes stop moving. Read off
-      # the tag rather than configured, so it stops being true exactly when 1.0
-      # is cut and not a release before or after.
+      # No `--prerelease`, on the owner's ruling: no tag published from here
+      # carries the label. The flag used to be added for the whole of 0.x and
+      # was taken off `v0.3.1` by hand afterwards, which is the second time
+      # that ruling was made.
+      #
+      # Decision 0014 is untouched by this and still keeps the project in
+      # `0.x` until the two file formats it writes stop moving. That gate and
+      # GitHub's label are different things; reading the second off the first
+      # is what put the flag here. What the `0.x` version means for a reader
+      # deciding whether to download is said in the READMEs instead.
       - name: publish the release with the zip attached
         shell: pwsh
         env:
@@ -189,7 +195,6 @@ jobs:
           $ghArgs = @($tag, 'ShelfScan-win-x64.zip',
                     '--title', "shelfscan $tag",
                     '--notes-file', 'release-notes.md')
-          if ($tag.StartsWith('v0.')) { $ghArgs += '--prerelease' }
           gh release create @ghArgs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
