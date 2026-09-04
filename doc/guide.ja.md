@@ -221,9 +221,10 @@ Switch 2 のケースが数本あって、棚を一度スキャンするだけ�
 ### ローカルモデルの準備
 
 Ollama を入れ、ビジョンモデルを取得し、サーバを起動したままにします。組み込みの
-既定は `qwen2.5vl:7b` と `http://localhost:11434` で、どちらも
-`SHELFSCAN_OLLAMA_MODEL` と `SHELFSCAN_OLLAMA_URL` で上書きできます。モデルが
-収まるマシンで、4000×3000 の写真一枚あたり **約 25 秒**を見込んでください。
+既定は `qwen3-vl:8b-instruct` と `http://localhost:11434` で、どちらも
+`SHELFSCAN_OLLAMA_MODEL` と `SHELFSCAN_OLLAMA_URL` で上書きできます。
+`qwen2.5vl:7b` はモデルが収まるマシンで、4000×3000 の写真一枚あたり
+**約 25 秒**で答えます。
 
 ### クラウドのバックエンドの準備
 
@@ -258,7 +259,7 @@ PowerShell:
 
 **モデルを取得していない:**
 
-    Ollama at http://localhost:11434 has no model "qwen2.5vl:7b" (HTTP 404) -- it is not <...>
+    Ollama at http://localhost:11434 has no model "qwen3-vl:8b-instruct" (HTTP 404) -- it is not <...>
 
 **Ollama は動いているが応答しない。** 別の故障で対処も別なので、メッセージも別に
 してあります。末尾が診断です。詰まったモデルランナーはちょうどこう止まりますし、
@@ -426,7 +427,7 @@ IGDB の失敗から復旧するのに再スキャンは不要です。資格情
 
 選ばれたプロバイダ。後から実行を取り違えて帰属させられないようにするためです:
 
-    Vision: local Ollama (qwen2.5vl:7b)
+    Vision: local Ollama (qwen3-vl:8b-instruct)
 
 続いて各段階が、段階ごとに一行、項目ごとに一行で出ます。警告は stderr に出ます:
 

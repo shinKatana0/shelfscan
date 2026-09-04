@@ -65,7 +65,7 @@
   Imaging Component、Android ではシステムのコーデックを使う。インストーラも
   配布バイナリもなく、ソースからビルドする（[セットアップ](#setup)）。
 - **品質は与えたビジョンモデルの品質そのままであり、無料のものには既知の上限が
-  ある。** 既定のローカルモデル `qwen2.5vl:7b` はラテン文字の背表紙をよく読む
+  ある。** ローカルモデル `qwen2.5vl:7b` はラテン文字の背表紙をよく読む
   が、印刷された *Switch 2* の帯はまったく読まない。Switch 2 のケースは
   `PS2` というヒントを付けて返ってくる。一方で日本語の文字は最大解像度では
   *読める*。低解像度では日本語の背表紙を落とすが、そこではそれが正しい答え
@@ -207,7 +207,7 @@ TMDB へ、そしてカタログが設定されていない種別は、たまた
 ダウンロードである。
 
 ```
-ollama pull qwen2.5vl:7b
+ollama pull qwen3-vl:8b-instruct
 
 cd packages/shelfscan_core
 dart pub get
@@ -273,7 +273,7 @@ client id と secret はアクセストークンのために `id.twitch.tv` へ�
 
 ## 何を期待できるか
 
-実在の棚の写真二枚を、既定のローカルモデル（`qwen2.5vl:7b`）で計測:
+実在の棚の写真二枚を、ローカルモデル（`qwen2.5vl:7b`）で計測:
 
 - **項目の約 80〜83% が端から端まで正しく出る。** ラテン文字のタイトルなら
   約 93%。すべての項目が書き出し前に人間の確認を通るが、これは形式ではない。
@@ -318,7 +318,7 @@ Unread-spine reports: 6 -- one report can describe several spines, so this is no
 [`doc/measurements.md`](doc/measurements.md) の「The second lever works」および
 「A bigger local model, measured and rejected」にある（英語）。
 
-| | `qwen2.5vl:7b`（ローカル、既定） | `gpt-4.1-mini` | `gpt-5.5` |
+| | `qwen2.5vl:7b`（ローカル） | `gpt-4.1-mini` | `gpt-5.5` |
 |---|---|---|---|
 | 費用 | **$0** | あなたの鍵 | あなたの鍵 — 写真三枚の棚スキャンで約 **$0.45** |
 | ラテン文字の背表紙 | 約 93% 正しい | 検出数は写真ごとに同程度 | 同程度かやや上。`gpt-4.1-mini` が読み違える、光の反射したタイトルを読む |
@@ -425,7 +425,7 @@ Windows でも必ず動く」という意味ではない: Microsoft の Visual C
 ライン版と同じ三つ:
 
 - **ローカル** — 自分で入れて自分で動かす [Ollama](https://ollama.com) サーバ。
-  ビジョンモデルは一度だけ取得しておく（`ollama pull qwen2.5vl:7b`、約 6 GB）。
+  ビジョンモデルは一度だけ取得しておく（`ollama pull qwen3-vl:8b-instruct`、約 6 GB）。
   Windows の既定はこれである。アカウントも鍵も要らず、写真はそのサーバより先へ
   出ない。下の[経路 A](#path-a--keyless) がその全部である。
 - **Anthropic**、または **自分で指定する OpenAI 互換のエンドポイント** — 自分の
@@ -494,7 +494,7 @@ SDK が要り、そちらには Dart が含まれる。ビルドして動かし�
    する:
 
    ```
-   ollama pull qwen2.5vl:7b
+   ollama pull qwen3-vl:8b-instruct
    ```
 
 2. 棚の写真をフォルダに入れ、そのフォルダをスキャンする:
@@ -505,7 +505,7 @@ SDK が要り、そちらには Dart が含まれる。ビルドして動かし�
    dart run shelfscan_core:shelfscan scan ../../photos -o collection.review.json
    ```
 
-   実行は自らの選択を二つとも宣言する。`Vision: local Ollama (qwen2.5vl:7b)` と
+   実行は自らの選択を二つとも宣言する。`Vision: local Ollama (qwen3-vl:8b-instruct)` と
    `IGDB credentials not set -- resolve stage will be skipped, games stay
    unresolved` である。後者はエラーではない。
 

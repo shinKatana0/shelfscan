@@ -41,6 +41,20 @@ is the authority behind it.
   `.xcoll` and CSV are unchanged and still write their empty forms.
 
 ### Changed
+- **The default local vision model is now `qwen3-vl:8b-instruct`, and it is
+  the one model here that carries no figures.** It was `qwen2.5vl:7b`, and
+  every quality measurement this project holds — the model tables in the
+  README and the guide, `doc/measurements.md`, the control sets — was taken on
+  that model and still names it. Nothing here has measured the new default
+  against anything: it is an image-capable instruct model that answered on
+  every photograph of one reported run where a reasoning-heavy multimodal
+  model wrote nothing at all, which is one machine, one run, one comparison,
+  and it is not a claim that it is faster, better or as well measured. The
+  pull is still about 6 GB. Name `qwen2.5vl:7b` in `SHELFSCAN_OLLAMA_MODEL`,
+  or in Settings, to run on the model the published figures belong to. The
+  control-set capture tool is unaffected either way: it states the model the
+  control is defined on rather than reading the shipped default, so a capture
+  already taken still resolves to the file it was written to.
 - **Anime is a kind of its own, and it is looked up nowhere.** The receiving
   app has two types where this project had one: `animation` is a TMDB cartoon
   or animated series carrying a film-or-series `platform_id`, and `anime` is a
