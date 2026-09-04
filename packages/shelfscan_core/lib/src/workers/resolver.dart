@@ -870,8 +870,8 @@ class _RefusingClient extends http.BaseClient {
 ///
 /// A branch (`if (kind == movie) ... else ...`) is edited by every kind that
 /// is added, so the third one edits code the second one wrote and the test for
-/// the second is where the third breaks. A lookup is not edited at all: anime
-/// arrives as one more entry in [catalogues], built by the shell that already
+/// the second is where the third breaks. A lookup is not edited at all: a
+/// catalogue arrives as one more entry in [catalogues], built by the shell that
 /// builds the clients, and nothing in this file moves. That is the whole of
 /// the claim -- a seam is a thing you *pass* an implementation to, and the
 /// test for it is whether adding one requires editing it.
@@ -912,7 +912,7 @@ class CatalogueRouter extends ResolverWorker {
   /// shell's typo, so it is a developer error and [ArgumentError] is what that
   /// is; an `assert` would be stripped from a release build, which is the one
   /// build where a wrong id reaches somebody's collection file. It cannot be
-  /// caught later either -- an anime series answered from the film endpoint
+  /// caught later either -- an animated series answered from the film endpoint
   /// carries a `tmdb:` id like the right one, and decision 0016's namespace
   /// check in `TonkatsuExporter` compares namespaces.
   ///
@@ -974,9 +974,11 @@ class CatalogueRouter extends ResolverWorker {
 /// two films sharing a title are separated by it almost by definition.
 class TmdbResolverWorker extends CatalogueWorker {
   /// TMDB's film search: [WorkKind.movie], and [WorkKind.animationFilm] with
-  /// it. An anime film is a film in TMDB -- that catalogue has no separate
-  /// animation database, and the only thing that makes the row an anime is
-  /// what Tonkatsu writes in `platform_id` (T-0162, decision 0016).
+  /// it. An animated film is a film in TMDB -- that catalogue has no separate
+  /// animation database, and the only thing that separates the row from a
+  /// live-action one is what Tonkatsu writes in `platform_id` (T-0162,
+  /// decision 0016). Not [WorkKind.anime]: that is a different upstream type
+  /// keyed by AniList or Kitsu, and TMDB answers neither (T-0456).
   TmdbResolverWorker.movies(this.tmdb) : search = TmdbSearch.movie;
 
   /// TMDB's television search: [WorkKind.animationSeries] and nothing else.

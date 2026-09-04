@@ -150,7 +150,7 @@
 ///
 /// Resolution (IGDB) is optional: without IGDB_CLIENT_ID/IGDB_CLIENT_SECRET
 /// games stay unresolved in the review file, and the stage is skipped
-/// outright unless a TMDB token keys the film and anime catalogues
+/// outright unless a TMDB token keys the film and animation catalogues
 /// (T-0387). Note: the tonkatsu export needs resolved IGDB ids and silently
 /// omits every approved item without one; csv exports an unmatched item
 /// using the detection's own title and platform hint.
@@ -1416,9 +1416,10 @@ Never _usage() {
       // step with the requirement, which is the drift T-0383 repaired. It
       // prints as one long line and the terminal wraps it.
       '$tmdbAttribution\n'
-      'Film and anime rows are looked up on TMDB when $tmdbTokenVariable is\n'
-      'set, and are keyless without it. Games go to IGDB, which is a\n'
-      'different service and a different pair of credentials.\n'
+      'Film and animation rows are looked up on TMDB when\n'
+      '$tmdbTokenVariable is set, and are keyless without it. Games go to\n'
+      'IGDB, which is a different service and a different pair of\n'
+      'credentials. Anime is a kind of its own and is looked up nowhere.\n'
       '\n'
       'Missed an item? Append it to "games" in review.json and re-run resolve:\n'
       '  {"detection": {"raw_title": "Nocturne 5 Gold", "platform_hint": "PS4",\n'
@@ -1841,20 +1842,29 @@ void _sayTmdbAttribution(Map<String, String> env) {
 /// is what puts a film in front of a film catalogue; how well it is answered
 /// there is unmeasured, and nothing has been run over anime or at any scale.
 ///
-/// **The same token registers the two anime kinds a person can answer, on the
-/// two different TMDB endpoints they belong to (T-0369).** An anime film is a
-/// film and an anime series is television, so [WorkKind.animationFilm] goes
-/// to `TmdbResolverWorker.movies` beside [WorkKind.movie], and
-/// [WorkKind.animationSeries] goes to `TmdbResolverWorker.series`. No second
-/// credential and no second client -- T-0162 measured that Tonkatsu files
-/// anime under a TMDB id, and this is the client that holds one.
+/// **The same token registers the two animation kinds a person can answer, on
+/// the two different TMDB endpoints they belong to (T-0369).** An animated
+/// film is a film and an animated series is television, so
+/// [WorkKind.animationFilm] goes to `TmdbResolverWorker.movies` beside
+/// [WorkKind.movie], and [WorkKind.animationSeries] goes to
+/// `TmdbResolverWorker.series`. No second credential and no second client --
+/// T-0162 measured that Tonkatsu files `animation` under a TMDB id, and this
+/// is the client that holds one.
 ///
-/// [WorkKind.animation] -- an anime row whose film-or-series question nobody
-/// has answered -- is registered nowhere, and that is an answer rather than an
-/// omission. There is no endpoint for *one of the two*: a search would have to
-/// pick, and would answer half of those rows with an id for the other sort of
-/// thing. `TonkatsuExporter` refuses that row today for a reason that stays
-/// true whichever way it is matched.
+/// [WorkKind.animation] -- an animation row whose film-or-series question
+/// nobody has answered -- is registered nowhere, and that is an answer rather
+/// than an omission. There is no endpoint for *one of the two*: a search would
+/// have to pick, and would answer half of those rows with an id for the other
+/// sort of thing. `TonkatsuExporter` refuses that row today for a reason that
+/// stays true whichever way it is matched.
+///
+/// **[WorkKind.anime] is registered nowhere either, and for a different
+/// reason (T-0456).** Upstream's `anime` is not upstream's `animation`: it is
+/// a separate type keyed by AniList or Kitsu (`media_type.dart` and
+/// `docs/RCOLL_FORMAT.md`, `release/0.44`), and this project wires neither
+/// service. TMDB is not a near-enough answer -- a TMDB id under that
+/// `media_type` names a different work -- so such a row stays keyless however
+/// many credentials the run holds, and `TonkatsuExporter` declines it.
 ///
 /// **Which kind goes to which endpoint is not written at this site.** The
 /// shell names catalogues and `registrationsOf` reads the kinds off them, so a
@@ -1898,8 +1908,8 @@ ResolverWorker _makeResolver(List<String> args, {bool required = false}) {
     }
     // Two sentences rather than one, because the stage is skipped in only
     // one of these runs: with a TMDB token set, `resolverFor` still registers
-    // the film and anime catalogues and those rows are looked up while games
-    // are not (T-0387).
+    // the film and animation catalogues and those rows are looked up while
+    // games are not (T-0387).
     //
     // The keyless wording is byte-for-byte what shipped, and has to stay so:
     // three guides and three READMEs quote it, and
@@ -1909,8 +1919,8 @@ ResolverWorker _makeResolver(List<String> args, {bool required = false}) {
     stdout.writeln(tmdbTokenFrom(env) == null
         ? 'IGDB credentials not set -- resolve stage will be skipped, games '
             'stay unresolved (fine for vision validation).'
-        : 'IGDB credentials not set -- games stay unresolved; film and anime '
-            'rows are still looked up on TMDB.');
+        : 'IGDB credentials not set -- games stay unresolved; film and '
+            'animation rows are still looked up on TMDB.');
     _sayTmdbAttribution(env);
     return resolverFor(env);
   }
@@ -1919,12 +1929,17 @@ ResolverWorker _makeResolver(List<String> args, {bool required = false}) {
   // repeating it per catalogue would be noise; with them, games are looked up
   // and films are not, which is the difference a person has to be told about.
   //
-  // Anime joined the sentence with T-0369 rather than getting one of its own:
-  // the same token registers the same catalogue for those rows, so a person
-  // without it loses the same thing on both, and a second line would say the
-  // same thing twice.
+  // Animation joined the sentence with T-0369 rather than getting one of its
+  // own: the same token registers the same catalogue for those rows, so a
+  // person without it loses the same thing on both, and a second line would
+  // say the same thing twice.
+  //
+  // It says `animation` and not `anime` since T-0456, and the difference is
+  // not cosmetic: an anime row is keyless in EVERY run, token or not, so
+  // naming it here would promise a lookup this token does not buy.
   if (tmdbTokenFrom(env) == null) {
-    stdout.writeln('No $tmdbTokenVariable -- film and anime rows are keyless: '
+    stdout.writeln(
+        'No $tmdbTokenVariable -- film and animation rows are keyless: '
         'the title read off the filename, CSV yes, .xcoll no. Games are '
         'unaffected.');
   }

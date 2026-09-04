@@ -728,15 +728,22 @@ class ProviderPolicy {
   /// sorting only films, without games* -- and is what the CLI has always
   /// done.
   ///
-  /// **The token registers the two anime kinds a person can answer as well,
-  /// each on the TMDB endpoint it belongs to (T-0369), and the CLI's
-  /// `resolverFor` registers exactly the same four.** An anime film is a film
-  /// and an anime series is television, which TMDB separates by endpoint --
-  /// so [WorkKind.animationFilm] joins [WorkKind.movie] on the film search and
-  /// [WorkKind.animationSeries] goes to the series one. [WorkKind.animation],
-  /// whose film-or-series question nobody has answered, is registered nowhere:
-  /// there is no endpoint for *one of the two*, and a search that picked would
-  /// answer half of those rows with an id for the other sort of thing.
+  /// **The token registers the two animation kinds a person can answer as
+  /// well, each on the TMDB endpoint it belongs to (T-0369), and the CLI's
+  /// `resolverFor` registers exactly the same four.** An animated film is a
+  /// film and an animated series is television, which TMDB separates by
+  /// endpoint -- so [WorkKind.animationFilm] joins [WorkKind.movie] on the
+  /// film search and [WorkKind.animationSeries] goes to the series one.
+  /// [WorkKind.animation], whose film-or-series question nobody has answered,
+  /// is registered nowhere: there is no endpoint for *one of the two*, and a
+  /// search that picked would answer half of those rows with an id for the
+  /// other sort of thing.
+  ///
+  /// **[WorkKind.anime] is registered nowhere in any configuration, and no
+  /// credential this screen collects would change that (T-0456).** Upstream
+  /// files anime on AniList or Kitsu and `animation` on TMDB -- two types, not
+  /// two words -- so the TMDB token buys that kind nothing, and a row of it
+  /// stays keyless: the title as read, CSV yes, `.xcoll` no.
   ///
   /// No kind is named at this site. `registrationsOf` reads the kinds off the
   /// catalogue, so which endpoint answers which kind is stated once, on
