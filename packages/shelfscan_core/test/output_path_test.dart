@@ -109,7 +109,10 @@ const _reviewFixture = {
 class _StubVision {
   _StubVision(this._server) {
     _server.listen((request) async {
-      calls += 1;
+      // The vision route alone. Since T-0464 a scan also reads the model's
+      // manifest from /api/show before stage 1, and what this counter is about
+      // is what the provider spent -- not how many sockets were opened.
+      if (request.uri.path == '/api/chat') calls += 1;
       await request.drain<void>();
       request.response
         ..headers.contentType = ContentType.json

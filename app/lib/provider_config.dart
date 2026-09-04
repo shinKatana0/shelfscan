@@ -72,8 +72,11 @@ import 'package:shelfscan_core/shelfscan_core.dart';
 /// agree with them (T-0087). Re-exported so the settings screen's `hintText` --
 /// which since T-0082 is what a cleared field resolves to -- reaches them
 /// through this file like every other piece of provider policy.
+/// `ollamaModelAdvice` travels the same road for the same reason (T-0464): the
+/// model field's helper text and the CLI banner say one sentence about what
+/// makes a local model work here, and two copies of it would drift.
 export 'package:shelfscan_core/shelfscan_core.dart'
-    show defaultOllamaModel, defaultOllamaUrl;
+    show defaultOllamaModel, defaultOllamaUrl, ollamaModelAdvice;
 
 /// Declaration order is the order the user meets them in: local, then the
 /// endpoint they name, then Anthropic. The owner's call about who uses this,

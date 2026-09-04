@@ -79,6 +79,44 @@ const _numPredict = 8192;
 /// model.
 const _chatPath = '/api/chat';
 
+/// The manifest route, which reads a model's metadata and runs nothing.
+///
+/// It answers about a model already on the server: a name that is not pulled
+/// comes back 404 rather than being fetched, so nothing on this path
+/// downloads, loads or unloads anything (Ollama 0.33.3, measured on both).
+const _showPath = '/api/show';
+
+/// What the capability probe is given (T-0464).
+///
+/// The same argument as [igdbCallTimeout] and not the same number by accident:
+/// [_showPath] reads a manifest and runs no inference, so nothing legitimate
+/// here takes seconds. The direction a bound fails in is safe -- a probe that
+/// times out reports that the server said nothing and the run proceeds
+/// unwarned -- so the value only decides how long a wedged server delays a
+/// scan, and it delays it once per run rather than once per photograph.
+const _showTimeout = Duration(seconds: 20);
+
+/// What makes a local model a good fit for this scan, said once (T-0464).
+///
+/// One constant because two surfaces say it -- the app's model field and the
+/// CLI's banner -- and a user choosing a model reads whichever one is in front
+/// of them. It states no default: which id ships as [defaultOllamaModel] is a
+/// separate question from what makes a model work here, and a sentence that
+/// tied the two would have to be rewritten every time either moved.
+///
+/// What the claim about [testedOllamaInstructModel] rests on is one machine,
+/// one run, three photographs, one comparison -- so it says "tested here" and
+/// not "better", and it says other models work rather than that this one is
+/// required.
+const ollamaModelAdvice =
+    'ShelfScan needs an image-capable (vision) model, and asks the server '
+    'whether the one you name is before it scans. Being multimodal is not '
+    'by itself a good fit: this route wants one concise structured answer '
+    'per photograph, and a model that reasons before it answers can spend '
+    'its whole output budget doing so and write no answer at all. '
+    '"$testedOllamaInstructModel" is one that has been tested here. Other '
+    'image-capable models work and are simply not validated here.';
+
 class OllamaVisionProvider implements VisionProvider {
   /// Sampling is stated rather than inherited (T-0053). Ollama's documented
   /// default is temperature 0.8, but qwen2.5vl:7b's own Modelfile sets
@@ -259,6 +297,155 @@ class OllamaVisionProvider implements VisionProvider {
         service: 'Ollama at $baseUrl', model: model, hasKey: false);
   }
 }
+
+// --------------------------------------------------------------------- //
+
+/// Whether the server said a model has a capability (T-0464).
+///
+/// Three answers rather than two, and [unknown] is the one that has to stay
+/// its own: an Ollama too old to publish `capabilities`, a 404 on the route, a
+/// server nothing answered at and a body that did not decode all arrive as the
+/// same silence, and folding that silence into either neighbour would have
+/// this build judge a model nobody asked it about.
+enum OllamaCapability { present, absent, unknown }
+
+/// What an Ollama server says a model can do, read from [_showPath] (T-0464).
+///
+/// Read off a running server rather than inferred: on Ollama 0.33.3 the answer
+/// carries a top-level `capabilities` array of strings, an image-capable model
+/// carries `vision` in it, and a model that reasons before it answers
+/// additionally carries `thinking`.
+///
+/// **`thinking` is the discriminator and the model name is not.** The two
+/// models this was measured on are both multimodal, so `vision` does not
+/// separate the one that answers this route from the one that spent the whole
+/// output budget reasoning and wrote nothing -- which is exactly the trap the
+/// defect was reported against. That is also why neither an allowlist nor a
+/// blocklist of ids is needed here, and why none is written.
+class OllamaModelReport {
+  const OllamaModelReport({required this.vision, required this.thinking});
+
+  /// The server said nothing this can use, whatever the reason.
+  const OllamaModelReport.unanswered()
+      : vision = OllamaCapability.unknown,
+        thinking = OllamaCapability.unknown;
+
+  /// What a decoded `/api/show` body says, or silence for anything this cannot
+  /// read as an answer.
+  ///
+  /// An EMPTY `capabilities` array is silence rather than a model that can do
+  /// nothing: every model this server describes carries at least `completion`,
+  /// so an empty list is a shape nothing here has seen, and the policy's own
+  /// rule is never to judge a question that was not answered.
+  factory OllamaModelReport.fromShowBody(Object? decoded) {
+    if (decoded is! Map) return const OllamaModelReport.unanswered();
+    final said = decoded['capabilities'];
+    if (said is! List || said.isEmpty) {
+      return const OllamaModelReport.unanswered();
+    }
+    final named = {for (final capability in said) '$capability'};
+    OllamaCapability stated(String capability) => named.contains(capability)
+        ? OllamaCapability.present
+        : OllamaCapability.absent;
+    return OllamaModelReport(
+        vision: stated('vision'), thinking: stated('thinking'));
+  }
+
+  /// Whether an image may be sent to this model at all.
+  final OllamaCapability vision;
+
+  /// Whether it reasons before it answers.
+  final OllamaCapability thinking;
+}
+
+/// What the server says about [model], or silence (T-0464).
+///
+/// **It never throws, and that is the contract rather than a convenience.** A
+/// pre-flight that can fail a run is a second way for a scan to die, and the
+/// scan's own errors beat a pre-flight's guesses -- a server answering
+/// [_chatPath] while refusing [_showPath] must still scan. So a route that is
+/// not there, a server that is not, a body that does not decode and a bound
+/// that trips all arrive as [OllamaModelReport.unanswered] and the run goes
+/// ahead.
+///
+/// One request, and it reads a manifest: [_showPath] pulls, loads and unloads
+/// nothing, so this costs a run one round trip and no model time. It is the
+/// caller's job to ask once per run rather than once per photograph.
+Future<OllamaModelReport> readOllamaModelReport({
+  String baseUrl = defaultOllamaUrl,
+  String model = defaultOllamaModel,
+  http.Client? client,
+  Duration timeout = _showTimeout,
+}) async {
+  try {
+    final response = await boundedPost(
+      (client) => client.post(
+        Uri.parse('$baseUrl$_showPath'),
+        headers: {'content-type': 'application/json'},
+        body: jsonEncode({'model': model}),
+      ),
+      reusing: client,
+      within: timeout,
+      onTimeout: (waited) =>
+          OllamaUnreachableException.timedOut(baseUrl, waited),
+    );
+    if (response.statusCode != 200) {
+      return const OllamaModelReport.unanswered();
+    }
+    return OllamaModelReport.fromShowBody(jsonDecode(response.body));
+  } on Exception {
+    return const OllamaModelReport.unanswered();
+  }
+}
+
+/// Why a run must not start, or null (T-0464).
+///
+/// The one thing that stops a run is the server stating that the model has no
+/// `vision`. That is an answer about the model rather than a guess from its
+/// name, and a model that cannot be sent an image cannot read a photograph of
+/// a shelf. Every other answer -- including everything the server did not say
+/// -- is null, so an unknown image-capable model stays usable.
+///
+/// It names what ShelfScan needs and what this model cannot do, and stops
+/// there: the model id is not changed for the user, on either surface. They
+/// picked it; this tells them about it.
+String? ollamaModelRefusal({
+  required String baseUrl,
+  required String model,
+  required OllamaModelReport report,
+}) =>
+    report.vision != OllamaCapability.absent
+        ? null
+        : 'Ollama at $baseUrl says model "$model" has no vision capability, so '
+            'it cannot be sent an image at all -- that is the server\'s own '
+            'answer about the model, not a guess from its name. ShelfScan '
+            'reads photographs and needs an image-capable model. The model id '
+            'is yours to type, in the app\'s settings and in the CLI\'s '
+            'environment; "$testedOllamaInstructModel" is one that has been '
+            'tested here.';
+
+/// What a run should be told without being stopped, or null (T-0464).
+///
+/// Stated `thinking` beside stated `vision` is the only case that warns.
+/// `vision` without it runs silently whatever the id -- including the id this
+/// project recommends, because a warning nobody can act on is noise -- and so
+/// does every answer the server did not give.
+String? ollamaModelWarning({
+  required String baseUrl,
+  required String model,
+  required OllamaModelReport report,
+}) =>
+    report.vision == OllamaCapability.present &&
+            report.thinking == OllamaCapability.present
+        ? 'Ollama at $baseUrl says model "$model" reasons before it answers '
+            '("thinking"), and this scan asks for one concise structured '
+            'answer per photograph. A model that thinks first can spend its '
+            'whole output budget doing so and write no answer at all. The '
+            'scan is going ahead anyway; if the photographs come back with no '
+            'answer, "$testedOllamaInstructModel" read all three photographs '
+            'of the run this was reported on, where a thinking model read '
+            'none of them.'
+        : null;
 
 // --------------------------------------------------------------------- //
 
