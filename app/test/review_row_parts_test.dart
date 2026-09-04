@@ -386,7 +386,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Film'), findsOneWidget);
-      expect(find.textContaining('not in .xcoll -- csv carries it'),
+      expect(find.textContaining('not in .xcoll -- cards/csv carry it'),
           findsOneWidget);
       // In the negative, because the defect was the invitation itself: the
       // row still holds the candidate it would have offered.
