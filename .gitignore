@@ -19,8 +19,8 @@ collection.review.json
 *.xcoll
 photos*/
 *.db
-*.sqlite
-*.sqlite3
+*.sqlite*
+*.db-*
 *.log
 *.har
 *.pcap

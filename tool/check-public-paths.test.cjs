@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { forbidden, check } = require('./check-public-paths.cjs');
+const { forbidden, check, failureSummary } = require('./check-public-paths.cjs');
 
 test('rejects private workspace paths with case variants', () => {
   for (const path of [
@@ -21,4 +21,11 @@ test('allows public assets, examples, and product agent code', () => {
     'app/android/key.properties.example',
   ]) assert.equal(forbidden(path), false, path);
   assert.deepEqual(check(['README.md', '.env.production']), ['.env.production']);
+});
+
+test('failure output never repeats private filenames', () => {
+  const paths = ['doc/reports/private-title.md', '.env.private-key'];
+  const summary = failureSummary(paths);
+  assert.equal(summary, 'Forbidden tracked paths: 2 (credential file, private project record)\n');
+  for (const path of paths) assert.equal(summary.includes(path), false);
 });
