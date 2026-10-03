@@ -459,9 +459,8 @@ final _outwardCheck = checkOutsideThisApp(
 /// refuses the connection and is the message above. This is a server that IS
 /// running and is not answering, and the two remedies are not the same one.
 ///
-/// It ends on the diagnosis and never on a control: "legitimately takes
-/// minutes" is the case a longer budget serves, but only a shell knows whether
-/// its user can set one (T-0152), so the next clause is [stallRemedy]'s.
+/// It ends on the diagnosis and never on a timeout control. Only a shell
+/// knows whether its user can set one, so the next clause is [stallRemedy]'s.
 const _stalledOllama =
     'A model runner that has wedged stalls exactly like this. Check that the '
     'server is alive (ollama ps) before assuming the model is merely slow -- '

@@ -252,12 +252,12 @@ void main() {
       }));
 
       expect(message, startsWith('Timed out after 1 s'));
-      expect(message, contains('legitimately takes minutes'));
+      expect(message, contains('may also take longer than the bound'));
       expect(message, contains('$visionTimeoutVar=<seconds>'));
       // The order is the whole change: T-0104 said what happened and why, and
       // stopped one clause short of what to do about it.
       expect(message.indexOf(visionTimeoutVar),
-          greaterThan(message.indexOf('legitimately takes minutes')));
+          greaterThan(message.indexOf('may also take longer than the bound')));
     });
 
     test('a stalled cloud read gets the same two halves', () async {
@@ -285,8 +285,8 @@ void main() {
         timeout: const Duration(seconds: 1),
       ));
 
-      expect(message, contains('legitimately takes minutes'));
-      expect(message, endsWith('legitimately takes minutes.'));
+      expect(message, contains('may also take longer than the bound'));
+      expect(message, endsWith('may also take longer than the bound.'));
       expect(message, isNot(contains(visionTimeoutVar)));
       expect(message, isNot(contains('SHELFSCAN')));
       expect(message, isNot(contains('raise')));
