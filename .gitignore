@@ -6,6 +6,9 @@ pubspec.lock
 app/.metadata
 app/android/.kotlin/
 
+# Local build artifacts
+/dist/
+
 # Local release packaging
 ShelfScan-win-x64.zip
 release-notes.md
