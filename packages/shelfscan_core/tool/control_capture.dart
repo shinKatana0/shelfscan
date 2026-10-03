@@ -1,49 +1,15 @@
-/// Capture the control sets' detections once, reuse them until the key moves
-/// (T-0131).
+/// Captures local control detections for repeatable offline checks.
 ///
-/// The defect: T-0055, T-0062, T-0085 and T-0100 each needed the same
-/// detections off the same photographs to replay through [dedupeDetections],
-/// and each produced them itself -- 35-80 s of scan every time and, far more
-/// expensively, the whole detection JSON read into a transcript. Every
-/// piece needed to stop that already existed: T-0053 pinned the sampling,
-/// T-0081 wrote the manifest and the prompt fingerprint, T-0106 established
-/// that a regeneration must follow an `ollama stop`.
-///
-/// **Nothing here ever prints a raw title, and that is the point.** The
-/// photographs are a private home (decision 0004) and the detections are that
-/// home as a list of possessions, so the capture lives outside the repository
-/// and this tool answers in counts. Reading the capture file into a transcript
-/// pays the cost this tool exists to remove and puts an inventory of a private
-/// house where it does not belong.
-///
-/// **The manifest is in a clone; the prose around it is not (T-0231).** The
-/// figures this tool parses are [manifestPath], which is tracked. The document
-/// that identifies the photographs -- content hashes, regeneration commands,
-/// the staleness ladder below -- is `doc/control-set.md`, which belongs to the
-/// working record this repository keeps and does not publish, for the reason in
-/// decision 0004: the control is named sets of the control photographs. Any
-/// mention of *that* path below is a real read on the one machine holding it,
-/// not a citation. This tool needs the photographs in any case, which is why
-/// `status` answers `unverifiable` rather than failing anywhere else.
+/// Control photographs and their detections are private. Captures stay outside
+/// the repository; this tool reports status and counts without printing titles.
+/// A checkout without the local control definition reports UNVERIFIABLE.
 ///
 /// Usage, from `packages/shelfscan_core`:
 ///
 ///     dart run tool/control_capture.dart where
 ///     dart run tool/control_capture.dart status [CONTROL-HIRES|CONTROL-LOWRES|all]
 ///     dart run tool/control_capture.dart capture CONTROL-HIRES|CONTROL-LOWRES|all
-///     dart run tool/control_capture.dart replay  CONTROL-HIRES|CONTROL-LOWRES|five
-///
-/// `status` exits 0 only on `fresh`. `absent`, `stale` and `unverifiable` all
-/// exit 3 and all mean the same thing: regenerate. A capture whose key cannot
-/// be checked is treated as absent rather than as good -- the one case that
-/// bites, since it is indistinguishable from a good one by looking.
-///
-/// A checkout that does not hold the working record cannot reach any of those
-/// four, and until T-0261 it did not try: every command died in
-/// [manifestPhotos] with a stack trace and exit 255, which is what the first
-/// command a contributor is told to run answered everywhere but here. It now
-/// answers [Verdict.unverifiable] and [notHereExit]; [figuresNotHere] is the
-/// condition and [notHereReport] is the wording.
+///     dart run tool/control_capture.dart replay CONTROL-HIRES|CONTROL-LOWRES|all
 library;
 
 import 'dart:convert';
@@ -60,38 +26,12 @@ const captureFormat = 1;
 const hiRes = 'CONTROL-HIRES';
 const lowRes = 'CONTROL-LOWRES';
 
-/// The model the control sets are DEFINED on, stated rather than inherited
-/// (T-0466).
-///
-/// Every figure in `doc/control-set.md` and [manifestPath] was measured on
-/// this model, so it is part of what the control is -- a capture taken under
-/// another one is a different control that happens to share a file name, which
-/// is why [CaptureKey.fileName] carries the model tag.
-///
-/// It was `defaultOllamaModel` until the default moved, and that inheritance
-/// was a trap rather than a shortcut: the day the shipped default changed,
-/// [wantedKey] began asking for a file name nothing had ever written, `status`
-/// answered [Verdict.absent] for a capture sitting on disk, and the next
-/// person was sent to buy the vision pass this whole tool exists to stop them
-/// buying.
-///
-/// `SHELFSCAN_OLLAMA_MODEL` still wins: capturing under another model
-/// deliberately is something to be able to do, and the file name is what keeps
-/// the two apart.
+/// The model fixed for local control captures. A different model gets a
+/// different capture identity even if the app default changes.
 const controlSetModel = 'qwen2.5vl:7b';
 
-/// FNV-1a over the UTF-8 bytes, as eight hex digits.
-///
-/// Not sha256: that would mean a `crypto` dependency for a check whose entire
-/// question is "is this the same text", and `shelfscan_core` stays at http only
-/// (ARCHITECTURE.md). Collisions are not a threat model here -- nobody is
-/// choosing
-/// prompt wording to hit a hash.
-///
-/// Lives here rather than in `test/control_set_test.dart`, which is where
-/// T-0081 wrote it and which now imports it: the capture's key and the test's
-/// pin are the same number, and a second copy of it is exactly the drift this
-/// repository keeps paying for (T-0056, T-0077).
+/// FNV-1a over the UTF-8 prompt bytes, as eight hex digits. This check
+/// needs a stable fingerprint, without another package dependency.
 String promptFingerprint(String text) {
   var hash = 0x811c9dc5;
   for (final byte in utf8.encode(text)) {
@@ -130,12 +70,7 @@ Map<String, Map<String, String>> parseManifest(String markdown) {
   return sections;
 }
 
-/// The tracked half of the control definition, relative to the repository root.
-///
-/// Keyed on this rather than on `doc/control-set.md`, which is not in a clone:
-/// every reader below wants the figures, and pinning the walk to the
-/// unpublished document is what made three tests and one whole test file fail
-/// to load anywhere but here (T-0231).
+/// The public set labels and prompt fingerprint, relative to the repo root.
 const manifestPath = 'doc/control-set-manifest.md';
 
 /// Repository root, found by walking up from [from].
@@ -150,12 +85,7 @@ Directory? findRepoRoot(Directory from) {
 Map<String, Map<String, String>> readManifest(Directory root) =>
     parseManifest(File('${root.path}/$manifestPath').readAsStringSync());
 
-/// The private half of the control definition, relative to the repository root.
-///
-/// A byte size identifies one exact photograph (T-0234) and a detection count
-/// with its platform split reconstructs one household's collection (T-0246),
-/// so neither is published with the labels. Both live here, beside the
-/// photographs, and everything that wants them needs those too.
+/// The untracked control definition beside the private photographs.
 const controlSetPath = 'doc/control-set.md';
 
 /// The `control-set` blocks of [controlSetPath], or null where that document is
@@ -165,13 +95,8 @@ Map<String, Map<String, String>>? readPrivateControlSet(Directory root) {
   return file.existsSync() ? parseManifest(file.readAsStringSync()) : null;
 }
 
-/// The manifest with the private half folded into each section: `sizes` since
-/// T-0234, and every count since T-0246.
-///
-/// Everything that reads a figure -- the capture key, the pre-scan file check,
-/// [manifestMismatch] -- needs the photographs too, so it runs only where this
-/// document is. A clone gets the published labels and the prompt fingerprint,
-/// and every reader that needs only those keeps using [readManifest].
+/// Merge local photograph names, sizes and outcomes with the public prompt pin.
+/// A clone without the local definition retains only the public set labels.
 Map<String, Map<String, String>> readManifestWithSizes(Directory root) {
   final private = readPrivateControlSet(root);
   if (private == null) return readManifest(root);
@@ -184,11 +109,15 @@ Map<String, Map<String, String>> readManifestWithSizes(Directory root) {
 List<String> manifestList(String value) =>
     value.split(',').map((part) => part.trim()).toList();
 
-/// The photo names of [section] against their stated byte sizes, in the order
-/// `photos` states them -- which is the order a scan reads them in, since
-/// stage 1 orders by photo name (`_orderedAnalyses`, T-0085).
+/// The local photograph names and byte sizes, in scan order.
 Map<String, int> manifestPhotos(Map<String, String> section) {
-  final names = manifestList(section['photos']!);
+  final listed = section['photos'];
+  if (listed == null || listed.trim().isEmpty) {
+    throw StateError('this control-set section states no photographs: they '
+        'are in $controlSetPath beside the photographs, not in $manifestPath, '
+        'so read the manifest with readManifestWithSizes');
+  }
+  final names = manifestList(listed);
   final stated = section['sizes'];
   if (stated == null) {
     throw StateError('this control-set section states no byte sizes: they are '
@@ -196,13 +125,14 @@ Map<String, int> manifestPhotos(Map<String, String> section) {
         'read the manifest with readManifestWithSizes');
   }
   final sizes = manifestList(stated).map(int.parse).toList();
+  if (sizes.length != names.length) {
+    throw StateError('$controlSetPath names a different number of photographs '
+        'and sizes for this control set');
+  }
   return {for (var i = 0; i < names.length; i++) names[i]: sizes[i]};
 }
 
-/// The hint counts of [section], which are private and arrive by the same fold
-/// as `sizes`. Since T-0260 the keys are also the only record of *which*
-/// platforms a set answered: an exhaustive published list of them was the same
-/// disclosure one step further on.
+/// The local platform-hint counts for a control set.
 Map<String, int> manifestHints(Map<String, String> section) => {
       for (final entry in section.entries)
         if (entry.key.startsWith('hint_'))
@@ -212,38 +142,36 @@ Map<String, int> manifestHints(Map<String, String> section) => {
 // --------------------------------------------------------------------- //
 // What cannot be checked here, and how that is said
 
-/// `status` on a checkout that does not hold the working record.
+/// `status` on a checkout that does not hold the local control definition.
 ///
 /// Not 3, which means regenerate: without the control photographs there is
 /// nothing to regenerate from, and a caller reading 3 here would be sent to
 /// buy a vision pass it cannot buy. Not 0 either -- nothing was checked.
 const notHereExit = 4;
 
-/// Why [name] cannot be looked up in [manifest], or null when it can.
-///
-/// Every reader here took `manifest[name]!` until T-0232, so a manifest whose
-/// block had been hand-edited out died at the null check naming neither the
-/// block nor the file. [manifestPath] is published and a contributor can edit
-/// it, so that arrives from any machine.
+/// A named failure when a public set identifier is absent.
 String? blockMissing(Map<String, Map<String, String>> manifest, String name) =>
     manifest.containsKey(name)
         ? null
         : '$manifestPath holds no [$name] block. A control set is a '
-            'control-set fenced block naming its photographs; the two this '
+            'control-set fenced block naming a set; the two this '
             'tool knows are [$hiRes] and [$lowRes].';
 
-/// Why the recorded figures cannot be read at [root], or null when they can.
-///
-/// They are in [controlSetPath], the working record kept beside the control
-/// photographs, which is not published -- so this answers on every checkout
-/// but the one holding them. Nothing here can be checked without it: the
-/// capture key carries the photographs' byte sizes and the body is compared
-/// against recorded counts, and both moved to that document (T-0234, T-0246).
-String? figuresNotHere(Directory root) => readPrivateControlSet(root) != null
-    ? null
-    : 'the figures this check needs are in $controlSetPath, the working '
-        'record kept beside the control photographs, and it is not on this '
-        'machine';
+/// Why local control data cannot be checked here, or null when it can.
+String? figuresNotHere(Directory root) {
+  final local = readPrivateControlSet(root);
+  if (local == null) {
+    return 'the control definition this check needs is in $controlSetPath '
+        'beside the photographs, and it is not on this machine';
+  }
+  for (final name in [hiRes, lowRes]) {
+    if (local[name]?['photos']?.trim().isNotEmpty != true) {
+      return '$controlSetPath needs a photos entry for [$name] beside the '
+          'other local control data';
+    }
+  }
+  return null;
+}
 
 /// What `status` answers where [figuresNotHere] does.
 ///
@@ -263,15 +191,7 @@ List<String> notHereReport(List<String> sets, String reason) => [
 // --------------------------------------------------------------------- //
 // Where a capture lives
 
-/// The capture directory: outside the repository, stable across runs, one
-/// per user account.
-///
-/// Not a per-session scratchpad, which is where two runs overwrote each other's
-/// files on 2026-08-15: a scratchpad is per-session by design, so it is either
-/// shared and racy or private and useless for the one thing wanted here.
-/// `%LOCALAPPDATA%` is per-user, survives a reboot, is on the same volume as
-/// the temp dir the atomic rename below needs, and is not backed up or synced,
-/// which matters for a file that is an inventory of a private house.
+/// Store private captures outside the repository in a stable user cache.
 String captureDir(Map<String, String> env) {
   final explicit = env['SHELFSCAN_CAPTURE_DIR']?.trim();
   if (explicit != null && explicit.isNotEmpty) return _slashes(explicit);
@@ -292,14 +212,8 @@ String captureDir(Map<String, String> env) {
 /// the same string. Windows accepts either.
 String _slashes(String path) => path.replaceAll(r'\', '/');
 
-/// Everything that decides the answer, in the file name.
-///
-/// Two runs with the same key write the same bytes, so the collision that
-/// destroyed work in the scratchpad cannot destroy anything here; two runs
-/// with different keys cannot reach each other's file at all. Model and server
-/// are in the name because both have been measured to move a counted figure --
-/// the model tag obviously, and the server through `OLLAMA_NUM_PARALLEL`, which
-/// moved 3 rows and lost half of a bilingual title under T-0086.
+/// The key includes every input that can change a control result. A new
+/// model or server setting gets a separate capture file.
 class CaptureKey {
   const CaptureKey({
     required this.controlSet,
@@ -508,11 +422,7 @@ List<Detection> readDetections(Map<String, dynamic> capture) => [
         Detection.fromJson(row as Map<String, dynamic>),
     ];
 
-/// The first recorded figure [detections] fails to reproduce, or null.
-///
-/// The figures are the private half ([controlSetPath]) since T-0246, so
-/// [section] must have come from [readManifestWithSizes]; every caller needs
-/// the photographs anyway.
+/// Compare a capture with the local control definition.
 String? manifestMismatch(
     List<Detection> detections, int unreadable, Map<String, String> section) {
   final photos = manifestPhotos(section);
@@ -544,13 +454,12 @@ String? manifestMismatch(
       detections.where((d) => d.rawTitle.trim().isEmpty).length;
   if (empty != int.parse(section['empty_titles']!)) {
     return 'holds $empty empty titles, $controlSetPath states '
-        '${section['empty_titles']} (T-0035)';
+        '${section['empty_titles']}';
   }
   if (unreadable != int.parse(section['unreadable']!)) {
     return 'holds $unreadable unreadable entries, $controlSetPath states '
-        '${section['unreadable']} -- the third cache state answers 3 phantoms '
-        'where the truth is 0 (T-0106), so this capture was taken without the '
-        '"ollama stop"';
+        '${section['unreadable']} -- a stale prompt cache can produce phantom '
+        'entries; restart the model before capture';
   }
   return null;
 }
@@ -618,19 +527,14 @@ List<PhotoInput> readControlPhotos(String controlSet, String photoRoot,
   return photos;
 }
 
-/// T-0106's one line, run rather than remembered.
-///
-/// A server that has answered these photos under a different prompt text --
-/// which is every server a prompt task has been measured on -- answers 3
-/// phantom `unreadable` entries instead of 0. Costs one model load, ~5 s of
-/// the 55.
+/// Restart the model before capture so a prior prompt cache cannot affect
+/// the local control result.
 void stopModel(String model) {
   final result = Process.runSync('ollama', ['stop', model]);
   if (result.exitCode != 0) {
     throw StateError('"ollama stop $model" failed (${result.exitCode}): '
         '${result.stderr}. Without it the run can land in the third cache '
-        'state and fabricate rows (T-0106; doc/measurements.md, "A third '
-        'cache state"), so this is not skippable.');
+        'state and fabricate rows, so this is not skippable.');
   }
 }
 
@@ -672,18 +576,18 @@ Future<Map<String, dynamic>> captureSet(String controlSet, CaptureKey key,
 // --------------------------------------------------------------------- //
 
 const _usage = '''
-control_capture -- the control sets' detections, captured once (T-0131)
+control_capture -- the control sets' detections, captured once
 
   dart run tool/control_capture.dart where
   dart run tool/control_capture.dart status  [CONTROL-HIRES|CONTROL-LOWRES|all]
   dart run tool/control_capture.dart capture [CONTROL-HIRES|CONTROL-LOWRES|all]
-  dart run tool/control_capture.dart replay  [CONTROL-HIRES|CONTROL-LOWRES|five]
+  dart run tool/control_capture.dart replay [CONTROL-HIRES|CONTROL-LOWRES|all]
 
 `capture` needs SHELFSCAN_PHOTOS and a running Ollama; it runs `ollama stop`
-itself (T-0106). Everything else is offline and free.
+itself. Everything else is offline and free.
 
 Exit codes: 0 usable, 3 regenerate (absent, stale or unverifiable), 4 the
-working record this check reads is not on this machine, 2 misuse.
+local control definition this check reads is not on this machine, 2 misuse.
 ''';
 
 Future<int> run(List<String> args,
@@ -705,7 +609,7 @@ Future<int> run(List<String> args,
   final command = args.first;
   final target = args.length > 1 ? args[1] : 'all';
   final sets = switch (target) {
-    'all' || 'five' => [hiRes, lowRes],
+    'all' => [hiRes, lowRes],
     hiRes => [hiRes],
     lowRes => [lowRes],
     _ => <String>[],
@@ -717,7 +621,7 @@ Future<int> run(List<String> args,
   }
 
   // Before any command, because every one of them reads a figure and both
-  // conditions leave the same question unanswerable (T-0232, T-0261).
+  // conditions leave the same question unanswerable.
   for (final name in sets) {
     final missing = blockMissing(manifest, name);
     if (missing != null) {
@@ -765,7 +669,7 @@ Future<int> run(List<String> args,
       if (photoRoot == null || !Directory(photoRoot).existsSync()) {
         stderr.writeln('Set SHELFSCAN_PHOTOS to the control photo directory. '
             'The control set is the photographs; without them there is '
-            'nothing to capture and the labels in $manifestPath are all '
+            'nothing to capture and the local control definition is all '
             'there is.');
         return 2;
       }
@@ -814,12 +718,9 @@ Future<int> run(List<String> args,
         detections.addAll(rows);
       }
       if (sets.length > 1) {
-        // Stage 1 orders by photo name (`_orderedAnalyses`, T-0085) and the
-        // three hi-res names sort before the two low-res ones, so appending
-        // the sets in this order IS the five-photo scan's input order.
         detections.sort((a, b) => a.sourcePhoto.compareTo(b.sourcePhoto));
         final merged = dedupeDetections(detections);
-        stdout.writeln('five photos: ${detections.length} detections -> '
+        stdout.writeln('combined sets: ${detections.length} detections -> '
             '${merged.length} rows (${detections.length - merged.length} '
             'merges)');
       }

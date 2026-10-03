@@ -1,4 +1,4 @@
-/// The capture's key and its four verdicts (T-0131).
+/// The capture's key and its four verdicts.
 ///
 /// No photo, no Ollama, no network -- everything here is synthetic, because the
 /// question is not "are the detections right" (the manifest answers that) but
@@ -36,17 +36,14 @@ const _env = {
 
 CaptureKey _key() => wantedKey('CONTROL-TEST', _section, _env);
 
-/// The published manifest's shape: labels and photo lists, and none of the
-/// figures, which is what a clone holds.
+/// The published manifest's shape: set labels only, with no local image data.
 const _published = '''
 ```control-set
 [CONTROL-HIRES]
-photos = a.jpg, b.jpg
 ```
 
 ```control-set
 [CONTROL-LOWRES]
-photos = c.jpg
 ```
 ''';
 
@@ -58,11 +55,18 @@ fingerprint = 0000beef
 ```
 ''';
 
-/// The working record's half, invented: it only has to exist and parse.
+/// The local control definition's half, invented: it only has to exist and parse.
 const _workingRecord = '''
 ```control-set
 [CONTROL-HIRES]
+photos = a.jpg, b.jpg
 sizes = 10, 20
+```
+
+```control-set
+[CONTROL-LOWRES]
+photos = c.jpg
+sizes = 30
 ```
 ''';
 
@@ -112,7 +116,7 @@ void main() {
     // someone runs a scan: the model tag is in the file name, so a tool that
     // inherited the shipped default started looking for a name nothing had
     // ever written the day that default moved -- ABSENT for a capture sitting
-    // on disk, and the next person buys the vision pass again (T-0466).
+    // on disk, and the next person buys the vision pass again.
     //
     // The tag is spelled out rather than built from the constant on purpose.
     // What must not move is the identity already on disk and already written
@@ -127,7 +131,7 @@ void main() {
 
     test('the control set model is not read from the shipped default', () {
       // Discriminating only while the two ids differ, which they do since
-      // T-0466. If they are ever made equal again the test above stops
+      // its earlier value. If they are ever made equal again the test above stops
       // proving which of the two wantedKey read, and this says so instead of
       // passing quietly.
       expect(controlSetModel, isNot(defaultOllamaModel));
@@ -210,7 +214,8 @@ void main() {
             .toJson(),
       ];
       write(phantom);
-      expect(checkCapture(path, _key(), _section).reason, contains('T-0106'));
+      expect(checkCapture(path, _key(), _section).reason,
+          contains('stale prompt cache'));
     });
 
     test('is UNVERIFIABLE, never fresh, when it cannot be checked', () {
@@ -251,7 +256,7 @@ void main() {
     });
   });
 
-  group('a checkout without the working record', () {
+  group('a checkout without the local control definition', () {
     late Directory root;
 
     setUp(() {
@@ -266,7 +271,7 @@ void main() {
       expect(figuresNotHere(root), contains(controlSetPath));
     });
 
-    test('answers a named verdict, not a stack trace (T-0261)', () {
+    test('answers a named verdict, not a stack trace', () {
       final lines = notHereReport([hiRes, lowRes], figuresNotHere(root)!);
       expect(lines.first, startsWith('$hiRes: UNVERIFIABLE -- '));
       expect(lines[1], startsWith('$lowRes: UNVERIFIABLE -- '));
@@ -288,11 +293,25 @@ void main() {
     test('reads them again where the record is beside the photographs', () {
       File('${root.path}/$controlSetPath').writeAsStringSync(_workingRecord);
       expect(figuresNotHere(root), isNull);
+      final merged = readManifestWithSizes(root);
+      expect(manifestPhotos(merged[hiRes]!), {'a.jpg': 10, 'b.jpg': 20});
+    });
+
+    test('requires photograph names in the local definition', () {
+      File('${root.path}/$controlSetPath').writeAsStringSync('''
+```control-set
+[CONTROL-HIRES]
+sizes = 10, 20
+```
+''');
+      expect(figuresNotHere(root), contains('photos entry'));
+      expect(() => manifestPhotos(readManifestWithSizes(root)[hiRes]!),
+          throwsStateError);
     });
   });
 
   group('a manifest missing a block', () {
-    test('names the block and the file it is missing from (T-0232)', () {
+    test('names the block and the file it is missing from', () {
       expect(blockMissing(const {}, hiRes), contains('[$hiRes]'));
       expect(blockMissing(const {}, hiRes), contains(manifestPath));
       expect(
