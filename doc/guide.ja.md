@@ -2,31 +2,7 @@
 
 > `TRANSLATED-FROM: doc/guide.md blob 413e5689166191b09f4f360b648e028cfce10d8a STALE`
 >
-> **`doc/guide.md` の翻訳。STALE — 英語版は先へ
-> 進んでおり、最後に動かしたのは T-0386 です (2026-08-25)。**
-> この翻訳は
-> T-0278 が加えた内容――ローカルモデルの密度上限と、
-> 棚を分割して撮影する助言――と、T-0275 が加えた内容――`scan-library` の
-> 前提条件、すなわち Galaxy が導入され少なくとも一度サインインして
-> いることと、その二つの失敗状態――と、T-0286 が直した内容――
-> `measurements.md` がこのプロジェクトのあらゆる数値を持つと述べていた
-> 二箇所、すなわちステップ 1 と「次に読むもの」――と、T-0162 が加えた
-> 内容――`scan-installs` は映画も読むようになり、その契約が
-> 「ゲームのフォルダだけを指定する」から「メディアのフォルダを指定し、
-> すべての行を確認する」へ弱まったこと、および名前を取り違える経路が
-> 二つから三つに増えたこと――と、T-0334 が直した内容――二つのシェルは
-> どちらも行の種別で行き先を決めるので、映画の行は TMDB へ送られ、どの
-> 設定でもゲームのカタログには入らないこと、この照会には専用の資格情報
-> `SHELFSCAN_TMDB_TOKEN` が要り、それが無ければ映画の行は鍵なしのままで
-> あること、経路は公開作品のリリース名
-> 二つで実在のサービスに対して一度通してあり、それは「動く」と言うには
-> 足りても「どれだけうまく答えるか」を言うには足りないこと、および
-> `resolve` は直された行を、その現在の種別が含意するカタログで引き直す
-> こと――と、T-0370 が直した内容――TMDB の資格情報はアプリにも置ける
-> ようになり（設定画面の欄で、OS のキーチェーンに預けられます）、それだけで
-> 実行に鍵が入るので、映画の行は照会され、鍵なしになるのはゲームの行の
-> ほうであること、ただしアプリを通した実行が TMDB から答えを得たことは
-> 一度もないこと――を含んでいません。
+> **この翻訳は古くなっています。最新の説明は英語版を参照してください。**
 > 上の `TRANSLATED-FROM` 行が何を指すのか、そこから英語の原文が先に進んで
 > いないかをどう確かめるのか――規則の全文は一箇所にのみ置いてあります:
 > [`../CONTRIBUTING.md` の「Translations」](../CONTRIBUTING.md#translations)。
@@ -788,19 +764,17 @@ PC にインストールしてあるゲームと、GOG で所有しているが�
 
     Reading C:\GOG Games: file and folder NAMES, plus any goggame-*.info beside them. No photo is read and no vision model is called. Nothing here can tell an application from a game, or a game from a film, by its name -- point this at a media folder, and review every row before you export it.
 
-これは真に受けてください。実在の `Downloads` フォルダに向けたところ、**出てきた
-タイトルは全部がアプリケーションで、ゲームではありませんでした**。その
-フォルダは私的なものであり、一覧も、中身の件数も公開しません。計測とはそれらへの
-判定のことです。ファイル*名*の中に `NoteWellSetup.exe` と
-`setup_moor_1.9.exe` を分けるものはなく、名前だけを読む規則にそれができることは
-永遠にありません。
+これは真に受けてください。`Downloads` フォルダにはゲーム以外の
+アプリケーションもあります。ファイル*名*だけでは
+`ExampleNotesInstaller.exe` と `setup_fable_quay_1.9.exe` を
+確実に区別できません。
 
 そのため、よく知られた個人用・システム用ディレクトリの短い固定の一覧は、正面から
 拒否されます:
 
 <!-- transcript: scan-installs-refused -->
 
-    Not a games folder: C:\Users\me\Downloads. This reads NAMES, and no rule reading a name tells NoteWellSetup.exe from setup_moor_1.9.exe -- run over a Downloads folder it titles every installer it finds, and not one of them is a game (T-0158). Point it at the directory your games are installed in.
+    Not a games folder: C:\Users\Example\Downloads. This reads NAMES, and no rule reading a name tells ExampleNotesInstaller.exe from setup_fable_quay_1.9.exe. Point it at the directory your games are installed in.
 
 ドライブのルートは同じ理由と、さらに悪い理由で拒否されます。その下のディレクトリ
 が他のすべてになってしまう唯一のディレクトリだからです。

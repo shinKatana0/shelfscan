@@ -105,8 +105,8 @@ than as a report of a working app.
   no cover and no metadata for it.
 - **Only one path is verified end to end.** Photographs → `.xcoll` → an import
   into Tonkatsu Box: every approved item arrived, covers and metadata fetched
-  by the importer, every platform id correct, including Nintendo Switch 2
-  (T-0009). The disk
+  by the importer, every platform id correct, including Nintendo Switch 2.
+  The disk
   sources are newer and have had far less exercise. They have now been run
   against real folders: one installed GOG game resolved by its store id alone
   (`externalId`, no search string), and a folder of staged downloads gave three
@@ -126,11 +126,9 @@ than as a report of a working app.
   been run in the CLI, not surveyed
   ([how far that goes](#films-are-read-as-films-and-how-far-that-goes)).
 - **A folder of installers is not a games folder.** Names alone cannot tell
-  `NoteWellSetup.exe` from `setup_moor_1.9.exe` — measured on a real `Downloads`
-  folder, every title the name parser produced was an application rather than a
-  game — so the command refuses the well-known personal and system directories
-  outright. That folder was a private one and its contents are not published.
-  Reading names for three kinds of thing rather than one makes that weaker and
+  `ExampleNotesInstaller.exe` from `setup_fable_quay_1.9.exe`, so the command
+  refuses well-known personal and system directories outright. Reading names
+  for three kinds of thing rather than one makes that weaker and
   not stronger: a name can now also be read as the wrong *kind*, so the rule is
   point it at a media folder and review every row.
 - **"Local" does not mean "offline".** A local run POSTs every photo to your
@@ -804,12 +802,10 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
   release-shaped is read as a **film** rather than a game, decided per file
   ([Films](#films-are-read-as-films-and-how-far-that-goes)). Free, instant
   and byte-identical on repeats, because nothing is guessed by a model. Point
-  it at a games folder and not at `Downloads`: measured over one, every title
-  the name parser produced was an application rather than a game (T-0158), and
-  nothing in a filename can tell `NoteWellSetup.exe` from
-  `setup_moor_1.9.exe`. The folder measured was a private one: neither its
-  listing nor any count of it is published. The command refuses the well-known
-  personal and system directories outright and says so on every run.
+  it at a games folder and not at `Downloads`: nothing in a filename can tell
+  `ExampleNotesInstaller.exe` from `setup_fable_quay_1.9.exe`. The command
+  refuses well-known personal and system directories outright and says so on
+  every run.
 - **`scan-library`** — GOG Galaxy's own local database in, the same review
   file out, so a game you own but have **not** installed is in the list too.
   No photo, no vision call, no cost, and nothing from `gog.com`: it reads one
@@ -1117,11 +1113,11 @@ added rows was checked against the photographs, and **every one was wrong**:
 A wrong row can be rejected at review and a missing one cannot, so this
 is a trade rather than a disaster. But it is a **local** second reader
 that was measured. A cloud one has never been measured here — no cloud key
-was available (T-0057) — so nothing above is evidence about
+was available — so nothing above is evidence about
 what `--fallback openai` or `--fallback anthropic` would buy, and turning
 one on to find out uploads every photo.
 
-Since T-0061 this is a **CLI flag only**. The app has one reader per
+This is a **CLI flag only**. The app has one reader per
 photo and never asks for a second, so there is no switch for it in
 Settings and nothing to look for.
 

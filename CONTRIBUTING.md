@@ -266,9 +266,8 @@ edit invalidates them without failing anything you would notice:
   the above fails `dart test` everywhere — no photographs, no model, no
   network. That failure is the feature: **re-measure and move the figures,
   never move the hash.** The figures themselves are not in this repository —
-  a detection count and a platform split describe a private collection, so
-  they live in the working record beside the photographs, and the hash is the
-  half that can be published. Re-measuring means
+  a detection count and a platform split could describe a private collection.
+  Re-measuring means
   scanning both control resolutions, high and low; a prompt measured at the
   high one alone is half-measured, and that is how a regression at the low one
   once survived four prompt edits. The control photographs are of a private
@@ -286,24 +285,13 @@ only** — a number from a real run, or a choice a reader could not infer
 from the code. Never restate the code in prose. When you touch a file for
 any reason, trim the comments already in it.
 
-## What is published, and what is not
+## Project references
 
-The working record this project was built against — the notes, the arguments
-and the day-to-day decisions behind each change — stays on a private disk and
-is not published. It quotes conversations verbatim, it is development rather
-than product, and **nothing you need is in it.** What it produced is here:
-[`ARCHITECTURE.md`](ARCHITECTURE.md) for the shape,
-[`doc/decisions/`](doc/decisions/) for why that shape and not another,
-[`doc/measurements.md`](doc/measurements.md) for the figures those choices
-rest on, and this page for the rules a change is held to.
-
-**So a task id is not a link.** Pages here cite ids like `T-0086` because an id
-is a stable name for a decision, and a claim that names its origin can be
-checked by whoever holds that record. Nothing published depends on looking one
-up.
-
-None of it is something a contributor installs or registers for. A pull
-request is reviewed as a pull request.
+[`ARCHITECTURE.md`](ARCHITECTURE.md) describes the structure,
+[`doc/decisions/`](doc/decisions/) records design choices, and
+[`doc/measurements.md`](doc/measurements.md) records their technical evidence.
+These are the public references for a contribution. A pull request is reviewed
+as a pull request; no separate project-management system is required.
 
 ### Translations
 
@@ -335,9 +323,9 @@ written. Different means it has, and `git diff <the name in the marker>
 HEAD:README.md` shows what changed — a convenience rather than the verdict, and
 the half that can stop working.
 
-**Naming content instead of history is the whole of the scheme, and it was
-paid for.** A commit hash is the obvious thing to record, was recorded here
-until T-0406, and answers wrongly in two separate ways. Merge two branches that
+**Naming content instead of history is the whole of the scheme.** A commit
+hash seems an obvious choice, but answers wrongly in two separate ways. Merge
+two branches that
 each translated from the same base, and neither branch's hash has the other's
 work in its ancestry: each marker then reports the other branch's commits as
 English it has not caught up with. Rewrite the history — this repository has
@@ -396,10 +384,10 @@ grep -n "igdb_id" README.ru.md README.ja.md doc/guide.ru.md doc/guide.ja.md
 ```
 
 **Grep the name you replaced, not the line you deleted** — the two are the
-same thing only when you removed a whole line. T-0300 replaced a column name
-*inside* lines: six copies sat in fenced blocks and were byte-identical, and
-three sat inside translated prose, where the surrounding sentence is Russian
-or Japanese and the line matches nothing. Grepping the line would have shipped
+same thing only when you removed a whole line. A column name replaced
+*inside* lines can leave copies in fenced blocks and translated prose, where
+the surrounding sentence is Russian or Japanese and the line matches nothing.
+Grepping the line would have shipped
 two translations whose code blocks said the new name and whose prose still
 said the old one, which is worse than either endpoint.
 
@@ -408,7 +396,7 @@ and say in the report that the others did not. Delete what it names, or paste
 the English's replacement over it. The translation is then behind by an
 **addition** again, which is the case the marker already handles.
 
-**One commit, not two.** This rule said two until T-0406, because a marker
+**One commit, not two.** A marker
 naming *the commit the English moved to* cannot be inside that commit. A blob
 name has no such shape: `git hash-object` reads the working tree, so the name
 of the English you have just written exists before any commit does, and the
@@ -453,9 +441,8 @@ verdict.
 markers and fails when one claims `CURRENT` while its English source has a
 different blob name at `HEAD`. It asks nobody to translate: the last word of
 one line is the whole fix, in a language you need not read. That is the
-difference from the CI check this section carried as considered-and-rejected
-until T-0406 — that one fired on "the English changed and the translation did
-not" and left a contributor two exits, translate a language they may not read
+difference from a simpler check that fired on "the English changed and the
+translation did not" and left a contributor two exits, translate a language they may not read
 or bump the marker without translating, the second of which converts the marker
 into a lie. Separating the claim (`CURRENT` or `STALE`) from the reference (the
 blob name) removes the lie, because `STALE` is an honest answer and it is the

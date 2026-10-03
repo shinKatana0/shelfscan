@@ -69,7 +69,7 @@ jobs:
       - name: core -- analyze
         working-directory: packages/shelfscan_core
         run: dart analyze
-      # Nine suites run CLI children off one kernel snapshot (T-0217); building
+      # The CLI suites spawn children from one kernel snapshot; building
       # it here gives a compile failure its own red step instead of nine
       # failing setUpAlls.
       - name: core -- CLI snapshot
@@ -92,7 +92,7 @@ jobs:
         working-directory: app
         run: flutter test --reporter expanded
 
-      # Since T-0194 app/windows/ is committed, so the runner checks it out and
+      # The committed app/windows/ directory is checked out by the runner, and
       # this builds the identity in `Runner.rc` rather than a `flutter create`
       # default. There is no `flutter create` step here for that reason.
       - name: app -- build windows release
@@ -102,7 +102,7 @@ jobs:
       # Step 4 of the release checklist, against the bundle actually being
       # shipped rather than the default list. The failure it exists for is an
       # asset key beginning `../`, which is written outside the bundle and
-      # reaches no packaged app while every test still passes (T-0386). Named
+      # reaches no packaged app while every test still passes. Named
       # explicitly because with no argument the script also checks the
       # unit-test bundle, which is the one bundle that cannot answer this.
       - name: verify the shipped bundle carries its assets

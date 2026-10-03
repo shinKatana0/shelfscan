@@ -18,6 +18,13 @@ release-notes.md
 collection.review.json
 *.xcoll
 photos*/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.har
+*.pcap
+*.pcapng
 
 # Local credentials and signing material
 .env

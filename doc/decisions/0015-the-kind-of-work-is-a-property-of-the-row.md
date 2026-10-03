@@ -116,9 +116,8 @@ is mostly films" breaks ties; it does not override a clear marker.
 
 `scan-installs` ships a contract — *point this at a games folder only* — and it
 exists because a name cannot tell an application installer from a game
-installer. That is measured, not feared: a run over a real download directory
-returned application installers as titles, and `NoteWellSetup.exe` is the
-example in the guide.
+installer. For example, `ExampleNotesInstaller.exe` can look like a title to a
+name parser; the guide warns users to review every row.
 
 **Three kinds do not remove that contract, they weaken it.** It becomes *point
 this at a media folder and review every row*, and there are now three ways for

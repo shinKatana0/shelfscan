@@ -2,13 +2,8 @@
      Translated 2026-08-28. What that line names, and how to check it:
      CONTRIBUTING.md, "Translations". It names content rather than a commit,
      so it survives a merge and a history rewrite; the commit hash it replaced
-     survived neither (T-0406).
-     Two blocks this file no longer carries at all, because T-0425 moved them
-     out of README.md and into CONTRIBUTING.md, which is English-only by the
-     owner's decision: the build diagnoses that sat under "Setup -> The app",
-     and the whole development-workflow section, the "Translations" rule
-     included. A reader of this file who needs either goes to CONTRIBUTING.md;
-     nothing here summarises them any more. -->
+     survived neither.
+     Build and translation guidance is in CONTRIBUTING.md. -->
 
 [English](README.md) · [Русский](README.ru.md) · **日本語**
 
@@ -87,8 +82,7 @@
   要る。なくても実行はでき、CSV は書き出せる（[経路 A](#path-a--keyless)）。
 - **端から端まで検証できている経路は一つだけ。** 写真 → `.xcoll` → Tonkatsu Box
   への取り込み。承認した項目はすべて届き、カバー画像とメタデータは取り込み側が
-  取得、プラットフォーム ID はすべて正しく、Nintendo Switch 2 も含む
-  （T-0009）。
+  取得、プラットフォーム ID はすべて正しく、Nintendo Switch 2 も含む。
   ディスク系の入力源はより新しく、はるかに実地の量が少ない。実在のフォルダに
   対しては実行済みで、インストール済みの GOG ゲーム一本はストア ID だけで解決
   され（`externalId`、検索文字列なし）、ダウンロードを溜めたフォルダからは
@@ -108,11 +102,9 @@
   通しはしたが、測ってはいない
   （[どこまで来ているか](#films-are-read-as-films-and-how-far-that-goes)）。
 - **インストーラの置き場はゲームフォルダではない。** 名前だけでは
-  `NoteWellSetup.exe` と `setup_moor_1.9.exe` を区別できない。実在の `Downloads`
-  フォルダで計測したところ、名前解析が出したタイトルはすべてゲームではなく
-  アプリケーションだった。そのためこのコマンドは、よく知られた個人用・システム用
-  ディレクトリを正面から拒否する。そのフォルダは私的なものであり、中身は
-  公開しない。一種類ではなく三種類のものとして名前を読むことは、この約束を
+  `ExampleNotesInstaller.exe` と `setup_fable_quay_1.9.exe` を区別できない。
+  そのためこのコマンドは、よく知られた個人用・システム用ディレクトリを
+  正面から拒否する。一種類ではなく三種類のものとして名前を読むことは、この約束を
   強めるのではなく弱める。名前は今や*種別*として読み違えられることもあるので、
   向ける先はメディアのフォルダとし、全行を確認すること。
 - **「ローカル」は「オフライン」を意味しない。** ローカル実行はすべての写真を
@@ -743,10 +735,8 @@ shelfscan export <review.json> --target <tonkatsu|csv> -o <file>
   （[映画](#films-are-read-as-films-and-how-far-that-goes)）。
   無料で、即座に終わり、繰り返してもバイト単位で同じ結果になる。モデルが何も
   推測しないからである。向ける先はゲームのフォルダであって `Downloads` ではない。
-  実在の `Downloads` フォルダで計測したところ、名前解析が出した
-  タイトルはすべてゲームではなくアプリケーションだった（T-0158）。ファイル名の
-  中に `NoteWellSetup.exe` と `setup_moor_1.9.exe` を区別できるものはない。
-  計測したフォルダは私的なものであり、その一覧も、中身の件数も公開しない。この
+  ファイル名の中に `ExampleNotesInstaller.exe` と
+  `setup_fable_quay_1.9.exe` を区別できるものはない。この
   コマンドはよく知られた個人用・システム用ディレクトリを正面から拒否し、毎回その
   旨を述べる。
 - **`scan-library`** — GOG Galaxy 自身のローカルデータベースを入れ、同じレビュー
@@ -1006,11 +996,11 @@ JPEG へ変換される。ここで写真に加えられる変更はそれだけ
 
 誤った行は確認時に却下できるが、欠けた行はできないので、これは破滅ではなく取引で
 ある。ただし計測したのは**ローカルの**二人目である。クラウドの二人目はここで一度も
-計測していない。クラウドの鍵は入手できなかった（T-0057）。したがって上に書いた
+計測していない。クラウドの鍵は入手できなかった。したがって上に書いた
 ことは、`--fallback openai` や `--fallback anthropic` が何をもたらすかについての
 証拠には一切ならないし、確かめるために有効にすれば写真は全枚数送信される。
 
-T-0061 以降、これは**コマンドライン版のフラグのみ**である。アプリは写真一枚に
+これは**コマンドライン版のフラグのみ**である。アプリは写真一枚に
 つき読み手が一つで、二人目を求めることは決してないので、設定にその切り替えは
 なく、探すものもない。
 

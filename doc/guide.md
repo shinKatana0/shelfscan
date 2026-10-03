@@ -930,16 +930,13 @@ from the inside:**
 
     Reading C:\GOG Games: file and folder NAMES, plus any goggame-*.info beside them. No photo is read and no vision model is called. Nothing here can tell an application from a game, or a game from a film, by its name -- point this at a media folder, and review every row before you export it.
 
-Take that seriously. Pointed at a real `Downloads` folder, **every title it
-produced was an application** rather than a game. The folder was a private one:
-neither its listing nor any count of what was in it is published, and the
-verdict on the titles is the measurement. Nothing in a file *name* separates
-`NoteWellSetup.exe` from `setup_moor_1.9.exe`, and no rule reading only a name
-ever will.
+Take that seriously. A general `Downloads` folder holds applications as well
+as games. Nothing in a file *name* separates `ExampleNotesInstaller.exe` from
+`setup_fable_quay_1.9.exe`, and no rule reading only a name ever will.
 
 ### It reads films too now, and that widens the contract rather than fixing it
 
-Since T-0162 this command also reads **films**. A video file whose name is
+This command also reads **films**. A video file whose name is
 release-shaped — `Some.Title.1999.1080p.BluRay.x264-GROUP.mkv` — becomes a film
 row rather than a game row; a game installer beside it stays a game row. The
 kind is decided per file, so the folder you point at can hold both, is read
@@ -950,8 +947,8 @@ knowing.** A film kept in its own folder — the ordinary way films are kept —
 comes back as a film row carrying the title and the release year read off the
 file inside, rather than as a game named after the folder and hinted `PC`. A
 folder of episodes depends on how they are named: the fansub shape --
-`[Group] Title - 04 [1080p].mkv` -- comes back as one row for the series
-(T-0368), while `S01E04` and `1x04` still come back as one honest skip,
+`[Group] Title - 04 [1080p].mkv` -- comes back as one row for the series,
+while `S01E04` and `1x04` still come back as one honest skip,
 because those say *series* without saying which kind of series and this tool
 would otherwise file every television release as anime. But a subdirectory
 hands over one entry whatever it
@@ -959,11 +956,11 @@ holds, and one entry cannot be two works: a folder holding a game's installer
 *and* a film is read as the game, and the film in it is lost the same way a
 second game in one folder already is. **The app's folder picker walks the same
 way and answers the same** — both shells ask one shared rule, so a folder that
-is a film here is a film there (T-0349, T-0352).
+is a film here is a film there.
 
 **Films are read, and a film is looked up in a film catalogue.** Deciding that
 a name is a film is one half; sending it to TMDB rather than to the games
-catalogue is the other, and since T-0308 both shells route a row by its kind.
+catalogue is the other, and both shells route a row by its kind.
 What that needs from you, and what happens when you have not got it, is below
 — because it is not what you would guess.
 
@@ -992,8 +989,8 @@ Two things keep that honest, and neither is automatic:
   instruction to *review every row* now means the kind as well as the title.
   Correcting it throws away whatever match the row was holding — a match found
   under the wrong kind is not evidence for the right one — and marks the row as
-  owed a fresh one. **Nothing in the app performs that fresh lookup**, and since
-  T-0311 the review screen says so rather than promising one: its only resolver
+  owed a fresh one. **Nothing in the app performs that fresh lookup**, and
+  the review screen says so rather than promising one: its only resolver
   call fires on an item you have just typed, and it writes no review document,
   so there is no file to point `resolve` at. A corrected film row therefore
   reaches an export from the app carrying the title read off its filename and
@@ -1009,8 +1006,7 @@ your own TMDB account, and `.env.example` says which of TMDB's two credentials
 that is and why it is not the other one. Set it the way you set the IGDB pair
 in Step 3.
 
-**What a run does when it is not set is the owner's decision, and it is the
-plain one: a film row is keyless.** It behaves exactly as a game row does
+**Without the token, a film row is keyless.** It behaves exactly as a game row does
 without IGDB credentials — it reaches review carrying the title read off its
 filename, matches nothing, and exports to CSV but not to `.xcoll`, which is a
 file of catalogue ids and has nothing to put in one. Games are unaffected, and
@@ -1037,12 +1033,8 @@ build one resolver per kind rather than one resolver: game rows to IGDB, film
 and animation rows to TMDB, and a kind nobody registered a catalogue for — an
 anime row, or an animation whose film-or-series question is still open — is
 left unresolved rather than sent to whichever catalogue happens to be
-configured. Until T-0308
-a film row in a run with IGDB credentials was searched among games, and a film
-whose title is also a game's — an adaptation shares its title almost by
-definition — could come back holding that game's canonical title, platform and
-confidence score, reading on the review screen exactly like a row that went
-right. That cannot happen now.
+configured. A film row is never searched among games, even when a film shares
+its title with a game.
 
 **What has actually been run against TMDB, so you can price the rest
 yourself.** Two public release names, on one machine, on one evening, with one
@@ -1070,7 +1062,7 @@ refused outright:
 
 <!-- transcript: scan-installs-refused -->
 
-    Not a games folder: C:\Users\me\Downloads. This reads NAMES, and no rule reading a name tells NoteWellSetup.exe from setup_moor_1.9.exe -- run over a Downloads folder it titles every installer it finds, and not one of them is a game (T-0158). Point it at the directory your games are installed in.
+    Not a games folder: C:\Users\Example\Downloads. This reads NAMES, and no rule reading a name tells ExampleNotesInstaller.exe from setup_fable_quay_1.9.exe. Point it at the directory your games are installed in.
 
 A drive root is refused for the same reason and one worse: it is the one
 directory whose subdirectories are all the others.
