@@ -1,0 +1,7 @@
+# Historical synthetic credential fixtures in tests only.
+# Exact finding fingerprints keep all other secret detection active.
+465c7a52d9b2fcd414a3dd57ab739e64d6b787ce:packages/shelfscan_core/test/refused_access_test.dart:generic-api-key:38
+2500ef66a9d867e8f8e80c74e03bc6caab1a80b2:packages/shelfscan_core/test/refusal_diagnostics_test.dart:generic-api-key:36
+8dbba0b3385cd57d7f12d0df526e207fe38862a2:packages/shelfscan_core/test/cloud_unreachable_test.dart:generic-api-key:28
+8dbba0b3385cd57d7f12d0df526e207fe38862a2:packages/shelfscan_core/test/vision_failure_text_test.dart:generic-api-key:24
+8dbba0b3385cd57d7f12d0df526e207fe38862a2:app/test/settings_store_test.dart:generic-api-key:49
