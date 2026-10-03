@@ -37,25 +37,23 @@ Three independent findings, each reproduced more than once:
 
 1. **Example values in the schema are copied verbatim into the model's answer.**
    Measured three separate times: a literal `"null"` string arriving as a
-   platform hint (T-0014), and entries in the "could not read this spine" channel
-   echoing the example text back (T-0028). This is why the schema is not
+   platform hint, and entries in the "could not read this spine" channel
+   echoing the example text back. This is why the schema is not
    illustrated with realistic-looking values.
 
-2. **Adjacency matters more than length.** T-0026 added prose about console
-   branding next to an unrelated rule about Japanese script, and broke the
+2. **Adjacency matters more than length.** Prose about console
+   branding next to an unrelated rule about Japanese script broke the
    guarantee that the model never invents a title it cannot read — but only at
-   the lower of the two control resolutions. T-0034 repaired it by moving one
-   bullet and changing **zero characters** of text. A separate shortened variant
+   the lower of the two control resolutions. Moving one bullet without
+   changing its text repaired the regression. A separate shortened variant
    still invented titles, which disproved "the prompt got too long" as the
-   explanation. T-0033 then found that the same bullet's position also governs an
-   apparently unrelated field, the platform hint.
+   explanation. The same bullet's position also governs an apparently
+   unrelated field, the platform hint.
 
-3. **A field nothing reads still does work.** T-0093 removed `notes` from the
-   schema — a field answered as an empty string on every row anyone had ever
-   measured, and displayed nowhere in either interface. Removing it left every
-   count intact and made one control photograph report fabricated unread-spine
-   entries where the shipped schema reports none, reproducibly, five runs each
-   way. A line in one object of the schema governs the contents of a different
+3. **A field nothing reads still does work.** `notes` was always empty and
+   displayed nowhere, yet removing it from the schema changed a control
+   answer: the model reported fabricated unread-spine entries where the
+   shipped schema reports none, repeatedly under the same sampling settings. A line in one object of the schema governs the contents of a different
    array.
 
 The counts behind all three are in [`doc/measurements.md`](../measurements.md);
@@ -68,8 +66,8 @@ they are not repeated here.
   machine, with no photographs, no model and no network — the moment either
   constant changes, with a message naming the document that must be re-measured.
 - Because there is no per-provider prompt, a wording that would help one opt-in
-  cloud model cannot be tried cheaply. T-0113 and T-0147 both priced a prompt
-  change and both declined it for this reason; the arithmetic is in
+  cloud model cannot be tried cheaply. Two prompt experiments were priced
+  and declined for this reason; see
   `doc/measurements.md`.
 - The anti-invention guarantee is a property of the prompt **and** of near-greedy
   decoding. A prompt measured at another sampling temperature is a measurement of

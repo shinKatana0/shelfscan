@@ -35,8 +35,7 @@ Semantic Versioning reserves exactly this meaning for it.
 
 `app/pubspec.yaml`'s version is not decoration: it flows through
 `app/windows/runner/CMakeLists.txt` into `Runner.rc`, so the built `.exe` is
-stamped from it and Windows shows that number in the file's properties
-(T-0194). `packages/shelfscan_core` is a path dependency and is never published
+stamped from it and Windows shows that number in the file's properties. `packages/shelfscan_core` is a path dependency and is never published
 to a package registry, so its own number is free — and a free number is one
 that drifts. Two numbers that disagree would make a bug report ambiguous about
 which half it came from, and the report form asks for a version.
@@ -84,10 +83,9 @@ same value — which is the defect this amendment exists to remove.
 **A build that never leaves the machine consumes nothing.** The rule says
 *every artefact handed to anyone*, and the word doing the work is *handed*. A
 build made to measure something, to watch a check refuse, or to answer a
-question about the artefact itself is not a hand-over, however many of them a
-task makes: T-0404 built four apks and one Windows exe on its branch and
-nobody received any of them. Requiring a number for each would make `BUILD` a
-record of how much was built rather than of what was released, and would put
+question about the artefact itself is not a hand-over. Exploratory packages
+remain local. Requiring a number for each would make `BUILD` a record of
+build activity rather than of what was released, and would put
 the counting somewhere git cannot see -- which is the class of rule this
 record has spent two amendments narrowing.
 

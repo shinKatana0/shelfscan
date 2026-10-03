@@ -6,7 +6,7 @@ SDK on it. Getting there cost four diagnoses, and not one of them presents as a
 missing step: three fail the build while naming something else, or naming
 nothing at all, and the fourth does not fail the build. This page is those
 diagnoses written down so that the next person pays for none of them -- plus a
-fifth trap that belongs to nobody's first day (T-0365) and, below them, what
+fifth trap that belongs to nobody's first day and, below them, what
 the plugin upgrade later cost, which is the same kind of knowledge arriving
 from a different direction.
 
@@ -83,7 +83,7 @@ The apk lands at `app\build\app\outputs\flutter-apk\app-debug.apk` and carries
 the `applicationId` set in `app/android/app/build.gradle.kts`.
 
 `flutter build apk` gives you the release one, and **that one needs a signing
-key**: since T-0398 a release build with no `app/android/key.properties` fails
+key**: a release build with no `app/android/key.properties` fails
 rather than falling back to the debug key. *Signing the release build* below is
 what to do about it; the debug build above needs none of it. Both succeeded
 here on 2026-08-23: **debug 155 MB, release 50.9 MB**. R8 runs on the release
@@ -93,7 +93,7 @@ size of the release one is not a symptom of anything — expect it.
 **Test on a release build, not only a debug one.** Trap 4 below is invisible to
 `flutter run`.
 
-**And run that build alone in its worktree** — no `flutter analyze`, no
+**And run that build alone in its checkout** — no `flutter analyze`, no
 `flutter test`, no `flutter pub get` beside it. Trap 5 below is what happens
 when one of them lands while the apk is building.
 
@@ -189,7 +189,7 @@ already there in this tree, with the reason in a comment beside it.
 platform folder, and a platform folder is the thing somebody regenerates. Run
 `flutter create` over `app/android/` one day and the empty manifest comes back,
 exactly as `com.example` comes back over the Windows runner — which is the
-defect T-0194 exists for.
+kind of version-metadata defect this project avoids.
 
 The same manifest carries `android:label`, which Flutter fills with the project
 name, `shelfscan_app`. It is now `shelfscan`, matching what `Runner.rc` and the
@@ -224,14 +224,14 @@ after it starts, and there are two versions of it:
 Each is right on its own, and the release build's write wins whenever it runs
 alone: it rewrites the file about six seconds in, and Gradle then compiles for
 one to two minutes. **Those minutes are the hole.** Any other flutter command
-started in the same worktree during them puts the dev-dependency version back,
+started in the same checkout during them puts the dev-dependency version back,
 and `compileReleaseJavaWithJavac` runs late enough to compile what it finds.
 
 Measured 2026-08-24 on Flutter 3.47.0, five release builds. A build in a
-worktree whose registrant already named `integration_test` succeeded — twice,
-from two differently-prepared worktrees — because it rewrote the file before
+checkout whose registrant already named `integration_test` succeeded — twice,
+from two differently prepared checkouts — because it rewrote the file before
 Gradle started. The same build with one `flutter analyze` fired into its Gradle
-phase failed with the error above. **What a worktree has run before the build
+phase failed with the error above. **What a checkout has run before the build
 does not matter. What runs during it does.**
 
 **Fix.** Build alone. Do not run the suites in one shell while the apk builds
@@ -260,7 +260,7 @@ incomplete the release build fails**, printing what is missing and what to do
 about it.
 
 **There is no fallback to the debug key, and the refusal is the feature.**
-Until T-0398 there was a fallback -- `flutter create`'s own line, with
+There was previously a fallback -- `flutter create`'s own line, with
 `flutter create`'s own `TODO` above it -- so every release apk this project
 produced was signed with a key that is public and identical in every Flutter
 checkout: anybody can build a package Android accepts as an update to it, and
@@ -288,7 +288,7 @@ What you do once:
    `-storetype JKS` is what Flutter's own instructions say, and keytool
    answers it with a warning that JKS is a proprietary format and PKCS12 is
    the standard one. It is a warning and not an error -- the keystore is
-   written and the build signs with it (measured T-0398). Leave the flag off
+   written and the build signs with it. Leave the flag off
    and you get PKCS12, which this config also accepts; `storeType` in
    `key.properties` is there for a keystore that is neither.
 
@@ -312,7 +312,7 @@ your machine.
 ### Reading the signature off an apk
 
 **Not with `keytool`.** `keytool -printcert -jarfile <apk>` is the answer
-everywhere and it answers `Not a signed jar file` here (measured T-0398): the
+everywhere and it answers `Not a signed jar file` here: the
 app's `minSdk` is high enough that AGP turns v1 JAR signing off and signs with
 APK Signature Scheme v2 only, and keytool reads v1. Nothing is wrong with the
 apk -- keytool is looking in `META-INF` for something no longer put there.
@@ -355,8 +355,7 @@ shell alias or function that supplies the flag.
 
 ## `share_plus` applied the Kotlin Gradle Plugin, and getting off it moved three plugins
 
-**Symptom, and it is history: until T-0304 every `flutter build apk` printed
-this, and then built anyway.**
+**Earlier `flutter build apk` runs printed this warning and continued.**
 
 ```
 WARNING: Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP): share_plus
@@ -367,8 +366,8 @@ Future versions of Flutter will fail to build if your app uses plugins that appl
 it: AGP supplies Kotlin itself, and a plugin that applies KGP in its own Gradle
 file stops building. This tree is past that for the plugins it has today, and a
 plugin added tomorrow can put the warning back — the two guides are worth
-keeping to hand for when it does. **This app is now on built-in Kotlin itself**
-(T-0399) — see *Built-in Kotlin is taken; the new DSL is blocked upstream*
+keeping to hand for when it does. **This app is now on built-in Kotlin
+itself**; see *Built-in Kotlin is taken; the new DSL is blocked upstream*
 below, which is where the flags that decide it are written down.
 [For app developers](https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers)
 and [for plugin authors](https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors).
@@ -398,9 +397,8 @@ to move together, not as one blocker to argue with.
   waited.** It removes `FilePicker.platform` and makes `FilePicker` a `final`
   class, so the fake-picker pattern the app test suite was built on stopped
   compiling: priced against the tree of the day, 90 of 94 analyzer complaints,
-  spread over nine test files. By the time the upgrade was taken, T-0305 had
-  put the picker behind `app/lib/input_picker.dart` and that pattern was
-  already gone — the same upgrade then raised four issues in one adapter.
+  spread over nine test files. By the time the upgrade was taken, the picker was behind
+  `app/lib/input_picker.dart`. That pattern was already gone — the same upgrade then raised four issues in one adapter.
   **The general case:** an upgrade is priced against the tree it was priced
   on, and an intervening refactor can move that price by more than an order of
   magnitude. Re-price before you plan around an old estimate.
@@ -413,17 +411,16 @@ to move together, not as one blocker to argue with.
   exists and still works, but is `@Deprecated`, and `flutter analyze` — which
   CI runs, and which fails on an `info` — reports it.
 
-**Fix, taken in T-0304.** All three constraints moved together, the
+**Fix.** All three constraints moved together, the
 `file_picker` call sites and the `Share` call were ported, and a release apk
 was built and its whole log searched for the warning: nothing, against the two
 lines above on a build with the old constraints restored. `app/pubspec.yaml`
 pins `share_plus: ^13.2.0` rather than `^13.3.0` — 13.2.0 is the release that
 added the support, so the constraint records the reason for the number, and
-13.3.0 is what resolves. `doc/reports/T-0304.md` holds the measurement and the
-full list of what moved with them.
+13.3.0 is what resolves.
 
-Nothing here has been run on a device — T-0015 is still what verifies the share
-sheet actually shares — so a green build is a green build and no more.
+The share sheet still needs device verification. A green build proves the
+package compiles, not that sharing works on a phone.
 
 ## Three notes from the plugin upgrade, in the order they bite
 
@@ -463,11 +460,10 @@ available from the two plugins' Gradle files and nothing more. Proving it means
 seeding a build directory from 10.1.4 and upgrading over it, which has not been
 done here.
 
-**Why it was not caught before the merge.** T-0304 was verified in a fresh git
-worktree, where `app/build/` is gitignored and therefore absent, so its release
-build ran from an empty build directory. That establishes that the upgrade
-builds from scratch. It says nothing about building over an existing checkout,
-which is what everybody who pulls the change has.
+**Why an existing build directory matters.** A fresh git checkout has no
+`app/build/`, so a release build there starts from an empty directory. That
+proves a clean build succeeds; it says nothing about building over outputs from
+an older plugin version, as happens after a dependency upgrade.
 
 The general case is worth one line: **a plugin changing *how* it is compiled is
 invisible in a version number**, so `flutter clean` after any plugin major is
@@ -506,8 +502,7 @@ store and nothing tries to. The damage is bounded by the project being
 bring-your-own-key: the keys belong to whoever entered them and they still have
 them, so the cost is entering them once more.
 
-**Two things nobody knows, and both need an Android device** — T-0017 is the
-task that verifies settings persistence there:
+**Two settings-persistence behaviors still need Android device verification:**
 
 - Whether the read **fails soft**, returning null so the settings screen simply
   shows empty fields, or **throws**, which on that screen would look like the
@@ -538,7 +533,7 @@ graph, while sitting below one that is in it.
 currently in the graph still needs the hook: nothing is on record as requiring
 36, the package that did require it has gone, and the one plugin whose level is
 on record declares 37 — above the hook rather than below it. That is checked
-against this tree and against T-0304's measurements, not against every current
+against this tree and the measurements above, not against every current
 plugin's own Gradle file. And it does **not** show the hook to be dead weight:
 every build since trap 2 has run with it in place, and a build with the hook
 cannot say what a build without it would do. Only a build with the hook removed
@@ -556,7 +551,7 @@ rather than by Flutter has not been checked either.
 **Two flags in `app/android/gradle.properties` decide this, the Flutter
 template wrote both, and AGP 9 defaults both the other way.** AGP 9.1.0
 deprecates setting either to `false`, says so on every configuration, and
-removes both in AGP 10. T-0399 took one of them and could not take the other.
+removes both in AGP 10. The migration could take one of them but not the other.
 The end state, which is also exactly what Flutter's own migration guide
 prescribes:
 
@@ -649,7 +644,7 @@ somebody do this are the two subsections that follow.
 
 ### Upstream knows, it is open, and the only version named is Flutter 3.50
 
-Searched 2026-08-26 (T-0407): the `flutter/flutter` issue tracker, Flutter's
+Searched 2026-08-26: the `flutter/flutter` issue tracker, Flutter's
 AGP 9 and built-in-Kotlin migration guides, and AGP 9's own release notes.
 
 - **flutter/flutter#181557** — *"☔ Flutter Fully Supports AGP 9"*, **open**,
@@ -700,7 +695,7 @@ Which versions are pinned, and why the others are not:
   version would go red on 9.1 → 9.2, which is red for the wrong reason,
   and a test that does that gets deleted.
 - **Kotlin, not pinned at all.** Its version belongs to `builtInKotlin`, which
-  is settled, and T-0399 measured the two flags independent.
+  is settled, and the two flags were measured independently.
 
 The running framework version is read from
 `bin/cache/flutter.version.json` under the SDK root that `flutter test`
@@ -743,7 +738,7 @@ are pinned by the same flag, and they are nobody's to fix here.
   the exact shape that bit `share_plus` above — and the debug build over that
   directory succeeded anyway. Worth stating because the earlier note makes the
   opposite outcome look likely.
-- **The release-signing refusal (T-0398) still fires.** The concern was real:
+- **The release-signing refusal still fires.** The concern was real:
   the refusal is bound to `gradle.taskGraph.whenReady`, and a DSL change can
   move what `this` is in that position. Proved rather than reasoned about, with
   `key.properties` moved aside — the release build failed in 4.9 s with the

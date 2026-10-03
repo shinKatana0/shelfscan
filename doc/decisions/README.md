@@ -12,36 +12,19 @@ wearing a decision's clothes.
 
 ## What is not here
 
-Around two hundred tasks have closed in this repository. Most were fixes, and a
-registry of everything would be the commit history again. Specifically excluded:
+This registry records decisions that explain current product and engineering
+behavior. It leaves routine bug fixes to the commit history. Specifically excluded:
 
-- **Bug fixes**, however involved. The line drawn: a fix restores behaviour the
-  code already claimed; a decision changes what the code claims. Several fixes
-  *produced* the decisions below, and they are cited inside them.
+- **Bug fixes**, however involved. A fix restores behavior the code already
+  claims; a decision changes what the code claims.
 - **Decisions already stated where a reader will find them.** The canonical
-  intermediate document, the pinned external export format, the
-  orchestrator/worker shape and the retry policy are in
-  [`ARCHITECTURE.md`](../../ARCHITECTURE.md); what the product is and what it
-  deliberately does not do is on the [front page](../../README.md); what a
-  change must not break is in [`CONTRIBUTING.md`](../../CONTRIBUTING.md). This
-  directory is for what was *not* findable.
-- **Numbers.** They live in [`doc/measurements.md`](../measurements.md), which
-  also records everything this project measured and then decided **not** to do.
-  A record here cites a section of it rather than copying figures out of it —
-  two copies of a number drift, and a number whose sentence changed in transit is
-  one nobody can check again. Where a single figure is the crux of an argument it
-  appears once, next to its pointer.
-
-Every record opens with the task ids it came from, under **Tasks** and
-**Reports**. Those are bare ids and not links on purpose: a task id such as
-`T-0086` names an entry in the working record this repository keeps but does
-not publish — development rather than product, and quoting conversations
-verbatim. What survives here is what it produced: this registry for the
-reasoning, [`doc/measurements.md`](../measurements.md) for the figures, and
-[`ARCHITECTURE.md`](../../ARCHITECTURE.md) for the shape. **Nothing on this
-page depends on looking one up.** The ids are kept because they are stable
-names for a decision, and because a claim that names its origin is checkable by
-anyone who ever does hold that record.
+  intermediate document, pinned external export format, pipeline stages and
+  retry policy are in [`ARCHITECTURE.md`](../../ARCHITECTURE.md); the product
+  scope is on the [front page](../../README.md); contributor checks are in
+  [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+- **Repeated measurements.** They live in
+  [`doc/measurements.md`](../measurements.md). A record cites the relevant
+  section instead of copying figures that could drift apart.
 
 ## The records
 
@@ -50,7 +33,7 @@ anyone who ever does hold that record.
 | [0001](0001-the-platform-boundary.md) | The pipeline is pure Dart; platform capabilities cross as values | The core has one dependency and touches no file, no device and no operating system — the shells convert, read and save, and hand it plain values. |
 | [0002](0002-the-prompt-is-a-measured-artifact.md) | The vision prompt is a measured artifact, not writing | Moving one bullet and changing zero characters of text broke — and later restored — a correctness guarantee, so the prompt is edited only against a measurement. |
 | [0003](0003-reproducibility-is-the-prompt-cache.md) | Reproducibility is the prompt cache, not a freshly loaded model | The first explanation of why two identical scans disagreed was wrong and stood for two days; what actually decides it is what the inference server had cached. |
-| [0004](0004-the-control-set-is-figures-not-a-file.md) | The control set is a definition and a manifest, not a committed document | The photographs are someone's home, so what is committed is the figures a scan must produce — and a test that fails everywhere the moment the prompt drifts from them. |
+| [0004](0004-the-control-set-is-figures-not-a-file.md) | Keep control photographs and their measurements private | Private control data stays local; a public prompt fingerprint still detects drift on every machine. |
 | [0005](0005-resolution-is-the-lever-not-the-model.md) | Buy quality with pixels, not with a bigger model | Three "just use a bigger model" arguments were priced and two failed outright; the one that worked is still not the default. |
 | [0006](0006-a-platform-hint-has-a-measured-width.md) | A platform hint is a lookup with a measured width | Whether a console hint means one database id or several is decided by counting how much the platforms' catalogues actually overlap — and it came out differently for the desktop, the Switch and the handhelds. |
 | [0007](0007-the-resolver-refuses-what-it-cannot-decide.md) | The resolver refuses what it cannot decide | Ties are never broken by whichever row the database returned first; they go to a human, and the one exemption to that was measured to cost nothing. |
@@ -66,7 +49,7 @@ anyone who ever does hold that record.
 ## Adding one
 
 A new record is written when a decision is *taken*, in the same pass that takes
-it, and it needs three things: a task it came from, a measurement that settled
-it, and a reader who would otherwise be surprised. If the record cannot be
+it, and it needs three things: the context that prompted it, evidence that
+settled it, and a reader who would otherwise be surprised. If the record cannot be
 written without re-deriving something, that is a sign it belongs in the archive
 and not here. Number it in sequence; never renumber an existing one.

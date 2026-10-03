@@ -206,10 +206,9 @@ build number is never reused.
   no link checker could reach it, and was found only by searching for the
   words rather than the link. All 81 anchors across the three files now
   resolve.
-- **Published pages cited `doc/conventions.md`, which no clone has.** Thirty
-  citations across tests, decision records and the build notes, one of them
-  a markdown link resolving to nothing. Each rule they invoked is now
-  stated where it was cited rather than pointed at.
+- **Contributor guidance is self-contained in a fresh clone.** Public
+  documentation now explains the relevant rules where readers need them,
+  and its links resolve without local development files.
 - **The READMEs said the app converts HEIC on Windows only.** It has carried a
   decoder on each platform since the Android one landed — the Windows Imaging
   Component on Windows, the system codec on Android — and two claims in each

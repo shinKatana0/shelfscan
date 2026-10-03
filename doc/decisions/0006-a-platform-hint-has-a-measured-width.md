@@ -49,16 +49,16 @@ differently each time — which is the whole point.
   against live IGDB. Each union bought exactly one row and lost several to
   ties, because a desktop game is listed on all of them as a matter of course.
   The one row it buys is a title the database does not list on Windows at all.
-  Rejected (T-0156).
+  Rejected.
 - **Switch: a union.** A Switch 2 case and a Switch case are the same plastic;
   the printed band that distinguishes them defeated thirteen prompt wordings on
   the local model (`doc/measurements.md`, "The Switch 2 band"), and a file
   container carries no band at all. Mapping `SWITCH` to the Switch id alone sank
   every Switch 2 release into a mismatch. The union rescued rows the
   database had answered with nothing and removed the last wrong auto-match, at
-  the cost of ties (T-0023).
-- **The handhelds: a union, for the opposite reason.** T-0190 read the whole
-  platform listing live — one request rather than four searches, so that "is
+  the cost of ties.
+- **The handhelds: a union, for the opposite reason.** A live check read the whole
+  platform listing in one request rather than several searches, so that "is
   there a second one of these?" could be answered without recalling anything —
   and found that Wii U and Vita have no sibling at all, while the 3DS and DS each
   do. It then counted the overlap: **1.6% and 1.0%** of those catalogues are
@@ -71,10 +71,9 @@ differently each time — which is the whole point.
 The third rule was measured as a failure already shipping. A container that
 spans systems — a PlayStation package that is equally PS3, PS4 and Vita; an
 archive extension that is a Vita package *and* a Valve archive — can only claim a
-hint that is wrong for some of its files. T-0113 measured what such a hint costs
-on a real row: the misread spines carry a hint for the wrong console, and the
-row is lost to the platform filter *before* it is lost to anything else, so the
-two defects are conjunctive and fixing either alone moves nothing. The offline
+hint that is wrong for some of its files. A measurement showed the cost:
+misread spines carry a hint for the wrong console. The row is lost to
+the platform filter *before* it is lost to anything else, so the two defects are conjunctive and fixing either alone moves nothing. The offline
 four-cell measurement is in `doc/measurements.md`, "One spine, two gates".
 Those containers therefore decline.
 

@@ -31,18 +31,17 @@ is stated as a condition on every figure rather than assumed.** Three parts:
 
 ## The measurement that settled it
 
-Recorded in full in `doc/measurements.md`, "What temperature 0 actually bought
-(T-0086)" and "A third cache state, and the counted figure that moves in it
-(T-0106)". The shape of it:
+Recorded in `doc/measurements.md` under "What temperature 0 actually bought"
+and "A third cache state, and the counted figure that moves in it":
 
 - Before any of this, nothing in the repository asked for the sampling that every
   figure depended on. The answers came back nearly greedy anyway, because the
   model's own model file happened to carry a near-zero temperature — a file
-  nobody here controls. T-0053 found that and pinned the request.
-- T-0086 then re-measured against a server started for the measurement, with its
+  nobody here controls. The request now pins the sampling parameters.
+- A later measurement used a server started for the measurement, with its
   own request log accounting for every request served. Repeat runs were
   byte-identical. Runs with the cache dropped were byte-identical *to each other*
-  and differed from the repeats on a handful of rows of one photograph — letter
+  and differed from the repeats in typography on the private control — letter
   case, trademark signs, one diacritic; no count, no item and no hint moved. Runs
   deliberately overlapped with a second process were byte-identical to the
   isolated ones, which is what eliminated concurrency as the cause on that
@@ -51,7 +50,7 @@ Recorded in full in `doc/measurements.md`, "What temperature 0 actually bought
   tokens is near-total on a repeat and near-zero on a first ask, so a repeat skips
   the prefill and is not the same arithmetic. Stopping the model correlates only
   because it discards the cache along with the model.
-- T-0106 found a **third** state, which is the one that matters in practice: the
+- A **third** state was then observed, which is the one that matters in practice: the
   cache matches a token prefix, so scanning the control photographs under a
   changed prompt puts every photo of the second pass into a state that is neither
   a first ask nor a repeat. That is exactly what a prompt A/B test is. In that
@@ -62,8 +61,8 @@ Recorded in full in `doc/measurements.md`, "What temperature 0 actually bought
 ## Consequences
 
 - The wrong explanation had to be retracted from six places once it was
-  disproved (T-0092, T-0098, T-0119). The retraction is itself part of the
-  record: `doc/measurements.md` keeps the superseded claim visible with the
+  disproved. The corrected condition remains in the
+  public measurement archive: `doc/measurements.md` keeps the superseded claim visible with the
   condition it was missing, rather than quietly correcting it.
 - Anyone running a prompt comparison must drop the cache between passes, or the
   comparison lands in the third state and one of its figures is not the prompt's

@@ -8,7 +8,7 @@ Tonkatsu Box is not a game manager. It is a mixed-media collection manager by
 design — games, films, series, anime, manga, visual novels, books — and it
 already searches AniList, TMDB, VNDB, MangaDex and Kitsu beside IGDB. That was
 verified against its own repository while checking its licence for an unrelated
-question (T-0163), and it changes the standing of one literal: the `media_type`
+question, and it changes the standing of one literal: the `media_type`
 field `TonkatsuExporter` wrote as `game` has real siblings rather than being a
 lone constant.
 
@@ -119,7 +119,7 @@ name parser; the guide warns users to review every row.
 **Three kinds do not remove that contract, they weaken it.** It becomes *point
 this at a media folder and review every row*, and there are now three ways for
 a name to be read as the wrong thing instead of one. The failure stays silent,
-because a filename never announces that it is not what it looks like. Any task
+because a filename never announces that it is not what it looks like. Any change
 that adds a second kind to a disk source owns that sentence in the guide.
 
 **And the mitigation, decided by the owner 2026-08-23 in the same breath: the
@@ -144,23 +144,23 @@ There is a cost, and the first two items are the ones that were weighed.
    nothing here has done that yet.
 2. **The row-identity problem is admitted into the same document rather than
    quarantined beside it.** A film is one row; an anime is a series, a season
-   and episodes (T-0163), and that does not fit `ResolvedGame`, whose identity
+   and episodes, and that does not fit `ResolvedGame`, whose identity
    is a title and a platform id. A mode could have given that its own document
    type. This decision guarantees the answer has to land inside
    `ReviewDocument`.
 
    **Settled, 2026-08-23 —
-   [0016](0016-a-row-is-identified-by-the-catalogue-that-answered.md), T-0292.**
+   [0016](0016-a-row-is-identified-by-the-catalogue-that-answered.md).**
    It did land inside `ReviewDocument`, in two additive pieces and at no cost
    this paragraph did not predict. A row that maps to several catalogue
-   entries carries them in `ResolvedGame.parts` (T-0163); a row's external
+   entries carries them in `ResolvedGame.parts`; a row's external
    identity stops being a games-catalogue key and becomes the catalogue that
    answered plus that catalogue's id, and the platform becomes optional
    instead of a placeholder. What this paragraph got wrong is the price: the
    rename it feared touches twelve lines of production code and reaches no
    file format, because `Candidate`'s wire key was never its identifier —
-   which is the separation T-0290 had to build for `WorkKind` and that this
-   type already had.
+   which is the separation already built for `WorkKind` and already
+   present in this type.
 3. **Every stage after the prompt carries a branch, permanently.** A mode is
    one test at the top of a run. A property is a test in the resolver, in the
    review screen and in the exporter, and each further kind multiplies them.
@@ -197,13 +197,13 @@ correctly.
   every photograph. Nothing in this codebase may take that string as evidence
   of which concept it is looking at — only the Dart type says that, which is
   the whole reason there are two of them.
-- **`game` is the only value of the kind that has ever been imported.** T-0009
-  round-tripped it into Tonkatsu Box. `anime` is Tonkatsu's own vocabulary for
+- **`game` has been round-tripped into Tonkatsu Box.** `anime` is
+  Tonkatsu's own vocabulary for
   a kind it manages, but this *spelling* of it in this field is an assumption
-  until an import measures it; whichever task writes the second kind verifies
-  it against the importer before anything else.
+  until an import measures it; verify any additional kind against the importer
+  before relying on it.
 
-  **Verified, and the assumption was wrong — T-0162, corrected T-0290.**
+  **Verified, and the assumption was wrong.**
   Tonkatsu's published collections write `game`, `movie`, `tv_show` and
   `animation`. It files an anime film and an anime series alike under
   `animation`, telling them apart by `platform_id` (`0` film, `1` series)
@@ -225,7 +225,7 @@ correctly.
   record already applies to a `work_kind` it cannot parse, one level further
   out.
 - **An unrecognised `work_kind` is refused, not degraded.** `review.json` is
-  hand-editable by design (T-0050), and `unknown` is an honest landing place
+  hand-editable by design, and `unknown` is an honest landing place
   for a carrier the model could not tell. There is no equivalent for a kind:
   answering `game` to a typo would write a claim about the row that nobody
   made.
@@ -236,14 +236,14 @@ correctly.
 
 ## Out of this record
 
-Each is its own task, and none of them is decided here: the second catalogue
-client, the second prompt, the row-identity question (T-0163), the UI control
+The following questions are outside this decision: the second catalogue
+client, the second prompt, the row-identity question, the UI control
 for the per-run hint, and whether the CSV export grows a column for the kind.
 
 The row-identity question has since been decided, in
 [0016](0016-a-row-is-identified-by-the-catalogue-that-answered.md).
 
-## Overtaken in one respect — 2026-09-04, T-0456
+## Overtaken in one respect — 2026-09-04
 
 This record is kept as written. One sentence in it is no longer true, and it is
 named here rather than edited out, because what the record got wrong is part of

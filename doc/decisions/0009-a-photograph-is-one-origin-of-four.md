@@ -46,9 +46,8 @@ misrouted a real entry that was measured.
 
 - **The two non-photographic paths are not equally trustworthy, and one enum
   value would have hidden it.** A store's metadata file names the game because the
-  installer wrote it there (T-0157, which verified that premise against real
-  files before anything was built). A title cut out of
-  `Game.Name.2019.RePack-GROUP` is a guess with nobody behind it (T-0158). Those
+  installer wrote it there. A title cut out of
+  `Game.Name.2019.RePack-GROUP` is a guess with nobody behind it. Those
   are different claims, so they are different origins, and `isAuthoritative` is
   the axis every consumer branches on.
 - **What authority actually decides was measured end to end.** A merge ranks

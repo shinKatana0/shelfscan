@@ -53,14 +53,14 @@ argument rather than a number, and it is here because it is the decision that
 shapes the product most. What is measured is the *failure mode*, twice, and both
 times it was the documentation rather than the code:
 
-- **T-0069 — "local" does not mean "offline".** The README stated that on the
+- **"Local" does not mean "offline".** The README stated that on the
   keyless path images never leave the machine. That is false. A local run POSTs
   every photograph to a URL the user can set; aimed at a box on the local
-  network, it ships the photographs there over plain HTTP. The same task found
-  the fallback option's description understating the upload by a large factor.
+  network, it ships the photographs there over plain HTTP. The fallback
+  option's description also understated the upload.
   **Keyless is not the same claim as offline, and the documentation must not
   conflate them.**
-- **T-0076 — a warning that is not on screen is not a warning.** The scan screen
+- **A warning that is not on screen is not a warning.** The scan screen
   rendered no privacy notice until the backend switch was *touched*, so a phone
   launch and a restored cloud preference both reached the scan button unwarned.
 
@@ -100,7 +100,7 @@ its own hand-written paraphrase of the warning, and the two had already drifted.
   ([0005](0005-resolution-is-the-lever-not-the-model.md)). It is still not the
   default, and this decision is why.
 
-## The Android clause, narrowed 2026-08-24 (T-0361, recorded by T-0362)
+## The Android clause, narrowed 2026-08-24
 
 **What is narrowed:** *Android is cloud-only by platform necessity*, in the
 first clause of the Decision above. It is not cloud-only, and the necessity
@@ -111,8 +111,8 @@ its own**: on-device models are too weak for shelf spines, which is measured
 and stands exactly as it stood.
 What the clause was read as implying is a different sentence — that the only
 model an Android app could reach was somebody's cloud. That never followed. A
-model on the local network was always reachable, and since T-0361 the app
-reaches one: `VisionBackend.local` is offered on both platforms, and on a
+model on the local network was always reachable, and the app
+can reach one: `VisionBackend.local` is offered on both platforms, and on a
 phone it means an Ollama the user names on their own network, characteristically
 the same desktop, the same model and the same hardware the desktop app already
 talks to.
@@ -132,14 +132,13 @@ different route from the one it was written for.
   no local case for the first frame to be silent about.
 - It is true now because every backend the phone offers still leaves the
   device. Local acquired a warning of its own there; the phone's default is
-  still the cloud, which T-0361 deliberately did not move; and the scan screen
-  still composes its notice from the policy when it builds rather than when the
-  switch is touched, which is the T-0076 fix this record already turns on.
+  still the cloud; and the scan screen
+  composes its notice from the policy when it builds rather than when the
+  switch is touched, which keeps the warning visible from the first frame.
 - What would have broken it is precisely what was not done: making local the
   Android default, or offering it as a backend with nothing to say. Local on a
-  phone is not "nothing leaves this machine" — it is T-0069's correction made
-  visible on a platform instead of merely true — so a silent local backend
-  would have been a first frame warning about nothing while the photographs
+  phone is not "nothing leaves this machine" — the network transfer must be
+  visible in its warning. A silent local backend would have been a first frame warning about nothing while the photographs
   crossed a network in the clear.
 
 **The exception this clause carves is now a preference rather than a
@@ -149,7 +148,7 @@ is the vendor cloud. That used to be a consequence of there being nothing
 else. There is something else now and it is still not the default — because a
 default that cannot run until the user has typed an address is a broken first
 launch, and because the order the backends are offered in is the owner's call
-and not a task's. That reasoning lives on `ProviderPolicy.defaultBackend`, and
+rather than a process preference. That reasoning lives on `ProviderPolicy.defaultBackend`, and
 it is a reason of a different kind from the one this record originally gave.
 Whoever revisits the Android default from here is arguing with a judgement,
 not with a hardware limit.
@@ -186,5 +185,5 @@ has watched.
 to match today loses the thing it is for: the practice here is
 [0004](0004-the-control-set-is-figures-not-a-file.md)'s — the earlier sentence
 is left standing rather than rewritten, so that both readings are legible, and
-what changed is dated, attributed to the task that changed it, and separated
+what changed is dated, explained by its evidence and separated
 into what moved and what did not.

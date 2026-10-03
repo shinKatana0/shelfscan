@@ -1,9 +1,6 @@
 # 0005 — Buy quality with pixels, not with a bigger model; and the model that does win stays opt-in
 
 **Status:** accepted, 2026-08-14, re-confirmed 2026-08-16
-**Measurements:** `doc/measurements.md` — "A bigger local model, measured and
-rejected", "The Switch 2 band, measured and rejected as a prompt problem", "The
-second lever works"
 
 ## Context
 
@@ -24,31 +21,18 @@ the shelf at a higher resolution.
 
 ## The measurement that settled it
 
-- **Pixels work.** The same shelf at the lower control resolution yields a
-  fraction of the detections it yields at the higher one, with a far weaker
-  platform-hint rate. Nothing else changes — same model, same prompt. The
-  figures are a count of a private collection and are in the working record
-  rather than here (T-0246); what they show is in
-  [`doc/measurements.md`](../measurements.md), "What the figures are measured on".
-- **A bigger *local* model does not.** A 32-billion-parameter model of the same
-  family was pulled and run on the same photographs with the same prompt. It does
-  not fit the available video memory, so a quarter of it runs on the CPU: nine
-  times slower, one photograph lost outright to a server error, and on the two it
-  finished it matched the smaller model at best and transcribed Japanese worse.
-- **A bigger *cloud* model did not either — at first.** "A cloud model will read
-  the Japanese spines" was an assumption that had been repeated for days. T-0090 measured it: the model tested reports those spines as unreadable
-  rather than reading them, returns fewer detections than the local model, and
-  invents a title at the lower resolution that the local model gets right. The
-  assumption was retired as false *for that model*.
-- **Then one did.** T-0112 measured a newer cloud model on all five control
-  photographs and it reads what thirteen prompt wordings could not, per spine and
-  correctly, and passes the low-resolution set where every previous attempt
-  invented titles. It also makes one invention of its own at the higher
-  resolution, and introduces a new class of partial row. It costs roughly half a
-  dollar per scan of a real shelf against zero locally.
-
-The full tables, costs and per-photo counts are in `doc/measurements.md` and are
-not repeated here.
+- **More image detail helps.** The higher-resolution control read yields more
+  usable detections and stronger platform hints under the same model and
+  prompt. The private control results are summarized without owner-derived
+  counts in [`doc/measurements.md`](../measurements.md), under
+  "Control-photo methods and conclusions".
+- **A larger local model did not improve the result.** It exceeded available
+  video memory, ran more slowly and transcribed Japanese less reliably on the
+  completed comparison. It is not a better default.
+- **Cloud models differed.** An earlier model left difficult spines unreadable
+  and introduced an invention. A newer model read the difficult platform band
+  more reliably, while retaining its own errors and a paid, off-device path.
+  That result supports an opt-in choice, not a default change.
 
 ## Consequences
 
@@ -59,9 +43,9 @@ not repeated here.
   sends photographs of a home to a third party.
 - Because the prompt has no per-provider copy
   ([0002](0002-the-prompt-is-a-measured-artifact.md)), a wording tuned for the
-  cloud model would re-price the default provider's control document. Two tasks
-  priced exactly that and both declined; the arithmetic, including how many runs
-  a statistically meaningful comparison would need, is in `doc/measurements.md`.
+  cloud model would re-price the default provider's control document. Prompt
+  comparisons were priced and declined; see the measurement archive for their
+  method and limits.
 - Three separate "just use a bigger model" arguments have now been priced and
   written down, so the fourth one starts from evidence instead of from instinct.
   That is the point of keeping the rejected measurements at all.

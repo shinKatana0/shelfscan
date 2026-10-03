@@ -3,11 +3,10 @@
 ## Overview
 
 shelfscan is a pipeline utility, not an application. It turns photos of a
-physical shelf — and, since T-0155 and T-0179, what is already on the machine
-— into an importable collection file for existing collection managers. The
-shelf was games alone until T-0162; a disk source now answers films and
-animation series too, and decision 0015 makes the kind a property of the row
-rather than of the run. Animation and anime are two upstream types rather than
+physical shelf and local sources already on the machine into an importable
+collection file for existing collection managers. Disk sources also answer
+films and animation series, and decision 0015 makes the kind a property of
+the row rather than of the run. Animation and anime are two upstream types rather than
 one: the animation kinds are TMDB cartoons carrying a film-or-series
 `platform_id`, and `anime` is a separate type nothing here looks up.
 It deliberately owns **no catalog UI and no database** — those belong to the
@@ -81,7 +80,7 @@ returns every detection unmatched — the same shape a failed resolution
 degrades to, so review and both exporters handle it unchanged. Configure some
 but not all, and they pick a `CatalogueRouter` with `SkipResolver` behind it:
 a run holding a TMDB token and no IGDB pair looks its film and animation rows
-up and leaves its game rows unmatched (T-0387). No catalogue here answers
+up and leaves its game rows unmatched. No catalogue here answers
 `WorkKind.anime`: upstream keys that type on AniList or Kitsu and this project
 queries neither, so such a row is always unmatched and leaves through the
 Custom Cards target or CSV.
@@ -92,7 +91,7 @@ Design rules:
   Twitch token and the IGDB rate window — lives in `IgdbClient`, not in a
   worker: concurrent lanes share one in-flight refresh future rather than
   stampeding Twitch, and the first token failure is remembered so later rows
-  degrade with the same sentence instead of asking again (T-0144).
+  degrade with the same sentence instead of asking again.
 - **Workers never talk to each other.** Data flows only through the
   orchestrator between stages.
 - **A failed task never kills the run.** A bad photo is skipped with a
@@ -102,11 +101,11 @@ Design rules:
   exponential backoff), so rate limits from either API are handled
   uniformly — each provider still classifies its own statuses. One
   deliberate exception: the Twitch token's 429 and 5xx are retried inside
-  `IgdbClient._refreshToken`, not through `Worker.run`, because T-0144
+  `IgdbClient._refreshToken`, not through `Worker.run`, because the client
   caches the first token failure — a retry outside would be answered from
   that cache, sleeping once per row with no request leaving the machine.
   Retrying where the request is made prices it once per run instead of
-  once per detection (T-0143).
+  once per detection.
 
 ## Module map
 
@@ -209,7 +208,7 @@ Platform boundary rules:
   save/share dialogs, progress rendering via `ScanProgress` callbacks.
 - Naming bytes is not decoding them: `photo_format.dart` is core because what
   a file *is* is a property of its bytes, and both cloud providers have to
-  label the upload with it (T-0036).
+  label the upload with it.
 - The CLI in `bin/` is the validation harness: the go/no-go vision
   quality check runs there before any UI work.
 
@@ -254,8 +253,8 @@ Platform boundary rules:
 - New detection source — anything that names a work without being
   photographed:
   implement `DetectionSource` and add a `SourceRun` to the list
-  `Orchestrator.runScan` takes beside the photos, any of which may be empty
-  (T-0155, T-0179). The shell does the reading — walking a directory, querying
+  `Orchestrator.runScan` takes beside the photos, any of which may be empty.
+  The shell does the reading — walking a directory, querying
   a local database — and the source turns a `SourceEntry`'s name, container and
   text into rows through `Detection.fromSource`, declining what it cannot use.
   The platform boundary above is what forces that split, exactly as it does for
@@ -264,24 +263,23 @@ Platform boundary rules:
   of those is one row, and which source owns an entry is stated by the shell
   rather than guessed from the entry. The seam is drawn below.
 - ~~Shelf pre-segmentation (split wide photos into strips)~~ — built,
-  measured and rejected (T-0003); see doc/measurements.md for the numbers.
+  measured and rejected; see doc/measurements.md for the numbers.
   It slots into `VisionWorker.process` cleanly enough, but on the real photos
   it found no additional item and invented titles the whole-photo read got
-  right. T-0024 has since made a truncated read mergeable, but only when the
+  right. A truncated read is now mergeable, but only when the
   cut lands mid-word and leaves a complete 5+ character word — strips
   produce sub-floor fragments like `COM` and `CHRO`, which it deliberately
   refuses to merge. So that is not the missing piece either.
 - Camera capture on Android (image_picker) plugs into the scan screen
   and produces the same `PhotoInput`.
 - ~~Alias table can graduate from a dict to a data file + IGDB
-  `alternative_names` lookups inside the resolver only.~~ — done (T-0004).
+  `alternative_names` lookups inside the resolver only.~~ — done.
   New regional titles go in `app/assets/data/title_aliases.json`, no Dart
   edit. The resolver takes the parsed map as a constructor argument because it
   may not read files itself (platform boundary above): the CLI reads the file,
   the app loads the same file as a bundled asset. It lives under `app/`
   because that is the only place a Flutter asset can live — a key declared by
-  a `../` path is written outside the bundle and reaches no built app
-  (T-0386).
+  a `../` path is written outside the bundle and reaches no built app.
 
 ### Where a new source plugs in
 
@@ -317,6 +315,6 @@ Four implementations sit on this seam today: `GogMetadataSource`
 (`goggame-*.info`), `FilenameSource` (file and folder names),
 `GogLibrarySource` (GOG Galaxy rows), and `InstalledGameSource` — not a reader
 at all but a router, handing each entry to the first two by name. Its rows are
-not all games: `FilenameSource` has answered `WorkKind.movie` since T-0162, so
+not all games: `FilenameSource` also answers `WorkKind.movie`, so
 a film sitting in that folder leaves the seam as a film. Being shell code, that
 last one exists once in `bin/` and once in `app/lib/`.

@@ -32,16 +32,16 @@ The threshold itself has never been moved.
 
 ## The measurement that settled it
 
-**The scorer was never the problem.** T-0008 ran the resolver against live IGDB
+**The scorer was never the problem.** The resolver was run against live IGDB
 for the first time and checked every row against the photographs. Almost all the
 misses never reached the scorer at all — the database returned zero rows for
 them. Word order, subtitle noise, regional titles and corrupt reads accounted for
-zero occurrences each. What the data indicted instead was that the client emits
-one hit per (game, platform) pair while the score compared titles only, so a
-dozen rows tied at a perfect score and the winner was whichever arrived first.
+no explanatory power. What the data indicted instead was that the client emits
+one hit per (game, platform) pair while the score compared titles only.
+Multiple rows tied at a perfect score, so whichever arrived first won.
 Almost every confident false positive was the *right game on the wrong console*.
-T-0002 was re-scoped from "replace the string metric" to "gate on the platform"
-on the strength of that.
+The fix therefore gated candidates on platform rather than replacing the
+string metric.
 
 **The threshold is not the knob.** Scores cluster at the top and there was
 nothing at all in the band immediately below the cut. Every false positive scored
@@ -55,8 +55,8 @@ volume agreement is a gate rather than a weight.
 argued.** A hint mapping to a single platform id leaves every surviving candidate
 on that id, so a guard that only fired between *different* platforms could never
 fire at all — two different games at an identical score were decided by the
-database's ordering. T-0165 measured four rule variants across four console
-conditions and two control sets, using a method worth naming: one live answer per
+database's ordering. A later measurement compared rule variants across console conditions
+and both control sets, using a method worth naming: one live answer per
 (query, platform filter) was recorded to a file outside the repository and
 replayed through the **real** resolver under each variant, so every variant sees
 identical rows and the only difference is the rule. Sixteen variant runs cost
@@ -82,7 +82,7 @@ in `doc/measurements.md` and are not repeated here.
   row including partial reads, so confidence is unusable even as a *ranking*
   signal, let alone as a gate.
 - A refusal has a cost the measurement did not price: two tied rows reach review
-  looking identical. That was filed as its own task and fixed by putting the
+  looking identical. The fix puts the
   release year in front of the human — the same fact the rule uses.
 - This is what makes widening a platform hint affordable; see
   [0006](0006-a-platform-hint-has-a-measured-width.md).

@@ -34,8 +34,7 @@ Around that:
 ## The measurement that settled it
 
 All three options were run against a real Galaxy installation while
-Galaxy was running and had written to its log since the last checkpoint. The
-table is in the working record; the result is:
+Galaxy was running and had written to its log since the last checkpoint. The observed result was:
 
 - `mode=ro` sees the log, and touches the original (the shared-memory file's
   timestamp moves).
@@ -47,9 +46,8 @@ table is in the working record; the result is:
 - Copying both files and opening the copy sees the log and leaves the original
   untouched.
 
-Two honest limits, which T-0177 states about itself and which are repeated here
-because a registry that only carries the flattering half of a measurement is not
-worth reading. First, the rows the immutable open dropped were rows of a
+Two limits matter to the interpretation of that measurement. First, the
+rows the immutable open dropped were rows of a
 metadata cache table, not library rows and not games: the library tables
 answered the same count under both opens, so the mechanism is measured and the
 loss to *this feature* was not observed. Second, `mode=ro` did not actually

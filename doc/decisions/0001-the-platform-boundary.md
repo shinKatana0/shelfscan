@@ -43,7 +43,7 @@ the package is added.
 Two additions were priced rather than assumed, five months of project time
 apart, and both came out against the package:
 
-- **Image manipulation (T-0003).** Splitting each photograph into overlapping
+- **Image manipulation.** Splitting each photograph into overlapping
   strips before the vision call was implemented and measured. It found no
   additional item, invented titles the whole-photo read got right, and lost every
   platform hint — the numbers are in `doc/measurements.md`, "Pre-segmentation,
@@ -51,8 +51,8 @@ apart, and both came out against the package:
   finding: the `image` package the cropping needed pulls in six transitive
   packages, and it bought nothing. The feature was reverted and core stayed
   `http`-only.
-- **SQLite (T-0177).** Reading the storefront's library database looked like it
-  required a SQLite package — the task was filed asserting it outright.
+- **SQLite.** Reading the storefront's library database looked like it
+  required a SQLite package.
   It does not. `dart:ffi` is in the SDK, and Windows has shipped the SQLite
   engine itself since Windows 10 1803, so the shell opens the system library
   directly and binds ten functions. Not even an FFI helper package is needed,
@@ -65,8 +65,8 @@ apart, and both came out against the package:
 The boundary itself is not a convention that people remember. It is asserted by
 tests in `packages/shelfscan_core/test/`: nothing under `lib/` imports
 `dart:io`, nothing under `lib/` imports `dart:ffi`, and the package's declared
-dependencies parse to exactly `['http']`. The second of those was added by
-T-0177 precisely because the first would not have caught it — `dart:ffi` is not
+dependencies parse to exactly `['http']`. The second guard matters because
+the first would not have caught it — `dart:ffi` is not
 `dart:io`, and the guard that existed would have let the violation through.
 
 ## Consequences

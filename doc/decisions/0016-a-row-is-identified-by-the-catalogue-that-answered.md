@@ -8,22 +8,20 @@
 ask. It carries `igdbId`, `platformId` and `platformName`, all required, and
 writes `igdb_id`, `platform_id` and `platform_name` into `review.json`.
 
-Three tasks have since arrived at the same wall from three directions, and none
-of them was about identity when it started.
+Several changes exposed the same identity problem from different directions:
 
-- **T-0162** added TMDB. A film's id now travels in a field called `igdbId`.
-  Nothing is wrong in the bytes — the exporter writes the right number in the
+- **Adding TMDB** exposed a naming mismatch. A film's id travelled in a
+  field called `igdbId`. Nothing is wrong in the bytes — the exporter writes the right number in the
   right place — and everything is wrong in the name, which is the failure this
-  project has already paid for once: T-0290's whole cost was a Dart identifier
-  that had quietly become somebody else's file format.
-- **T-0162** also verified that a published movie item carries **no
-  `platform_id` key at all**, so the film path invents `filmPlatformId = 0` and
-  `filmPlatformName = ''` to satisfy two required fields, and documents loudly
+  project has encountered before: a Dart identifier had quietly become a
+  value in somebody else's file format.
+- **Published movie items carry no `platform_id` key at all**, so the film
+  path invents `filmPlatformId = 0` and `filmPlatformName = ''` to satisfy two required fields, and documents loudly
   that neither reaches a file.
-- **T-0290** found that `platform_id` is not one concept. For a game it is a
+- **`platform_id` is not one concept.** For a game it is a
   catalogue platform id; for an animation it is the export target's
   film-or-series discriminator. `main` was writing the first into the second.
-- **T-0163** found the same class from the other end: a part of a box set has
+- **The same mismatch appears at the other end:** a part of a box set has
   no id at all, and `.xcoll` refuses it — pinned as a test rather than worked
   around.
 
@@ -45,7 +43,7 @@ calls the entry**, carried together as one namespaced value in the form
 argued twice.** `Detection.sourceId` is a namespaced string, and its doc
 comment states the reason in the general form — *"the number alone is only
 unique inside one store, and two stores' ids colliding would resolve one game
-to another with nothing visible to a reader"*. `CatalogueEntry.ref` (T-0163)
+to another with nothing visible to a reader"*. `CatalogueEntry.ref`
 copied it a day ago and restated it: *"a string, not an int, precisely because
 `Candidate.igdbId` is an int for being only ever IGDB's"*. So of the three
 types in this tree that hold an external id, two namespace it and argue why,
@@ -57,7 +55,7 @@ an IGDB or a TMDB id — and copying that inward is the tempting shortcut. It is
 wrong here for a reason that is in the tree rather than in principle:
 `CatalogueRouter` holds `Map<WorkKind, Worker<Detection, ResolvedGame>>` and
 the map is built by the shell, deliberately, so that a third catalogue is one
-entry and no production line moves (T-0162). A kind therefore does not name a
+entry and no production line moves. A kind therefore does not name a
 catalogue in this codebase; it names whatever the shell registered for it. An
 id whose catalogue is inferred from a map somebody else configures is exactly
 the silent mismatch `Detection.sourceId` refuses.
@@ -66,7 +64,7 @@ the silent mismatch `Detection.sourceId` refuses.
 target wants a bare integer with the catalogue implied by `media_type`. So
 `TonkatsuExporter` splits the namespace off, and **refuses the row if the
 namespace disagrees with what the kind implies**. That check is not decoration:
-it is the shape of the defect T-0290 fixed by hand, made mechanical. A row
+it is the shape of a defect previously fixed by hand, made mechanical. A row
 carrying a games-catalogue id under a film kind is precisely what `main` was
 writing, one field over.
 
@@ -84,7 +82,7 @@ it out. A split by *has a platform / has not* puts `game` on one side and
 `movie` on the other, and then has nowhere to put `animation`, which needs a
 value in that wire position that is not a platform at all. A two-way carve of a
 three-way distinction is how one name comes to mean two things, which is the
-thing decision 0015 spends a paragraph on and T-0290 spent a task on. The
+thing decision 0015 explains. The
 film-or-series bit belongs to the **kind**, where `WorkKind.wire` already makes
 room for it: two enum values may share the wire string `animation` and differ
 only in the number they put in `platform_id`. That is written in
@@ -106,7 +104,7 @@ three times" is that it already is said once. What looked like three arguments
 is one contract with two clauses over three cases.**
 
 - A row with no match at all is refused by the base clause, `best != null`.
-- **A part of a box set is that same clause**, not a separate argument. T-0163's
+- **A part of a box set is that same clause**, not a separate argument.
   `expandParts` drops `best` because it was an answer about the box, so a part
   arrives unmatched and the default rule refuses it. Nothing was added for it;
   the test pins behaviour that was already there.
@@ -157,9 +155,8 @@ namespace goes in everywhere in one commit. A `Candidate` whose id is sometimes
 bare and sometimes namespaced is worse than either shape on its own, because
 every consumer then has to guess which it holds — and a half-applied rename is
 a substitution that stopped halfway, which is the failure shape this project
-has paid for most often, and the one T-0162 found twice in one afternoon. One
-commit for the type, the exporter's namespace check, and the reader's legacy
-path.
+has encountered repeatedly. The type, the exporter's namespace check and
+the reader's legacy path move together.
 
 ## The measurement that settled it, and how it was counted
 
@@ -173,7 +170,7 @@ was positive-controlled against a known site in the exporter and
 negative-controlled against the settings screen before any figure below was
 taken.
 
-**The rename is far cheaper than the task that raised it assumed, and that is
+**The rename is smaller than initially expected, and that is
 the answer rather than a caveat.**
 
 | | occurrences | files |
@@ -190,8 +187,8 @@ the rename is twelve lines of code across four files**: `models.dart`,
 The seventy in tests are almost entirely `igdbId:` in fixture construction —
 27 construction sites in all, five of them in `lib/`.
 
-**And the rename reaches no file format, because the separation T-0290 had to
-build already exists here.** `WorkKind` needed a `wire` field invented for it
+**The rename reaches no file format, because the required separation
+already exists here.** `WorkKind` needed a `wire` field
 because the exporter was writing `workKind.name` — the identifier itself.
 `Candidate` never did that: the wire key is a string literal at the
 (de)serialiser, `'igdb_id': igdbId`, and the CSV column is a literal in a header
@@ -228,7 +225,7 @@ person **corrected** from game to film at review keeps the detection's original
 hint — `correctWorkKind` clears the match, not the detection — so after
 re-resolution that row would print a console name in the platform column of a
 film. Nothing writes it today only because `''` happens to block the chain.
-Whichever task implements this owns that line, and the fix is that a kind with
+An implementation must update that line, and the fix is that a kind with
 no platform writes no platform rather than falling through to a hint that was
 about something else.
 
@@ -253,7 +250,7 @@ about something else.
   one catalogue that carries another's ids is the same defect as the field, one
   level out, and this project has now twice watched a name outlive the thing it
   named. The cost is real — the header is published in the README in three
-  languages, and T-0166 already accepted that a consumer must map by header
+  languages, and consumers already must map by header
   rather than by position. What makes it affordable today is that **no catalogue
   app has ever imported this CSV**, which the README and the changelog both
   state. The day one does, the column is frozen and this becomes a different
@@ -265,7 +262,7 @@ about something else.
   before it can reach the writer.
 - **A box-set part still does not export to `.xcoll`**, and nothing here changes
   that. It has no id from any catalogue, so it fails identity in the plain
-  sense; T-0163's pinned test goes on recording that, and what lifts it is a
+  sense; a pinned test records that, and what lifts it is a
   catalogue client that answers per part, not a change to this shape.
 - **This does not settle dedupe.** Decision 0015's cost #1 — that `titleKey`
   folds an adaptation into the work it was adapted from, and that the kind has
@@ -277,11 +274,11 @@ about something else.
 
 - **Whether `tv_show`'s `external_id` is a TMDB series id.** It is the obvious
   reading of the published collections and it was not verified against one.
-  What would settle it: the same check T-0162 ran against the format's own
-  reference files, before any task writes the fourth kind.
+  What would settle it: a check against the format's own
+  reference files before a fourth kind is exported.
 - **The internal separator.** `catalogue:id` is taken from the two existing
   fields for consistency, not because a colon was measured against a record
-  type. If a later task meets a catalogue whose ids contain a colon, the
+  type. If a later catalogue has ids whose ids contain a colon, the
   convention breaks in the same place in all three fields, which is the cheapest
   place for it to break.
 - **What a row identified by two catalogues looks like** — an anime holding both
