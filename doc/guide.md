@@ -96,19 +96,9 @@ the text is right.
 
 ## Step 1 — Photograph the shelf
 
-**Resolution is the lever.** This is the single biggest thing you control, and
-it is measured on a real shelf: the same shelf photographed at 4000×3000
-gives **well over twice** the detections the same two photographs give at
-1200×900.
-Same model, same prompt, nothing else changed. Every attempt this project made
-to buy quality with a bigger model failed; every attempt to buy it with pixels
-worked.
-
-Those two figures are the project's standard control sets, `CONTROL-LOWRES` and
-`CONTROL-HIRES` — the same shelf, twice, at those two resolutions. They are
-private photographs and are not published, so what you can read is what they
-produce: [`measurements.md`](measurements.md) quotes the figures they settled,
-each against the set it was measured on.
+**Resolution is a useful lever.** Small spine text becomes harder to read
+when a photo is downscaled. Model choice also matters, and no universal recognition rate is claimed here. Try a full-resolution image with
+complete spines in frame, then inspect the review before exporting.
 
 So, practically: shoot at your phone camera's full resolution and do not let a
 messaging app downscale the file on its way to the PC. Fill the frame with
@@ -146,7 +136,7 @@ model holds far more in one frame than the local 7B does; if you are scanning
 locally, the sections are what buy you the whole shelf.
 
 Numbers, the ladder they came off and the two failure texts:
-[`measurements.md`](measurements.md), "The 7B's density ceiling".
+[`measurements.md`](measurements.md), "The 7B's density ceiling, and the loop past it".
 
 **What is read.** JPEG, PNG and WebP. Each file is identified **by its
 contents, not by its name**, so a HEIC that your phone or a messaging app
@@ -221,83 +211,46 @@ not the same claim.
 
 ### What each one actually reads
 
-Measured on the same five control photographs, checked against the
-photographs by eye rather than against another JSON file. Numbers and full
-caveats: [`measurements.md`](measurements.md), "The second lever works" and "A
-bigger local model, measured and rejected".
+Models vary in their handling of small text, non-Latin scripts and printed
+platform bands. A paid or cloud endpoint does not guarantee a better result.
+Use review to correct every model's output, and check the provider's current
+pricing before sending photos.
 
 <!-- measured-on: qwen2.5vl:7b -->
 
-| | local `qwen2.5vl:7b` | `gpt-4.1-mini` | `gpt-5.5` |
-|---|---|---|---|
-| hi-res detections | the baseline | fewer | slightly more, and it wanders by photo |
-| Japanese-script spines | transcribes them all | **reads none** | transcribes them all |
-| printed Switch 2 band | **not read** — hints those cases `PS2` | not read | read per spine, every hint correct across the three full-resolution photographs, five runs each; measured separately at 1200×900, every case correct on the one photograph there where the band was checked |
-| invented titles at 1200×900 | none | one, on 3 of 5 runs | none over 5 runs |
-| cost | **$0** | paid | ~**$0.45** for a three-photo shelf |
+The historical local observations used `qwen2.5vl:7b`. Those observations do not establish another model's quality or speed.
+To try the older model, name it in `SHELFSCAN_OLLAMA_MODEL` or the app's
+Vision model field.
 
 <!-- /measured-on -->
 
-**The local column is `qwen2.5vl:7b`, and since 2026-09-04 it is not the
-built-in default.** The default is `qwen3-vl:8b-instruct`, and none of the
-figures above — or anywhere on this page — were measured on it. Name
-`qwen2.5vl:7b` in `SHELFSCAN_OLLAMA_MODEL`, or in the app's Vision model
-field, if you want them. What is known about the default is in the next
-section.
-
-Two things worth taking from that table, because both are easy to assume the
-other way round:
-
-- **The local model is not the one that fails on Japanese.** It transcribes
-  every Japanese-script spine; `gpt-4.1-mini` reads none of them. "A cloud model
-  will read the Japanese spines" was measured and is false for that model.
-- **What the local model does miss is the printed Switch 2 band.** Those
-  spines come back hinted `PS2`, which is wrong. Thirteen prompt wordings were
-  tried against this and none worked, so it is a model limit rather than
-  something to tune. `gpt-5.5` reads the band per spine and gets it right —
-  and still invents one row at 4000×3000 on 2 runs of 5, so review is not
-  optional on it either.
-
-If you have a handful of Switch 2 cases and a shelf you scan once, the cloud
-pass is worth about the price of a coffee. If you scan repeatedly, or your
-shelf has no Switch 2 band on it, local costs nothing and gives up little.
+The built-in default is now `qwen3-vl:8b-instruct`.
 
 ### Setting up the local model
 
 Install Ollama, pull a vision model, and leave the server running. The
 built-in defaults are `qwen3-vl:8b-instruct` at `http://localhost:11434`, and
-both are overridable with `SHELFSCAN_OLLAMA_MODEL` and `SHELFSCAN_OLLAMA_URL`. <!-- measured-on: qwen2.5vl:7b -->
-`qwen2.5vl:7b` answers a 4000×3000 photo in about **25 s** on a machine that
-fits it; how long the default takes on yours has not been measured here.
+both are overridable with `SHELFSCAN_OLLAMA_MODEL` and `SHELFSCAN_OLLAMA_URL`.
+
+<!-- measured-on: qwen2.5vl:7b -->
+
+A timing measured with `qwen2.5vl:7b` would not predict how long
+your chosen model takes on your machine. Check Ollama's running model and
+use the timeout setting below only when the model is genuinely slow.
 
 <!-- /measured-on -->
-
-**The default changed on 2026-09-04 and none of this page's figures changed
-with it.** Everything measured here was taken on `qwen2.5vl:7b`, which was the
-default until that date. The only thing anyone here has observed of
-`qwen3-vl:8b-instruct` is the comparison in the next list, and it is not a
-claim that it is faster, better, or as well measured.
 
 **Which model — shelfscan needs an image-capable one, and it checks.**
 
 - Before a scan starts, the server is asked what the model you named can do.
-  One question per run, not one per photograph. A model the server says
-  cannot accept an image stops the run with that sentence, instead of failing
-  once per photo with whatever the server happens to say at the time.
-- Being multimodal is not by itself a good fit. This route wants one concise
-  structured answer per photograph, and a model that reasons before it
-  answers can spend its whole output budget thinking and write no answer at
-  all.
-- `qwen3.5:9b` did exactly that on the run this was reported from, on every
-  photograph of it. `qwen3-vl:8b-instruct` read all three of those
-  photographs. That is why it is the default: an image-capable instruct model
-  that answered where a reasoning-heavy one wrote nothing. One machine, one
-  run, one comparison, and no other measurement of it exists here.
-- So a model the server says reasons first gets a warning and the run goes
-  ahead anyway. Nothing here changes the model id you typed, and a server too
-  old to answer the question, or one that does not answer it, changes nothing
-  about the run at all.
-- Other image-capable models work and are simply not validated here.
+  One question per run, not one per photograph. A model that cannot accept an
+  image stops the run with that explanation.
+- A reasoning-heavy multimodal model can exhaust its output budget before
+  returning the concise structured answer this tool needs. The default is an
+  image-capable instruct model; other image-capable models can be selected.
+- A model the server reports as reasoning-first gets a warning, but the run
+  continues. A server that cannot answer the capability question also leaves
+  your model selection unchanged.
 
 ### Setting up a cloud backend
 
@@ -336,12 +289,10 @@ counts as unset everywhere, deliberately.
 
 <!-- measured-on: qwen2.5vl:7b -->
 
-**Ollama is running but not answering.** A different failure with a different
-fix, so it is a different message. It ends on the diagnosis: a wedged model
-runner stalls exactly like this, `qwen2.5vl:7b` answers a 4000×3000 photo in
-about 25 s here, so check the server is alive with `ollama ps` before assuming
-the model is merely slow — a model too large for the machine is the one case
-measured here that legitimately takes minutes.
+**Ollama is running but not answering.** A stalled `qwen2.5vl:7b` runner
+and a genuinely slow model need different responses. Check `ollama ps` and the
+server logs before assuming a timeout means the model is merely slow. A model
+too large for the machine may genuinely need more time.
 
 <!-- /measured-on -->
 
@@ -1183,11 +1134,9 @@ is the last point at which a wrong row is still cheap to remove.
 - [`android-build.md`](android-build.md) — the Android toolchain from a
   bare Windows machine, and the failures that name something other than the
   missing step.
-- [`measurements.md`](measurements.md) — the measurements this project's
-  decisions rest on, including what it measured and then decided not to do.
-  Not every figure: one that settles a single constant usually lives in the
-  doc comment beside that constant, and the archive's own opening says so.
-  Read the one section that covers what you are about to try.
+- [`measurements.md`](measurements.md) — public measurement methods and
+  synthetic evidence for selected decisions. Read the section relevant to
+  the change you are considering.
 - [`decisions/`](decisions/) — the decisions a reader would otherwise be
   surprised by, each with the measurement that settled it.
 - [`../ARCHITECTURE.md`](../ARCHITECTURE.md) — the pipeline, the module map,

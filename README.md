@@ -72,24 +72,15 @@ than as a report of a working app.
   code carries a decoder on each platform, the Windows Imaging Component on
   Windows and the system codec on Android. There is no installer and no
   published binary — you build it from source ([Setup](#setup)).
-- **It is exactly as good as the vision model you supply, and the free one has <!-- measured-on: qwen2.5vl:7b -->
-  a known ceiling.** The local `qwen2.5vl:7b` reads a Latin-script
-  spine well and does not read the printed *Switch 2* band at all — those
-  cases come back hinted `PS2`. It *does* transcribe Japanese script at full
-  resolution; at low resolution it omits the Japanese spines, which is the
-  right answer there because they are illegible rather than merely foreign.
-  A cloud model is not automatically better: `gpt-4.1-mini` reads none of
-  those Japanese spines, which the local model does. Only
-  `gpt-5.5` reads both the script and the band, and charges for it
-  ([the measured difference](#which-model-and-what-it-changes)). <!-- /measured-on -->
-  Every one of those readings was taken on `qwen2.5vl:7b`, the built-in
-  default until 2026-09-04. The default is now `qwen3-vl:8b-instruct`, and
-  none of this was measured on it
-  ([what is known about it](#which-model-and-what-it-changes)).
-- **Human review is not optional, and confidence will not do it for you.** The
-  local model returns `1.0` for everything, including partial reads. Every item
-  passes your eye before export; that is where the remaining fifth gets fixed
-  ([what to expect](#what-to-expect)).
+- **Recognition depends on the model and the photograph.** <!-- measured-on: qwen2.5vl:7b -->
+  The evaluated local `qwen2.5vl:7b` missed some printed platform markings;
+  paying for a cloud model did not guarantee a better read. These observations
+  apply only to this evaluated model. <!-- /measured-on -->
+  The current default is `qwen3-vl:8b-instruct`; compare models on your own material and
+  [review every item](#what-to-expect) before export.
+- **Human review is not optional, and confidence will not do it for you.**
+  A confidence score cannot replace checking the title and platform yourself.
+  Every item passes review before export ([what to expect](#what-to-expect)).
 - **Some spines are not read at all** — a spine that carries a logo and no
   text, and any spine too dim or too small in the frame to resolve. They are
   counted and named rather than guessed at, and you
@@ -103,18 +94,9 @@ than as a report of a working app.
   through CSV instead ([Path A](#path-a--keyless)). A Custom Card is a title and
   a kind and no more: the receiving app stores it as a custom item and fetches
   no cover and no metadata for it.
-- **Only one path is verified end to end.** Photographs → `.xcoll` → an import
-  into Tonkatsu Box: every approved item arrived, covers and metadata fetched
-  by the importer, every platform id correct, including Nintendo Switch 2.
-  The disk
-  sources are newer and have had far less exercise. They have now been run
-  against real folders: one installed GOG game resolved by its store id alone
-  (`externalId`, no search string), and a folder of staged downloads gave three
-  more rows and one named refusal. But that run stops at the export — **no
-  disk-source `.xcoll` has been imported into a catalog app**, so "verified end
-  to end" still belongs to the photographs alone. Nor has a CSV ever been
-  imported into CLZ Games here: the format is generic and tested, the import is
-  not.
+- **The photo-to-Tonkatsu path has been exercised end to end.** The newer disk
+  sources and generic CSV export are implemented and tested, but their imports
+  into external catalogue apps are not claimed as live validated.
 - **Films are looked up, and both shells can reach the catalogue that does
   it.** A video file whose name is release-shaped becomes a film row rather
   than a game row, and the kind is shown and correctable at review. A film row
@@ -273,7 +255,7 @@ disk instead of a photo — is [Setup](#setup) and [Commands](#commands).
 | | |
 |---|---|
 | Photos, local model | **$0.** Your own Ollama server, no account. |
-| Photos, cloud model | **your own key, your own bill.** Measured with `gpt-5.5` at the vendor's listed rates on 2026-08-16: a three-photo 4000×3000 shelf scan costs about **$0.45** ($0.38–$0.46; a two-photo 1200×900 scan is $0.20–$0.27). |
+| Photos, cloud model | **Your own key, your own bill.** Cost depends on your provider, model and image size; check the provider's current pricing before a scan. |
 | Installed games, GOG Galaxy library | **$0.** No model and no key; Galaxy's library is read from a file on your own machine, and nothing is fetched from any store. |
 | IGDB ids (and with them `.xcoll`) | **$0**, but it needs a free Twitch application you register yourself ([Path B](#path-b--bring-your-own-keys)). |
 | Film and animation ids (and with them their `.xcoll` rows) | **$0**, but it needs a free TMDB account you register yourself ([Path B](#path-b--bring-your-own-keys)). |
@@ -303,7 +285,7 @@ worth reading before you pick a cloud endpoint.
 | [doc/android-build.md](doc/android-build.md) | building the Android apk on Windows: the toolchain, and four failures, three of which name something other than the missing step |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the pipeline, the platform boundary, where a new source plugs in |
 | [doc/decisions/](doc/decisions/) | the non-obvious decisions, each with the measurement that settled it |
-| [doc/measurements.md](doc/measurements.md) | the measurements behind the decisions — including what was measured and then *not* built. Not every number: a prompt figure usually lives in the doc comment beside the rule it settled |
+| [doc/measurements.md](doc/measurements.md) | public measurement methods and synthetic evidence behind selected decisions |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | running the suites, and what a change must not silently break |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | how people are expected to behave here |
 | [SECURITY.md](SECURITY.md) | keys, photographs, and how to report a problem |
@@ -316,32 +298,17 @@ every command, the export formats, and where your photos go.
 
 <!-- measured-on: qwen2.5vl:7b -->
 
-Measured on two real shelf photos with the local model `qwen2.5vl:7b`, which
-was the built-in default when they were taken:
-
-- **~80–83% of items come out correct end to end**, ~93% on
-  Latin-script titles. Every item passes human review before export, and
-  that is not a formality — it is where the remaining fifth gets fixed.
-- **The Japanese-script spines on these photos are not read.** The model
-  does not guess at them any more (it used to invent plausible titles); they
-  are counted and reported as unreadable, and you add them by hand. That is
-  these photos, not a rule about the script — on the full-resolution
-  control set the same model transcribes them
-  ([the table below](#which-model-and-what-it-changes)).
-- **Spines with a logo and no text** (a case whose art carries no printed
-  title is the example that started this note) are not detected. Same answer:
-  add by hand.
-- **Platform is often blank.** Disc cases carry a platform band the model
-  reads; a stack of Switch cartridges does not, so those items arrive
-  with no platform and you set it at review.
-- **Model confidence is useless here** — the local model returns `1.0`
-  for everything, including partial reads. Do not filter on it.
+With the evaluated local `qwen2.5vl:7b`, results varied with resolution,
+printed script and platform markings. Textless or unclear spines can be missed;
+partial reads need correction. These observations do not predict another model's accuracy. Review every item, add missing
+items by hand and correct platform hints before export.
 
 <!-- /measured-on -->
 
-A run over the two photos above prints exactly what it could not read.
-*Illustrative output: the filenames and the figures in this block are made
-up, not measured off any shelf.*
+The current default is `qwen3-vl:8b-instruct`; its quality must be checked
+separately.
+
+The following output is illustrative and uses invented filenames and figures:
 
 ```
 Scanned 2 photo(s): 18 game(s) detected, 18 unresolved.
@@ -352,54 +319,28 @@ Unread-spine reports: 6 -- one report can describe several spines, so this is no
   ...
 ```
 
-Reports, not spines: a cloud model answers one entry for a group of them
-("two/three spines in the middle are too blurred to read"), so the number
-is of things the model said, and its own wording is printed under it.
+An unread-spine report describes what the model said, sometimes about several
+spines. It is not a count of individual missing items.
 
 ### Which model, and what it changes
 
-The model is yours to choose and it is the largest single lever on the result.
-Three have been measured here on the same control photographs; the full numbers
-and the runs behind them are in
-[`doc/measurements.md`](doc/measurements.md), "The second lever works" and "A
-bigger local model, measured and rejected".
+Models can differ in how they read small print, scripts and platform bands.
+Cloud access alone does not establish better recognition; test a model with
+your own images and check the review rows. Pricing depends on the provider.
 
 <!-- measured-on: qwen2.5vl:7b -->
 
-| | `qwen2.5vl:7b` (local) | `gpt-4.1-mini` | `gpt-5.5` |
-|---|---|---|---|
-| Cost | **$0** | your key | your key — about **$0.45** for a three-photo shelf scan |
-| Latin-script spines | ~93% correct | comparable detection counts, photo by photo | comparable or slightly higher; reads a glare-struck title `gpt-4.1-mini` misreads |
-| Japanese-script spines | **read** at full resolution, with the platform wrong; omitted at low resolution, where they are illegible | **not read** — none of them | **read**, every one, on five runs of five, with the platform right |
-| The printed *Switch 2* band | **not read** — those cases come back hinted `PS2` | not read | **read per spine** — every `SWITCH 2` hint correct across the three full-resolution photographs, five runs each, and no false positive on a case whose band prints none. The third photograph contributes none: the frame cuts a column at its edge, and the cases in the cut print the band but are not read — so that tally counts hints given rather than bands present. At 1200×900 the band was checked on one photograph and every case in it is read correctly over five runs; that is a separate measurement |
-| Invention | none on either control set | misreads that glare-struck title on 3 of 5 low-resolution runs | one invented title, on 2 of 5 runs — the same spine twice, out of everything read across the three full-resolution photographs; none at all at 1200×900 |
+The historical observations on this page used `qwen2.5vl:7b`. Those observations do not describe another model. You can select
+the older model explicitly in Settings or through `SHELFSCAN_OLLAMA_MODEL`.
 
 <!-- /measured-on -->
 
-**The local column is `qwen2.5vl:7b`, and it is not the built-in default any
-more.** The default became `qwen3-vl:8b-instruct` on 2026-09-04, and no figure
-in this table — or anywhere else in this repository — was measured on it.
-What is known about it is one comparison, on one machine, on one reported run:
-it read all three photographs of that run, where a reasoning-heavy multimodal
-model read none of them. It is an image-capable instruct model that answered
-where the other spent its whole output budget without writing anything, and
-that is the whole of the case for it. Nothing here says it is faster, better,
-or as measured. If you want the figures above, name `qwen2.5vl:7b` yourself —
-in Settings, or in `SHELFSCAN_OLLAMA_MODEL`.
+The built-in default is now `qwen3-vl:8b-instruct`; no quality or speed
+figure from the older model transfers to it.
 
-Two things this table is not. It is **not** "cloud is better": the free local
-model reads those Japanese spines and one of the two paid ones does not, so
-it is a model claim rather than a cloud claim, and a paid endpoint buys you
-nothing by being paid.
-And it is **not** a reason to reach for a bigger *local* model — a 32B was
-measured and rejected, for numbers that are in the archive.
-
-The lever that beat all of them is free: **photograph the shelf at a higher
-resolution.** The same shelf gives well over twice as many detections at
-4000×3000 as at 1200×900 — same model, same prompt. Before paying for a model,
-re-shoot
-the shelf: [the guide](doc/guide.md#step-1--photograph-the-shelf) says what
-that means in practice.
+Higher-resolution photos with complete spines in frame can help more than
+switching to a larger model. [The guide](doc/guide.md#step-1--photograph-the-shelf)
+explains how to frame the shelf.
 
 ### Adding one by hand
 
@@ -576,9 +517,8 @@ No account, no key, nothing to configure. This is the default on Windows.
    nothing written next to your originals. It is not the extension that
    decides but the file's contents, so a HEIC your phone or a messaging app
    renamed `.jpg` is converted too, and a spreadsheet named `.jpg` is
-   skipped rather than uploaded. The run says what it converted (three
-   4000×3000 photos, against ~25 s of vision each) and names every file it
-   is leaving out, before it starts. *Illustrative output: the filenames
+   skipped rather than uploaded. The run says what it converted and names every file it is leaving out
+   before it starts. *Illustrative output: the filenames
    and the figures in this block are made up, not measured off any
    shelf.*
 
@@ -756,7 +696,7 @@ model only — the CLI's `--fallback` second reader has no counterpart there.
 name in the same way. Its file dialog offers HEIC — Windows' own "image"
 filter does not, which is why phone photos used to be not merely
 unreadable but invisible — and on Windows it converts each one in-process,
-340–610 ms per 4000×3000 photo, off the UI thread. Whatever it will not
+ off the UI thread. Whatever it will not
 scan it names in a rejected-photos panel the moment you pick it, rather
 than minutes later at a provider call. **On Android it converts them
 through Android's own codec** rather than through WIC, so a HEIC picked
@@ -1093,29 +1033,13 @@ directory, never next to your original.
 
 <!-- measured-on: qwen2.5vl:7b -->
 
-Measure before you turn it on. The one second reader measured here —
-`gemma3:12b` behind `qwen2.5vl:7b`, on the three 4000×3000 control photos
-— added 15 rows and took the run from 70 s to 146 s. Every one of those
-added rows was checked against the photographs, and **every one was wrong**:
-
-- **9** were second readings of spines the first model had *already read
-  correctly*, kept apart as separate rows by as little as one character
-  (a base title alongside the same title carrying its sequel's subtitle).
-- **6** were invented or misread, including two titles welded out of
-  characters from two different spines, and one invented Japanese title
-  on a photo whose Japanese spines that same model had just reported as
-  unreadable.
-- **0** were an item the first model had missed — which is the entire
-  reason to run a second one.
+In a local comparison using `qwen2.5vl:7b` as the first reader, a second
+reader added incorrect and duplicate rows as well as adding work to the run.
+Check the extra rows at review rather than assuming a second pass improved
+recognition. This observation does not establish how a cloud fallback would
+perform; enabling one uploads every photo again.
 
 <!-- /measured-on -->
-
-A wrong row can be rejected at review and a missing one cannot, so this
-is a trade rather than a disaster. But it is a **local** second reader
-that was measured. A cloud one has never been measured here — no cloud key
-was available — so nothing above is evidence about
-what `--fallback openai` or `--fallback anthropic` would buy, and turning
-one on to find out uploads every photo.
 
 This is a **CLI flag only**. The app has one reader per
 photo and never asks for a second, so there is no switch for it in
