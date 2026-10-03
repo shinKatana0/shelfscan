@@ -2,9 +2,6 @@
 
 **Status:** accepted, 2026-08-17; **the build-metadata clause amended
 2026-08-25**, see *What changed, and the measurement that changed it*
-**Tasks:** T-0194 (*the Windows runner's version metadata was never chosen*),
-T-0211 (*0.1.0 is a decision rather than a default*)
-**Reports:** `T-0194`, `T-0211`
 
 ## The decision
 

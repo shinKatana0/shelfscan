@@ -1,18 +1,6 @@
 # 0012 — What the pipeline drops is named, never counted — and a count that cannot be exact is stated as a bound
 
 **Status:** accepted, 2026-08-14, sharpened through 2026-08-16
-**Tasks:** T-0025 (*Accept HEIC photos on input*), T-0028 (*unreadable channel
-reports a constant 3 japanese spines per photo*), T-0030 (*Flutter app discards
-every pipeline warning, so failed photos vanish from the run*), T-0035 (*A
-detection with an empty raw_title becomes a review row*), T-0036 (*PNG and WebP
-photos are declared image/jpeg to both cloud providers*), T-0109 (*One unreadable
-entry can describe several spines*), T-0123 (*The review list never says which
-rows cannot reach .xcoll*), T-0151 (*The app still labels unreadable entries as a
-count of spines*), T-0161 (*The app can only add photos*), T-0184 (*A declined
-entry is named nowhere*)
-**Reports:** `T-0108` (carries T-0109's fix),
-`T-0123`, `T-0151`,
-`T-0161`, `T-0184`
 
 ## Context
 

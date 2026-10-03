@@ -1,18 +1,6 @@
 # 0002 — The vision prompt is a measured artifact, not a piece of writing
 
 **Status:** accepted, 2026-08-13, reinforced through 2026-08-16
-**Tasks:** T-0007 (*Vision prompt: forbid inventing unreadable titles*), T-0014
-(*Vision parse stores the string "null" as platform_hint*), T-0026 (*Platform is
-recalled from game knowledge for classic re-releases, not read from the case*),
-T-0028 (*unreadable channel reports a constant 3 japanese spines per photo*),
-T-0033 (*Low-resolution photo answers NINTENDO where the hi-res photo answers
-SWITCH*), T-0034 (*T-0007's zero-invented-titles guarantee does not hold at
-1200×900*), T-0093 (*Detection.notes is asked for, parsed and persisted, and
-displayed nowhere*)
-**Reports:** `T-0007`, `T-0014`,
-`T-0026`, `T-0028`,
-`T-0033`, `T-0034`,
-`T-0093`
 
 ## Context
 

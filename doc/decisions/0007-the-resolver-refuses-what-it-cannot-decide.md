@@ -1,15 +1,6 @@
 # 0007 — The resolver refuses what it cannot decide, and the refusal is visible
 
 **Status:** accepted, 2026-08-15, extended 2026-08-16
-**Tasks:** T-0002 (*Gate the auto-match on platform: the scorer is not what is
-failing*), T-0008 (*Measure resolver match rate on validated detections*), T-0055
-(*A CJK sequel is one character away from being merged into its successor*),
-T-0059 (*A roman-numeral sequel is merged into its predecessor and the row is
-deleted*), T-0100 (*Normalized Levenshtein orders the two Japanese siblings
-wrong*), T-0165 (*The tie rule cannot fire when a hint maps to one platform id*),
-T-0170 (*Two tied candidates reach review as identical rows*)
-**Reports:** `T-0002`, `T-0008`,
-`T-0100`, `T-0170`
 **Measurements:** `doc/measurements.md` — "The resolver, measured at last", "The
 tie nobody could see, and what a release year buys"
 

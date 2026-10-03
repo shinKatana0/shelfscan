@@ -1,18 +1,6 @@
 # 0006 — A platform hint is a lookup with a measured width, and a hint the gate cannot honour is worse than no hint
 
 **Status:** accepted, 2026-08-14, extended 2026-08-16
-**Tasks:** T-0002 (*Gate the auto-match on platform: the scorer is not what is
-failing*), T-0023 (*Switch 2 cases resolve as Nintendo Switch*), T-0026
-(*Platform is recalled from game knowledge for classic re-releases, not read from
-the case*), T-0084 (*A platform_hint the model copied out of the prompt travels
-to the CSV as a platform name*), T-0156 (*The platform gate has no PC entry, so
-every GoG or installer row is either unfiltered or a mismatch*), T-0168 (*A
-console game file is declined by the filename source, because the only hint it
-could carry is PC*), T-0190 (*platformIds has no 3DS, DS, Wii U or Vita entry, so
-four unambiguous console containers keep declining*)
-**Reports:** `T-0002`, `T-0023`,
-`T-0084`, `T-0113`,
-`T-0190`
 
 ## Context
 

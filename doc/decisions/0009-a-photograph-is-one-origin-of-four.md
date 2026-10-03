@@ -1,15 +1,6 @@
 # 0009 — A photograph is one of four origins a row can have, and authority is a property of the origin
 
 **Status:** accepted, 2026-08-16
-**Tasks:** T-0155 (*A scan can only begin from photographs: the pipeline has no
-seam for a source that produces detections directly*), T-0157 (*GoG installs
-carry authoritative metadata next to them, and nothing reads it*), T-0158 (*An
-installer filename is a noisy title with a strong year hint, and nothing parses
-it*), T-0160 (*Neither shell can point at a folder*), T-0173 (*One run cannot
-cover photos and installs together*), T-0179 (*A run may have many sources*)
-**Reports:** `T-0155`, `T-0157`,
-`T-0158`, `T-0160`,
-`T-0179`
 
 ## Context
 

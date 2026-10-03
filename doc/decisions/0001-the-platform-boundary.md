@@ -1,15 +1,6 @@
 # 0001 — The pipeline is pure Dart; every platform capability crosses the boundary as a value
 
 **Status:** accepted, 2026-08-13, tested continuously since
-**Tasks:** T-0003 (*Photo pre-segmentation into strips*), T-0004 (*Alias table as
-data file + IGDB alternative_names*), T-0025 (*Accept HEIC photos on input*),
-T-0031 (*CLI: convert HEIC via Windows WIC before the vision stage*), T-0155 (*A
-scan can only begin from photographs: the pipeline has no seam for a source that
-produces detections directly*), T-0177 (*GOG Galaxy keeps the whole owned library
-in a local database*)
-**Reports:** `T-0003`, `T-0004`,
-`T-0025`, `T-0031`,
-`T-0177`
 
 ## Context
 

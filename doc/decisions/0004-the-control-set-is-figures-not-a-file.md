@@ -3,16 +3,6 @@
 **Status:** accepted, 2026-08-15; **half of it reversed 2026-08-18**, and the
 reversal itself **narrowed the same day** — see "The reversal" and "The
 correction to the reversal" below
-**Tasks:** T-0081 (*The control document every resolver measurement quotes is
-not on disk*), T-0119 (*control_set_test's unreadable assertion names
-no cause*), T-0131 (*Every measurement re-scans the control set for
-detections an earlier one already had*), T-0136 (*the control-set definition
-defines a control by what a directory does NOT hold*), T-0246 (*The published
-control-set figures reconstruct the owner's physical game collection*), T-0260
-(*The manifest still publishes which platforms the control photographs
-answered*)
-**Reports:** `T-0081`, `T-0131`, `T-0246`, `T-0260`
-**Figures:** `doc/control-set.md` (the working record; not published)
 
 ## Context
 

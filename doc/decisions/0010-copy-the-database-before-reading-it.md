@@ -1,9 +1,6 @@
 # 0010 — Copy the GOG Galaxy database before reading it, because the inert-looking option is the one that loses data
 
 **Status:** accepted, 2026-08-16
-**Tasks:** T-0177 (*GOG Galaxy keeps the whole owned library in a local
-database, and we read only what is installed*)
-**Report:** `T-0177`
 
 ## Context
 

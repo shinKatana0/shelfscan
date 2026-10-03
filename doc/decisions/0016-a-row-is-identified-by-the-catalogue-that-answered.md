@@ -1,9 +1,6 @@
 # 0016 — A row is identified by the catalogue that answered and that catalogue's id
 
 **Status:** accepted, 2026-08-23
-**Tasks:** T-0292 (*`Candidate` is IGDB-shaped, so a film's identity rides in
-fields named after another catalogue*)
-**Reports:** `T-0292`
 
 ## Context
 

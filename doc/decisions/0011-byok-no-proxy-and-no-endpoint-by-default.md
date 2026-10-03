@@ -2,17 +2,6 @@
 
 **Status:** accepted, 2026-08-13, corrected 2026-08-15; **the Android half of
 one clause narrowed 2026-08-24** — see "The Android clause, narrowed" below
-**Tasks:** T-0010 (*App settings screen + API keys in flutter_secure_storage*),
-T-0016 (*README and onboarding for the two BYOK setup paths*), T-0058 (*Settings
-screen does not warn that Anthropic cloud sends photos off the machine*), T-0069
-(*README still says --fallback re-reads only the photos with unreadable spines,
-understating the upload*), T-0070 (*The privacy warning no longer tells the user
-what to do about it*), T-0076 (*Scan screen renders no privacy notice until the
-backend switch is touched*), T-0361 (*The phone cannot point at the desktop's
-Ollama, which is what would make Android useful without a key*), T-0362 (*Three
-documents still say Android is cloud-only*)
-**Reports:** `T-0010`, `T-0058`,
-`T-0069`, `T-0076`, `T-0361`, `T-0362`
 
 ## Context
 

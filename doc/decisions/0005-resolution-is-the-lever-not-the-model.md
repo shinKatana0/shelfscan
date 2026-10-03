@@ -1,10 +1,6 @@
 # 0005 — Buy quality with pixels, not with a bigger model; and the model that does win stays opt-in
 
 **Status:** accepted, 2026-08-14, re-confirmed 2026-08-16
-**Tasks:** T-0074 (*The vision prompt does not ask for the Switch 2 band*),
-T-0090 (*A cloud primary DOES report the spines it could not read*), T-0112
-(*T-0074's Switch 2 band is read unprompted by a GPT-5 cloud model*)
-**Reports:** `T-0090`, `T-0112`
 **Measurements:** `doc/measurements.md` — "A bigger local model, measured and
 rejected", "The Switch 2 band, measured and rejected as a prompt problem", "The
 second lever works"

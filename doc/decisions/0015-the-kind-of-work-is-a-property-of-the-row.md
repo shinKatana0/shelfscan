@@ -1,9 +1,6 @@
 # 0015 — The kind of work is a property of the row, not of the run
 
 **Status:** accepted, 2026-08-22
-**Tasks:** T-0279 (*settle the shape before any second catalogue is written*),
-T-0163 (*whether the export target accepts non-game media at all*)
-**Reports:** `T-0279`
 
 ## Context
 

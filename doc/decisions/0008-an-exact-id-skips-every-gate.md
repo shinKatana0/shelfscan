@@ -1,10 +1,6 @@
 # 0008 — When a source carries the store's own product id, join on it and skip every gate
 
 **Status:** accepted, 2026-08-16
-**Tasks:** T-0159 (*A GoG product id could join IGDB exactly, instead of being
-matched as a string*), T-0157 (*GoG installs carry authoritative metadata next to
-them, and nothing reads it*)
-**Reports:** `T-0159`, `T-0157`
 **Measurements:** `doc/measurements.md` — "The exact join: IGDB does carry GoG
 ids, and 82% of them"
 

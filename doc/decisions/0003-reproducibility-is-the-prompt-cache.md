@@ -1,16 +1,6 @@
 # 0003 — What makes a run reproducible is the prompt cache, not a freshly loaded model
 
 **Status:** accepted, 2026-08-15
-**Tasks:** T-0053 (*Two identical scans of the same photos do not agree: the
-vision call is sampled, not measured*), T-0086 (*A scan at temperature 0 is not
-byte-reproducible*), T-0092 (*dedupeDetections' doc comment still credits the
-typography difference to a freshly loaded model*), T-0098 (*Four more comments
-still call the first-ask/repeat typography the cold/warm difference*), T-0106
-(*CONTROL-HIRES unreadable = 0 is not reproducible*), T-0119
-(*control_set_test's unreadable assertion names no cause*)
-**Reports:** `T-0053`, `T-0086`,
-`T-0092`, `T-0098`,
-`T-0106`
 
 ## Context
 
