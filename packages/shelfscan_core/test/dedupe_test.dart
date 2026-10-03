@@ -68,11 +68,8 @@ Future<List<String>> _scanTwoPhotos(Detection a, Detection b) async {
 void main() {
   group('the same spine on two photos', () {
     test('formatted differently by the two reads is one row', () async {
-      // The four formatting disagreements observed between qwen2.5vl:7b and
-      // gemma3:12b on the T-0001 photos -- a trademark sign, an added colon, a
-      // `#` and a dropped macron. Every one survived as two rows before
-      // T-0018. The spines that carried them are not published; the pairs
-      // below are invented and reproduce the four shapes.
+      // Synthetic formatting variants exercise punctuation normalization
+      // without carrying any source photo titles.
       const pairs = <String, String>{
         'MOONLIGHT': 'MOONLIGHT™',
         'Gilt Banner Three Spires': 'Gilt Banner: Three Spires',

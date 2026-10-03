@@ -128,20 +128,15 @@ class PhotoAnalysis {
   /// What the model SAID it could not read -- not what it failed to read.
   ///
   /// Decorative for the default primary: since T-0028 `qwen2.5vl:7b` answers
-  /// `[]` on every photo, including photos with hand-counted unread spines on
-  /// them, and across seven prompt variants it never once named a spine it had
-  /// actually skipped. The only entry it can still put here is
+  /// `[]` even when unread spines are present. The only entry it can still put
+  /// here is
   /// [UnreadSpineReport.titleless], derived from a row it really did emit rather
   /// than from anything it reported. So treat a zero as "nobody counted", never
   /// as "nothing was missed"; it drove the escalation until T-0032 and drives
   /// nothing now.
   ///
-  /// Not a property of local models as such, which is why the field stays:
-  /// `gemma3:12b` on the same three photos answered entries of its own --
-  /// japanese, latin "partially occluded", unknown "only artwork visible" --
-  /// and every one of them holds up against the photographs, including a spine
-  /// that carries no text at all. It is the model that cannot report here, not
-  /// the channel.
+  /// Other local models can report unreadable entries, so the field remains
+  /// available even when the default model does not populate it reliably.
   final List<UnreadSpineReport> unreadable;
 }
 

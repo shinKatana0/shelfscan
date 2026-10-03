@@ -681,35 +681,12 @@ int _byPhotoThenInput((int, ResolvedGame) a, (int, ResolvedGame) b) {
 /// separate question with a separate answer: first-seen order is preserved, so
 /// a merged row holds the place of the earliest read of it in this list, and
 /// [_orderedAnalyses] is what makes "earliest" name a photo rather than a race
-/// (T-0085). The two can name different photos, though on a real five
-/// they do not: every cross-photo merge of that set is both placed and typed
-/// by a hi-res photo, which sorts first by name and also out-yields every
-/// low-res one.
+/// (T-0141). The two may name different photos.
 ///
-/// So the same detections in the same order give the same rows in the same
-/// order, which is the whole of what this function can promise. Whether two
-/// RUNS reach it with the same detections belongs to the vision call, and when
-/// this line first claimed "two identical runs produce identical review files"
-/// it was false there -- the local request stated no sampling options at all
-/// (T-0053).
-///
-/// With those pinned it holds end to end for the local provider, measured
-/// rather than argued: two consecutive five-photo CLI scans of a real
-/// directory wrote byte-identical review files, row for row, `created`
-/// aside -- both of them repeat asks for photos that server process had
-/// already answered. A FIRST ask is the case to watch, and what decides which
-/// of the model's two answers comes back is the prompt cache rather than a
-/// freshly loaded model; an unload correlates only because it drops the cache
-/// with the model (T-0086 -- run counts and cache figures on
-/// [OllamaVisionProvider]). One such run produced the same rows in the same
-/// order with the same hints, a handful of raw titles differing in case, ™/®
-/// and one diacritic, all of which [titleKey] folds away.
-///
-/// What it does not fold is what a server allowed to batch can retype: at
-/// `OLLAMA_NUM_PARALLEL=4` one title came back without its first half, and a
-/// leading loss is refused as a truncation ([isTruncatedRead], T-0054), so it
-/// arrives here as a second row. The cloud providers are untested here and
-/// nobody has measured whether they are reproducible at all.
+/// Given the same detections in the same order, this function yields the
+/// same ordered rows. Repeatability across runs also depends on the vision
+/// provider and its sampling settings. Title normalization folds case and
+/// selected punctuation, while a materially truncated read stays separate.
 List<Detection> dedupeDetections(List<Detection> detections) {
   final yields = _photoYield(detections);
   final groups = <_DedupeGroup>[];

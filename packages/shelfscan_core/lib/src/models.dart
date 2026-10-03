@@ -311,18 +311,11 @@ String? _optionalText(Object? value) {
 /// nobody mapped from a line of this project's own prompt is notation, not
 /// vocabulary:
 ///
-///   - the schema's menu separator. Measured at temperature 0 (T-0074):
-///     `SWITCH2 | SWITCH` on every detection of one photo and
-///     `SWITCH2 | N64 -- omit this field entirely if the platform is unclear`
-///     on most of another; at 0.8 the whole schema line verbatim, on every row
-///     of one photo and every row of another (T-0053). A pipe with
-///     whitespace beside it, or a second pipe: `Xbox Series X|S` is the one
-///     real platform name carrying a pipe and it has neither.
-///   - `--`, the marker the schema line uses to gloss its own menu.
-///   - length. The longest hint measured in this repository is
-///     `NINTENDO SWITCH` (15 characters, T-0021); the longest name the
-///     resolver's fallback can match a hint against is
-///     `Super Nintendo Entertainment System` (35). The echo above is 68.
+///   - the schema menu separator, which can be echoed into model output. A
+///     pipe with surrounding whitespace or an extra pipe distinguishes this
+///     from an ordinary platform name such as `Xbox Series X|S`.
+///   - `--`, the marker the schema uses to explain its menu.
+///   - excessive length, which indicates prompt text rather than a platform.
 ///
 /// What it would wrongly reject: a hint transcribing a whole band rather than
 /// the console name on it, and a human typing two consoles into one field at
@@ -330,7 +323,7 @@ String? _optionalText(Object? value) {
 /// where they stay visible, rather than in the platform column.
 ///
 /// What it deliberately does not test is containment of prompt text: `SWITCH`
-/// is prompt text and is also an answer the hi-res control run produces.
+/// is prompt text and can also be a valid platform answer.
 String? platformHintRejection(String hint) {
   if (_menuSeparator.hasMatch(hint)) {
     return 'reads as the prompt\'s "A | B" menu, not one console';
@@ -504,8 +497,7 @@ class Detection {
   final MediaType mediaType;
 
   /// What this row is a copy of, which is a property of the ROW and not of the
-  /// run that found it (decision 0015): one shelf holds both, one photograph
-  /// reads both, and one collection imports both.
+  /// run that found it: a collection can contain multiple media kinds.
   ///
   /// Read here rather than on [ResolvedGame] because the stage that would
   /// route it -- pick which catalogue answers this title -- consumes a
@@ -519,8 +511,8 @@ class Detection {
   /// vision path still hardcodes [WorkKind.game].
   ///
   /// Mutable, alone among this class's fields, because the review step
-  /// corrects that inference (decision 0015, the owner's mitigation): a
-  /// filename never announces that it is not what it looks like, and a person
+  /// corrects that inference: a filename can look like the wrong media kind,
+  /// and a person
   /// looking at the row is the only party who can see the inference was wrong.
   /// [ResolvedGame.best] and [ResolvedGame.status] are non-final for the same
   /// reason and are the precedent.
@@ -980,14 +972,12 @@ class Candidate {
   /// carry no key, and absent means "the canonical name matched".
   final String? matchedAlternativeName;
 
-  /// IGDB's `first_release_date` year, or null where IGDB stores none -- a
-  /// small fraction of the games one control run touches (T-0165).
+  /// IGDB's `first_release_date` year, or null where IGDB stores none.
   ///
   /// It is what separates two rows the resolver refuses to choose between:
   /// a title returned twice under one name at two release years, and a title
-  /// tied against a differently named edition of itself -- measured live on
-  /// T-0156's desktop titles. Every other field on such a pair is
-  /// identical, `score` included at 1.000 (T-0170).
+  /// tied against a differently named edition of itself. Other fields can be
+  /// identical, including the match score.
   ///
   /// Optional in JSON, like [matchedAlternativeName]: absent means IGDB has no
   /// date for the game, and nothing may render it as a year.

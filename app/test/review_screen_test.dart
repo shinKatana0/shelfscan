@@ -319,9 +319,7 @@ void main() {
       expect(find.textContaining('note:'), findsNothing);
     });
 
-    // The only producer measured to exist: qwen2.5vl:7b answers `""` on every
-    // control row, so a note on screen is a human's, off `Detection.manual`
-    // or the hand-edited document the CLI usage header documents.
+    // A note on screen comes from a manual detection or edited review file.
     testWidgets('a manual row keeps both its marks and the note',
         (tester) async {
       final doc = _doc([
@@ -351,10 +349,7 @@ void main() {
   group('rows that cannot reach .xcoll (T-0123)', () {
     testWidgets('an unmatched row says so, and says what to do about it',
         (tester) async {
-      // The candidate is the whole reason the instruction is honest: this is
-      // the commonest unresolved row, one IGDB answered with hits none of
-      // which scored, and picking any of them puts it in the file. The
-      // wording is the owner's (T-0123) and is unchanged.
+      // A candidate gives the reviewer an actionable match choice.
       final doc = _doc([
         _game('JP SPINE', candidates: [_candidate(4, 'Duskhollow Reach')]),
       ]);

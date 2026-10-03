@@ -125,13 +125,9 @@
 /// cloud takes the explicit flag, because a run started as local must not
 /// become a cloud run by way of an environment variable someone forgot about.
 ///
-/// It used to fire by itself, on photos where the primary reported spines it
-/// could not read. It no longer does, because that report does not exist: the
-/// local model answers `unreadable: []` on every photo including ones with
-/// unread spines on them, and across seven T-0028 prompt variants never named
-/// a spine it had actually skipped. A trigger that fires on no photo is not a
-/// safety net, so the choice is the user's, per run, and it is all photos or
-/// none.
+/// Automatic escalation depends on models reporting unreadable spines, which
+/// the default local model does not do reliably. Keep the second reader an
+/// explicit per-run choice.
 ///
 /// A second reader increases latency and can add incorrect rows to the
 /// review list. Keep the choice explicit so the user can weigh that cost.
@@ -1576,10 +1572,8 @@ AnthropicVisionProvider anthropicProviderFor(
 /// near-greedy decoding every number in this project was measured under.
 void _endpointNote(String note) => stderr.writeln('WARN: $note');
 
-/// `NOTE:` rather than `WARN:` for a documented exclusion (T-0222): the owner
-/// read these in the app as errors, and stderr had them under the same word.
-/// Nothing is dropped -- the line and its count are unchanged, and
-/// `declined_entries` in the review document still names every entry.
+/// `NOTE:` rather than `WARN:` for a documented exclusion: declined entries
+/// remain listed in the review document, while the summary is informational.
 ///
 /// Four letters, not an abbreviation of one: `documented_lists_test` reads
 /// every ALL-CAPS literal of six or more characters in this file as an

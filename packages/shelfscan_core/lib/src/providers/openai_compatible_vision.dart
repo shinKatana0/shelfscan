@@ -88,48 +88,16 @@ const _adjustable = {
 /// bounded, because a refusal is only ever reached by an endpoint that has
 /// just answered in under two seconds.
 ///
-/// ## The learned shape belongs to the endpoint, not to one call (T-0120)
+/// ## The learned shape belongs to the endpoint, not to one call
 ///
-/// One provider serves the whole vision stage, so at `visionConcurrency` 3 the
-/// first three photos are in flight before any of them has learned anything
-/// and every one of them gets the same 400 back. Judging that 400 against the
-/// shape the provider holds *now*, rather than against the shape that call
-/// actually sent, cost two photographs of three. Measured on the
-/// scripted `gpt-5.5` sequence, three photos, before this task:
+/// Concurrent requests may receive the same parameter refusal before any
+/// request has updated the provider's learned shape. Interpret a refusal
+/// against the fields actually sent by that request. If another request has
+/// already corrected the shape, resend with the updated shape; fail only
+/// when the refusal names no adjustable sent field and no correction landed
+/// while the request was in flight. The calls stay concurrent to avoid
+/// adding first-request latency to endpoints that accept the initial shape.
 ///
-/// - all three send `{max_tokens, temperature, seed}`, all three are refused
-///   `max_tokens`;
-/// - the first records the rename and re-sends;
-/// - the second re-reads its own 400 against the corrected shape, where
-///   `max_tokens` no longer appears, matches the only field of [_adjustable]
-///   left in both the message and that shape -- `max_completion_tokens` --
-///   and records the endpoint as refusing the replacement it had just been
-///   given. **The output cap is dropped from every later request with nothing
-///   said**, which is the silent failure the send order exists to avoid;
-/// - the third finds nothing it sent that it may adjust and dies as a real
-///   400, and so does one of the two retries at the `temperature` step.
-///
-/// One photo of three, `refusedParameters` reading
-/// `{max_tokens: max_completion_tokens, max_completion_tokens: null,
-/// temperature: null}`, and the survivor sent uncapped. At concurrency 1 the
-/// same script is clean -- two corrections, five calls, three photos -- which
-/// is why the CLI never showed it.
-///
-/// **The rule.** A 400 is read against the fields that request carried, and a
-/// correction another call has already made is not a failure of this one: the
-/// call re-sends under the shape that is now known, silently, because the
-/// endpoint has already been obeyed and told about once. A call fails only
-/// when its own 400 names nothing it sent that this provider may adjust and no
-/// correction landed while it was in flight.
-///
-/// **What it costs, and what the alternative cost.** Nothing is serialised, so
-/// each photo in the first wave still pays its own refusals -- three uploads
-/// per correction at concurrency 3, overlapped, ~1.9 s each. Holding the other
-/// calls until the first has a shape known to be accepted would save those
-/// uploads, but "accepted" is only knowable from a completed vision call
-/// (6.8-51 s), so it would add that wait to every run of every model,
-/// including the ones that are never refused anything. Bytes in the rare case
-/// against latency in all of them.
 ///
 /// No lock: one isolate runs all of this, so the hazard is interleaving at the
 /// `await` in [analyze] and not a data race, and [_refused] only ever grows.
