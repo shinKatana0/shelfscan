@@ -8,8 +8,8 @@
 /// What is tested here is that the screen reached it.
 ///
 /// Nothing opens a real dialog: the screen takes an [ExportSaver] and this
-/// file injects a fake, the seam `review_screen_test.dart` already uses. The
-/// GUI has not been driven (`doc/conventions.md` 3).
+/// file injects a fake, the seam `review_screen_test.dart` already uses.
+/// The widget tests exercise the screen without opening a real dialog.
 ///
 /// Every fixture value is invented.
 library;

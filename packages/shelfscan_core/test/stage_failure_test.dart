@@ -6,7 +6,7 @@
 /// and every row unresolved**. The token count is `rows / resolverConcurrency`
 /// and so is stated as that rather than as a number (T-0267). The row count
 /// below is a stand-in of the same order, not the control set's own size --
-/// that is a count of a private collection and is in the working record
+/// that is a count of a private collection and is in the local control data
 /// (T-0246).
 /// The rows are right; the other two are what this pins.
 ///

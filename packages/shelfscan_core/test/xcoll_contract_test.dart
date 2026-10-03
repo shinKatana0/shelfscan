@@ -1,8 +1,8 @@
 /// The two halves of the `.xcoll` contract that no test stated on purpose
 /// (T-0456): the envelope, and the pair each [WorkKind] writes inside it.
 ///
-/// **The envelope.** `ARCHITECTURE.md` "Key decisions" 4 and `PROJECT.md` both
-/// pin `version: 2`, and upstream's `docs/RCOLL_FORMAT.md` at `release/0.44`
+/// **The envelope.** `ARCHITECTURE.md` "Key decisions" 4
+/// pins `version: 2`, and upstream's `docs/RCOLL_FORMAT.md` at `release/0.44`
 /// says `Always 3 (v2 also accepted on import)` -- so 2 is the deliberate
 /// choice rather than a stale one: an older build refuses a v3 file cleanly,
 /// and v3's one relevant addition (`user_rating`) is a field this project does

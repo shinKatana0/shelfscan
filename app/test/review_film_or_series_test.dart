@@ -131,7 +131,7 @@ Future<void> _revealText(WidgetTester tester, String text) async {
 
 /// The negative half, asserted after the sheet has been scrolled to its end.
 ///
-/// Written this way since T-0456, and the reason is `doc/conventions.md` 4a:
+/// The negative assertion needs a fully built sheet:
 /// `findsNothing` on a lazily built list answers "not built" just as
 /// confidently as "not there", so the taller sheet a fourth kind produces
 /// would have turned these into assertions that pass for the wrong reason.

@@ -4,8 +4,7 @@
 /// no Android: what is testable here is the Dart half -- which decoder a host
 /// gets, what crosses the channel, and that every way the Kotlin half can fail
 /// arrives as a named [HeicDecodeException] rather than a null or a crash. The
-/// decode itself is Android's and is checked on a device; doc/reports/T-0346.md
-/// says what was and was not run.
+/// decode itself is Android's and requires device verification.
 library;
 
 import 'dart:io';

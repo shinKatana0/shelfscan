@@ -29,7 +29,7 @@
 /// Phase 2 carries the claim; phase 4 is T-0017's last clause (clearing a key
 /// removes it from the credential store) held to the same standard.
 ///
-/// ## Running it -- see doc/reports/T-0287.md
+/// ## Running it
 ///
 ///   cd app
 ///   flutter drive --driver=test_driver/integration_test.dart \
@@ -137,7 +137,7 @@ void main() {
 /// The candidate paths are searched rather than hard-coded because the
 /// location follows the Runner's identity and the plugin's own version. A
 /// miss fails loudly and names everything it looked at -- a skipped
-/// assertion here would be the silent failure PROJECT.md rejects.
+/// assertion here would silently miss a stored secret.
 Future<void> _expectSecretIsNotInPreferencesFile() async {
   final support = await getApplicationSupportDirectory();
   final candidates = [

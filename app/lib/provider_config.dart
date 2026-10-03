@@ -375,8 +375,8 @@ const endpointPrivacyWarning =
 /// Local's own warning, on a platform where local is another machine
 /// (T-0361). It exists because the first sentence of the other two is true
 /// here as well, and a backend that says nothing would be read as saying
-/// nothing happens -- which is exactly the conflation T-0069 corrected in the
-/// README ("images never leave the machine") and PROJECT.md now forbids.
+/// nothing happens. A local server may be on another machine, so calling it
+/// offline would misstate where the photographs travel.
 ///
 /// The second sentence is the one an auditor is owed and it is not softened:
 /// Ollama speaks plain HTTP and this app does not wrap it in anything, so the
@@ -765,7 +765,7 @@ class ProviderPolicy {
   /// shell. The film path at least ran once; `/3/search/tv` is code written
   /// against TMDB's published API and exercised only against a fake -- which
   /// is exactly how the film path's own `year` comment came to be false
-  /// (T-0336). What a live run must show is in `doc/reports/T-0369.md`.
+  /// (T-0336). A live run must confirm the TMDB endpoint and year handling.
   static ResolverWorker buildResolver(
     ProviderSettings settings, {
     Map<String, String>? aliases,

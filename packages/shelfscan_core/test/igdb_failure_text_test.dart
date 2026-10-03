@@ -28,7 +28,7 @@ const _clientSecret = 'twitch-client-secret-0123456789abcdef';
 
 /// A document big enough that one warning per row would be a wall. A stand-in
 /// of the right order: the control set's own size is a count of a private
-/// collection and is in the working record (T-0246).
+/// collection and is in the local control data (T-0246).
 const _rows = 40;
 
 const _goodToken = '{"access_token":"token-value","expires_in":3600}';

@@ -69,7 +69,7 @@ void main() {
     });
     tearDown(() => root.deleteSync(recursive: true));
 
-    test('will not probe where the working record is absent (T-0261)',
+    test('will not probe where the local control data is absent (T-0261)',
         () async {
       expect(
           await runProbe([hiRes, '1', '${root.path}/out.json'], const {},

@@ -3,8 +3,7 @@
 ///
 /// TMDB's terms mandate a sentence word for word, with only the bracketed
 /// word of "This [website, program, service, application, product]"
-/// substituted; `doc/backlog.md`'s T-0383 entry carries the requirement and
-/// `doc/reports/T-0383.md` the reasoning for `application`. The app states it
+/// substituted. The app states it
 /// on the settings screen and the three READMEs carry it; this shell had
 /// nothing, while naming TMDB to the user and building the client itself.
 ///
@@ -183,4 +182,3 @@ void main() {
     });
   });
 }
-

@@ -240,7 +240,7 @@ void main() {
 
   // T-0345. The label said "games" while the same walk had read films since
   // T-0162, so a person with a folder of films had no reason to press it. The
-  // establishment run is in doc/reports/T-0344.md: film-shaped names come back
+  // film-shaped names come back
   // through this control as film rows, unchanged, so what was wrong was the
   // label and not the reader.
   group('the folder control says what the scan actually reads (T-0345)', () {

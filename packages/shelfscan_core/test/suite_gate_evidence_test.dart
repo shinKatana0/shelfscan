@@ -5,8 +5,8 @@
 /// to every worker in a session, and the script writes `core.log` before
 /// `app.log`. A run stopped between the two left the PREVIOUS run's `app.log`
 /// and `app.did-not-complete` standing -- green, complete, and about another
-/// worktree -- so a reader doing exactly what `doc/conventions.md` section 4a
-/// asks reported somebody else's green.
+/// worktree -- so a reader checking only the prior summary could report
+/// somebody else's green.
 ///
 /// **No real suite runs here.** Running `dart test` and `flutter test` for
 /// every case would cost minutes each and would prove nothing about which
@@ -277,7 +277,7 @@ void main() {
 /// Built rather than typed, so nothing between here and the file on disk can
 /// eat it -- and doubled inside the character class, because what the source
 /// must not carry literally the regex engine still needs escaped
-/// (`doc/conventions.md` section 4a).
+/// (the regex still needs the escaped separator).
 final _bs = String.fromCharCode(92);
 final _anySep = RegExp('[/$_bs$_bs]');
 

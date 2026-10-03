@@ -37,9 +37,9 @@
 /// `tool/check-bundle-assets.dart`'s exit codes are deliberately not pinned.
 /// The page states them in a running sentence that says more than the tool's
 /// own one-line contract does, so extracting a mapping needs a regex written
-/// for that single sentence; `doc/reports/T-0417.md` carries the attempt and
-/// why it was dropped. The verdict words are held for both tools, because a
-/// quoted string is looked for in every script the section names.
+/// for that single sentence and would be brittle. The verdict words are held
+/// for both tools because a quoted string is looked for in every script the
+/// section names.
 library;
 
 import 'dart:io';

@@ -400,7 +400,7 @@ cloud_probe -- a control set through a cloud endpoint, repeated (T-0112)
 `run` needs SHELFSCAN_PHOTOS and SHELFSCAN_OPENAI_API_KEY / _BASE_URL /
 _MODEL, and costs money. `rows` and `tally` are offline and free.
 
-Exit codes: 0 done, 4 the working record `run` reads is not on this machine,
+Exit codes: 0 done, 4 the local control data `run` reads is not on this machine,
 2 misuse.
 ''';
 

@@ -32,7 +32,7 @@
 /// classes describe TMDB rather than report it; and none has carried an
 /// original title differing from its title, so [TmdbHit.originalTitle] — the
 /// field non-English releases need — is unexercised.
-/// See `doc/reports/T-0162.md` and `doc/reports/T-0336.md`.
+/// The API shape is documented by TMDB; a live result still needs verification.
 library;
 
 import 'dart:convert';
@@ -79,7 +79,7 @@ const _tmdbHost = 'api.themoviedb.org';
 /// [movie] is the shape T-0162 built and T-0336 measured live; [series] is new
 /// in T-0369, has never been called, and the paths, the three key names and
 /// [yearParameter] are all claims a live run has yet to confirm. What such a
-/// run must show is written down in `doc/reports/T-0369.md`.
+/// run must confirm the endpoint, response keys, and year filter.
 enum TmdbSearch {
   movie('/3/search/movie', 'title', 'original_title', 'release_date', 'year'),
 

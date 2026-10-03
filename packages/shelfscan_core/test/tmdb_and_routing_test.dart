@@ -6,7 +6,7 @@
 /// request this build sends, the parsing of a response of TMDB's published
 /// shape, and every decision made on top of that. The claim they do NOT make
 /// is that TMDB answers this shape -- that is read off its API documentation
-/// and needs a key to confirm. `doc/reports/T-0162.md` says so in full.
+/// and needs a key to confirm.
 ///
 /// **One thing here IS measured, and it is the one these tests cannot show**
 /// (T-0336): five live searches on 2026-08-23 established that TMDB's `year`
