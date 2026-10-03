@@ -247,9 +247,9 @@ void main() {
   group('an install and its installer in one folder', () {
     test('produce one row, and the authoritative title is the one kept',
         () async {
-      final game = _folder('MOOR');
-      _file(game, 'goggame-1100000002.info', _info('MOOR', '1100000002'));
-      _file(_root!, 'setup_moor_1.9_(21474).exe');
+      final game = _folder('Fable Quay');
+      _file(game, 'goggame-1100000002.info', _info('Fable Quay', '1100000002'));
+      _file(_root!, 'setup_fable_quay_1.9_(21474).exe');
 
       final listing = readInstallDirectory(_root!);
       expect(listing.entries, hasLength(3));
@@ -258,14 +258,14 @@ void main() {
 
       expect(doc.games, hasLength(1));
       expect(doc.games.single.detection.origin, DetectionOrigin.metadata);
-      expect(doc.games.single.detection.rawTitle, 'MOOR');
+      expect(doc.games.single.detection.rawTitle, 'Fable Quay');
     });
 
     test('and it is authority that decides it, not arrival order', () {
       final installer = Detection.fromSource(
         rawTitle: 'moor',
         origin: DetectionOrigin.filename,
-        sourceEntry: 'setup_moor_1.9_(21474).exe',
+        sourceEntry: 'setup_fable_quay_1.9_(21474).exe',
         platformHint: 'PC',
       );
       final installed = Detection.fromSource(
@@ -564,7 +564,8 @@ void main() {
         final dir = _folder(name);
         expect(gamesFolderError(dir.path), isNotNull, reason: name);
       }
-      expect(gamesFolderError(_folder('Downloads').path), contains('T-0158'));
+      expect(gamesFolderError(_folder('Downloads').path),
+          contains('ExampleNotesInstaller.exe'));
     });
 
     test('the refusal is case-insensitive', () {

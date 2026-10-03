@@ -65,7 +65,7 @@ void main() {
     await _pump(
       tester,
       _doc(games: [
-        _fromFolder('moor', 'setup_moor_1.9.exe'),
+        _fromFolder('fable quay', 'setup_fable_quay_1.9.exe'),
         _fromFolder('Harbour Lantern', 'goggame-1100000001.info',
             origin: DetectionOrigin.metadata),
       ]),
@@ -100,7 +100,7 @@ void main() {
       (tester) async {
     await _pump(
       tester,
-      _doc(games: [_fromFolder('moor', 'setup_moor_1.9.exe')]),
+      _doc(games: [_fromFolder('fable quay', 'setup_fable_quay_1.9.exe')]),
       folders: [r'C:\GOG Games', r'E:\Installers'],
     );
 
@@ -112,7 +112,7 @@ void main() {
   testWidgets('the header offers no photo affordances', (tester) async {
     await _pump(
       tester,
-      _doc(games: [_fromFolder('moor', 'setup_moor_1.9.exe')]),
+      _doc(games: [_fromFolder('fable quay', 'setup_fable_quay_1.9.exe')]),
       folders: [r'C:\GOG Games'],
     );
 
@@ -129,7 +129,7 @@ void main() {
     await _pump(
       tester,
       _doc(declined: const [
-        DeclinedEntry(name: 'NoteWellSetup.exe', reason: 'not a game file'),
+        DeclinedEntry(name: 'ExampleNotesInstaller.exe', reason: 'not a game file'),
       ]),
       folders: [r'C:\Users\someone\Downloads'],
     );
@@ -154,7 +154,7 @@ void main() {
         (tester) async {
       await _pump(
         tester,
-        _doc(games: [_fromFolder('moor', 'setup_moor_1.9.exe')],
+        _doc(games: [_fromFolder('fable quay', 'setup_fable_quay_1.9.exe')],
             declined: declined),
         folders: [r'C:\GOG Games'],
       );
@@ -170,7 +170,7 @@ void main() {
         (tester) async {
       await _pump(
         tester,
-        _doc(games: [_fromFolder('moor', 'setup_moor_1.9.exe')],
+        _doc(games: [_fromFolder('fable quay', 'setup_fable_quay_1.9.exe')],
             declined: declined),
         folders: [r'C:\GOG Games'],
       );
@@ -204,7 +204,7 @@ void main() {
       tester,
       _doc(photos: ['shelf1.jpg'], games: [
         _fromPhoto('Duskhollow', 'shelf1.jpg'),
-        _fromFolder('moor', 'setup_moor_1.9.exe'),
+        _fromFolder('fable quay', 'setup_fable_quay_1.9.exe'),
         ResolvedGame(
           detection: Detection.manual(rawTitle: 'typed by hand'),
           best: null,

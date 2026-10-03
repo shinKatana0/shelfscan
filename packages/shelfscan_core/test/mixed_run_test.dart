@@ -234,7 +234,7 @@ void main() {
     test('is installs then library, so the more specific claim is read first',
         () {
       final games = _tempDir('shelfscan_runs_');
-      File(_join(games.path, 'setup_moor_1.9.exe')).writeAsStringSync('');
+      File(_join(games.path, 'setup_fable_quay_1.9.exe')).writeAsStringSync('');
       final runs = sourceRunsFor(
         installs: readInstallDirectory(games),
         library: GalaxyLibrary(

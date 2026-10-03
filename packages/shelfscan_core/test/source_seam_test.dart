@@ -310,16 +310,16 @@ void main() {
       // T-0018-02 on a different pair of copies: owning a game on a disc and
       // on disk is owning two of it.
       final doc = await Orchestrator(
-        visionWorker: VisionWorker(_OnePhoto([_read('MOOR', hint: 'PS4')])),
+        visionWorker: VisionWorker(_OnePhoto([_read('FABLE QUAY', hint: 'PS4')])),
         resolverWorker: SkipResolver(),
       ).runScan(
         [_photo()],
         sources: [
-          SourceRun(_HintedSource('PC'), [_installer('setup_moor.exe')])
+          SourceRun(_HintedSource('PC'), [_installer('setup_fable_quay.exe')])
         ],
       );
 
-      expect(_titles(doc), ['MOOR', 'MOOR']);
+      expect(_titles(doc), ['FABLE QUAY', 'FABLE QUAY']);
     });
 
     test('the whole document survives a write and a read', () async {

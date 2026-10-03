@@ -55,8 +55,8 @@ void main() {
     test('prefers what runs to what it sits beside', () {
       expect(
           installerNamingFolder('New Folder',
-              const ['setup_moor_1.9_(21474).exe', 'Soundtrack.zip']),
-          'setup_moor_1.9_(21474).exe');
+              const ['setup_fable_quay_1.9_(21474).exe', 'Soundtrack.zip']),
+          'setup_fable_quay_1.9_(21474).exe');
     });
 
     test('reads the extension whatever its case', () {
@@ -77,7 +77,7 @@ void main() {
     test('two named installers are not one game', () {
       expect(
           installerNamingFolder('New Folder',
-              const ['setup_moor_1.9.exe', 'setup_arcanum_1.0.exe']),
+              const ['setup_fable_quay_1.9.exe', 'setup_arcanum_1.0.exe']),
           isNull);
     });
 
@@ -89,10 +89,10 @@ void main() {
     test('two spellings of one download are still one game', () {
       expect(
           installerNamingFolder('New Folder', const [
-            'setup_moor_1.9_(21474).exe',
-            'setup_moor_1.9_(64bit).exe',
+            'setup_fable_quay_1.9_(21474).exe',
+            'setup_fable_quay_1.9_(64bit).exe',
           ]),
-          'setup_moor_1.9_(21474).exe');
+          'setup_fable_quay_1.9_(21474).exe');
     });
 
     test('a game\'s own file tree names nothing, though its names parse', () {
@@ -186,8 +186,8 @@ void main() {
         '新しいフォルダー',
       ]) {
         expect(
-            installerNamingFolder(name, const ['setup_moor_1.9_(21474).exe']),
-            'setup_moor_1.9_(21474).exe',
+            installerNamingFolder(name, const ['setup_fable_quay_1.9_(21474).exe']),
+            'setup_fable_quay_1.9_(21474).exe',
             reason: name);
       }
     });
@@ -195,9 +195,9 @@ void main() {
     test('only an installer overrides, and only on a total disagreement', () {
       // The two gates, each on its own. A launcher is not evidence; a shared
       // word means the folder name is corroborated rather than contradicted.
-      expect(installerNamingFolder('Moor', const ['setup_moor_1.9.exe']),
+      expect(installerNamingFolder('Fable Quay', const ['setup_fable_quay_1.9.exe']),
           isNull);
-      expect(installerNamingFolder('Moor', const ['Blaze.exe']), isNull);
+      expect(installerNamingFolder('Fable Quay', const ['Blaze.exe']), isNull);
     });
 
     test('what the shape gate does NOT reach, pinned as the known gap', () {
@@ -216,7 +216,7 @@ void main() {
     test('two installers are still not one game, whatever the folder', () {
       expect(
           installerNamingFolder('Новая папка',
-              const ['setup_moor_1.9.exe', 'setup_arcanum_1.0.exe']),
+              const ['setup_fable_quay_1.9.exe', 'setup_arcanum_1.0.exe']),
           isNull);
     });
   });
@@ -246,10 +246,10 @@ void main() {
       // numbered folder simply joins that class.
       expect(
           installerNamingFolder(
-              'Новая папка (2)', const ['setup_moor_1.9_(21474).exe']),
-          'setup_moor_1.9_(21474).exe');
-      expect(installerNamingFolder('Moor (2)', const ['setup_moor_1.9.exe']),
-          'setup_moor_1.9.exe');
+              'Новая папка (2)', const ['setup_fable_quay_1.9_(21474).exe']),
+          'setup_fable_quay_1.9_(21474).exe');
+      expect(installerNamingFolder('Moor (2)', const ['setup_fable_quay_1.9.exe']),
+          'setup_fable_quay_1.9.exe');
       // T-0183's known gap closes for the numbered sibling and stays open for
       // the unnumbered one: an `.iso` is a payload with no installer shape, so
       // only the folder giving up its own title lets it through.

@@ -109,7 +109,7 @@ void main() {
     });
 
     test('a GoG installer name carries a build id and no year', () {
-      expect(_fromName('setup_moor_1.9_(21474).exe').sourceYear, isNull);
+      expect(_fromName('setup_fable_quay_1.9_(21474).exe').sourceYear, isNull);
       expect(_fromName('setup_marlows_gate_3_2.0.0.7_(64bit).exe').sourceYear,
           isNull);
     });
@@ -230,10 +230,10 @@ void main() {
     test('the third measured collision stays refused: its name prints no year',
         () async {
       final resolved = await _resolve([
-        _game(1100000011, 'Moor', [_pc], year: 2016),
-        _game(1100000012, 'The Ultimate Moor', [_pc],
-            year: 1995, alternativeNames: ['Moor']),
-      ], _fromName('setup_moor_1.9_(21474).exe'));
+        _game(1100000011, 'Fable Quay', [_pc], year: 2016),
+        _game(1100000012, 'The Ultimate Fable Quay', [_pc],
+            year: 1995, alternativeNames: ['Fable Quay']),
+      ], _fromName('setup_fable_quay_1.9_(21474).exe'));
       expect(resolved.best, isNull);
       expect(resolved.candidates.map((c) => c.score), everyElement(1.0));
     });

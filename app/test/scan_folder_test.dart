@@ -4,9 +4,8 @@
 /// the code's: no vision call, no cost, no key, and its own failures. What is
 /// pinned here is that it is separate, that it cannot open two dialogs
 /// (T-0116) or open one during a run (T-0121/T-0138), and that a folder full
-/// of other things is questioned before it is read: over a `Downloads` folder
-/// this source titles every installer it finds and not one of them is a game
-/// (T-0158), which nothing downstream can recover from.
+/// of other things is questioned before it is read: a filename alone cannot
+/// establish whether an installer contains a game or an application.
 ///
 /// The walk itself is not here -- it is real I/O, which never completes inside
 /// `testWidgets`'s fake async, so the screen takes a reader seam and
@@ -110,7 +109,7 @@ Future<_RecordingVision> _pump(
   MediaFolder? folder,
 }) async {
   final vision = _RecordingVision(gates: gates);
-  final held = folder ?? _folder(_gogGames, const ['setup_moor_1.9.exe']);
+  final held = folder ?? _folder(_gogGames, const ['setup_fable_quay_1.9.exe']);
   await tester.pumpWidget(MaterialApp(
     home: ScanScreen(
       settings: ProviderSettings(backend: backend),
@@ -137,7 +136,7 @@ void main() {
       (tester) async {
     final picker = _BothPicker(directory: _gogGames);
     await _pump(tester, picker: picker,
-        folder: _folder(_gogGames, const ['setup_moor_1.9.exe', 'notes.txt']));
+        folder: _folder(_gogGames, const ['setup_fable_quay_1.9.exe', 'notes.txt']));
 
     expect(find.text('Add photos'), findsOneWidget);
     expect(find.byKey(const Key('add-games-folder')), findsOneWidget);
@@ -259,7 +258,7 @@ void main() {
         (tester) async {
       await _pump(tester,
           picker: _BothPicker(directory: _downloads),
-          folder: _folder(_downloads, const ['NoteWellSetup.exe']));
+          folder: _folder(_downloads, const ['ExampleNotesInstaller.exe']));
 
       await tester.tap(find.text('Add media folder'));
       await tester.pumpAndSettle();
@@ -436,14 +435,14 @@ void main() {
         (tester) async {
       await _pump(tester,
           picker: _BothPicker(directory: _downloads),
-          folder: _folder(_downloads, const ['NoteWellSetup.exe']));
+          folder: _folder(_downloads, const ['ExampleNotesInstaller.exe']));
 
       await tester.tap(find.text('Add media folder'));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('folder-concern')), findsOneWidget);
-      expect(find.textContaining('not one of them is a game'), findsOneWidget);
-      expect(find.textContaining('T-0158'), findsOneWidget);
+      expect(find.textContaining('ExampleNotesInstaller.exe'), findsOneWidget);
+      expect(find.textContaining('setup_fable_quay_1.9.exe'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('folder-concern-cancel')));
       await tester.pumpAndSettle();
@@ -454,7 +453,7 @@ void main() {
     testWidgets('and added anyway if the user says so', (tester) async {
       await _pump(tester,
           picker: _BothPicker(directory: _downloads),
-          folder: _folder(_downloads, const ['NoteWellSetup.exe']));
+          folder: _folder(_downloads, const ['ExampleNotesInstaller.exe']));
 
       await tester.tap(find.text('Add media folder'));
       await tester.pumpAndSettle();
@@ -483,7 +482,7 @@ void main() {
         picker: _BothPicker(directory: _gogGames),
         backend: VisionBackend.cloud,
         folder:
-            _folder(_gogGames, const ['setup_moor_1.9.exe', 'unins000.exe']));
+            _folder(_gogGames, const ['setup_fable_quay_1.9.exe', 'unins000.exe']));
 
     await _addFolder(tester);
     await tester.tap(find.text('Scan'));
@@ -491,6 +490,6 @@ void main() {
 
     expect(vision.seen, isEmpty);
     expect(find.textContaining('Review ('), findsOneWidget);
-    expect(find.textContaining('moor'), findsWidgets);
+    expect(find.textContaining('fable quay'), findsWidgets);
   });
 }

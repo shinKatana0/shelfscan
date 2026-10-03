@@ -637,7 +637,7 @@ class ResolverWorker extends CatalogueWorker {
   /// answers two of the three collisions above — T-0158's corpus parses
   /// `Regent.of.Aurex.1993.DOSBox.GOG.zip` and `Cabalists.1993.GOG-Razor1911`
   /// to 1993, the year of the release a GoG install of each actually is, while
-  /// `setup_moor_1.9_(21474).exe` carries no year and stays refused.
+  /// `setup_fable_quay_1.9_(21474).exe` carries no year and stays refused.
   /// Folding it into the title instead is not the shortcut it looks like:
   /// `regent of aurex 1993` scores 0.750 and `regent of aurex (1993)` 0.682,
   /// both under [minAutoScore], and [volumeNumbersAgree] disagrees as well, so

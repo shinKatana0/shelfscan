@@ -450,7 +450,7 @@ Set<String> _titleWords(String title) =>
 /// deliberately not [_carrierExtensions]: a program is some game's and a
 /// payload is nobody's. A release extracted in place keeps its `.rar` parts
 /// beside the `.mkv`, and blocking on a carrier would leave exactly that
-/// folder a game row. A folder holding `setup_moor_1.9.exe` beside a film is
+/// folder a game row. A folder holding `setup_fable_quay_1.9.exe` beside a film is
 /// the mixed case, and the budget above decides it -- one entry cannot be two
 /// works, so the folder keeps the reading it already had.
 ///
@@ -593,7 +593,7 @@ FileNameParse _parseOne(String raw) {
   // The emitted title plus the duplication mark IS the whole name -- nothing
   // else came off it, separators included. That is the test, rather than the
   // mark on its own, and it is what leaves every name that carries evidence of
-  // being written ABOUT a game alone: `setup_moor_1.0 (2).exe` keeps its title
+  // being written ABOUT a game alone: `setup_fable_quay_1.0 (2).exe` keeps its title
   // through an extension, a prefix and a version, and `Moor (2).zip` through
   // an extension (T-0189).
   final copy = _numberedCopy.firstMatch(raw.trim());

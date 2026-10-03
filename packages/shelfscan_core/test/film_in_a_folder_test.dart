@@ -80,7 +80,7 @@ void main() {
     test('a runnable that names a game stops it -- the mixed folder', () {
       expect(
           videoNamingFolder(const [
-            'setup_moor_1.9.exe',
+            'setup_fable_quay_1.9.exe',
             'Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv',
           ]),
           isNull);
@@ -213,13 +213,13 @@ void main() {
     });
 
     test('a folder holding an installer AND a film stays a game folder', () {
-      final mixed = _folder('Moor');
-      _file(mixed, 'setup_moor_1.9.exe');
+      final mixed = _folder('Fable Quay');
+      _file(mixed, 'setup_fable_quay_1.9.exe');
       _file(mixed, 'Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
 
       final item = _readings().single.items.single;
 
-      expect(item.rawTitle, 'Moor');
+      expect(item.rawTitle, 'Fable Quay');
       expect(item.workKind, WorkKind.game);
     });
 

@@ -80,22 +80,13 @@ const _mixedFolders = {
   'users',
 };
 
-/// The tail both warnings share, and its two halves are not equally sourced.
-///
-/// **`(T-0158)` sits on the sentence it measured and covers nothing else**: a
-/// Downloads folder read by name titled every installer in it and not one was
-/// a game. That a film comes back as a game is T-0162's third way for a name
-/// to be read wrong -- a hazard nobody has put a rate on, so it carries no
-/// citation and does not borrow that one. It survives T-0352, which closed the
-/// folder-per-film layout it was written for: a film beside a game's own
-/// installer, two films in one folder, and a film in a container this does not
-/// read as video are all still game rows.
+/// A name alone cannot distinguish an application installer from a game
+/// installer. A film alongside an installer can also be read as a game.
 const _warning =
     'Every file and folder in it is read by name, subdirectories included, '
     'and a name is all this reads: a film can come back as a game, and an '
-    'application as either. Over a Downloads folder this titles every '
-    'installer it finds and not one of them is a game -- it reads '
-    'NoteWellSetup.exe exactly as it reads setup_moor_1.9.exe (T-0158). '
+    'application as either. It reads ExampleNotesInstaller.exe exactly as '
+    'it reads setup_fable_quay_1.9.exe. '
     'Review every row.';
 
 /// Why the chosen folder is probably not the one the user meant, or null.

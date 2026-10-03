@@ -1,4 +1,4 @@
-# The corpus T-0158's filename parser is measured against.
+# Synthetic filename parser corpus.
 #
 # Seven tab-separated columns, one entry per line:
 #
@@ -11,46 +11,12 @@
 #   expected  the title the parser must emit, or DECLINE
 #   year      the release year the parser must emit, or `-`
 #   hint      the `platformIds` key the row must carry, `-` for a DECLINE
-#             (T-0168). Every value here is a key of that table and the test
+#             Every value here is a key of that table and the test
 #             pins it, because a hint the gate cannot honour is `mismatch` on
-#             every candidate the row has and is worse than no row (T-0156).
+#             every candidate the row has and is worse than no row.
 #
-# EVERY ROW IN THIS FILE IS INVENTED. There is no `real` origin any more.
-#
-# The owner ruled on 2026-08-17 that no folder of their machine may be published
-# in any form -- not its contents, not a count of its contents, not a row
-# derived from it. The rows T-0158 and T-0183 read off real folders are gone.
-# What replaced them is written here to exercise the same parser paths, and it
-# stands in for those rows WITHOUT standing in for what they measured.
-#
-# NO SENTENCE IN THIS FILE COUNTS ITS OWN ROWS (T-0254). That is the rule, and
-# the two kinds of statement it leaves are these:
-#
-#   A FINDING was measured on a real folder during development, on the date its
-#   section header gives. Those folders are private and are not published, and
-#   a figure measured on one is a count of its contents -- which the rule above
-#   forbids exactly as plainly as it forbids a listing. So a finding is stated
-#   QUALITATIVELY, in prose, in its section header, and carries no figure at
-#   all. It says what the parser did, never how much of anything there was.
-#
-#   A COUNT OVER THE ROWS BELOW is an assertion in `filename_source_test.dart`
-#   and lives nowhere else. An assertion is read back against these rows every
-#   time the suite runs and fails when they move; a count written into this
-#   file is checked by nobody and stays true only while somebody remembers it.
-#   Both earlier versions of this header counted rows in prose, and both were
-#   false about the file they were written in.
-#
-#   The one number this file prints about its own rows is the index down
-#   section 1's list, which is not a total: it is what pairs each shape with
-#   the row that carries it, and reading the two against each other is the
-#   check that a prose count can never be.
-#
-# AND NO GROUP HERE IS SIZED TO ANYTHING OUTSIDE THIS FILE. A group holds one
-# row per shape it exercises; a row whose only job is to bring a group to a
-# size does not belong in it, and neither does a proportion borrowed from
-# something that was measured. Section 1 lists its shapes one per row, so its
-# size is checked by counting the list against the rows; the other sections
-# name a class, and the check there is that every row in them answers to it.
+# Every row and name below is invented. The numbered cases identify parser
+# shapes; `filename_source_test.dart` checks their expected outputs.
 #
 # The naming CONVENTIONS are preserved byte for byte -- the bracket markers, the
 # title id, the region, the mod note, the double extension, the scene suffix,
@@ -63,25 +29,9 @@
 # failed, and whole sections below hold nothing else.
 #
 # ---------------------------------------------------------------------------
-# 1. An ordinary Windows Downloads folder, which is the kind of folder a source
-#    will be pointed at by mistake. Almost none of it is a game, and the parser
-#    cannot tell an application installer from a game installer by name: every
-#    EMIT below is a false positive.
-#
-#    THE FINDING, measured 2026-08-16 on a real Downloads folder: part of it
-#    declined, the parser emitted a title for the rest, and every one of those
-#    titles was an application rather than a game -- not one true positive, the
-#    worst result in this file. Nothing in a name separates an application
-#    installer from a game installer, and no list of known applications is
-#    bounded, so the input contract has to be a games folder. That is T-0160
-#    and T-0161's to enforce and is the most useful thing this measurement
-#    says. The folder is private: it is not published, and neither is any count
-#    of what was in it.
-#
-#    THE ROWS BELOW ARE NOT THAT FOLDER, and how many of them there are is not
-#    that folder's number either. One shape per row, in row order; for a
-#    DECLINE the shape is the extension that decided it, each one a different
-#    member of a list nothing else in the suite pins:
+# 1. Application and other files in a generic Downloads folder. Filename
+#    parsing alone cannot tell an application installer from a game installer.
+#    Each row exercises a distinct naming or extension shape:
 #
 #      1  a digit run fused into the name, kept; an `x64` tag cut
 #      2  underscores, a four-part version, `windows` and `x64` cut
@@ -123,7 +73,7 @@
 # ---------------------------------------------------------------------------
 synthetic	downloads	Downloads	zipper2602-x64.exe	zipper2602	-	PC
 synthetic	downloads	Downloads	TunnelKitVPN_5.0.0.5_windows_x64.exe	TunnelKitVPN	-	PC
-synthetic	downloads	Downloads	NoteWellSetup.exe	NoteWellSetup	-	PC
+synthetic	downloads	Downloads	ExampleNotesInstaller.exe	ExampleNotesInstaller	-	PC
 synthetic	downloads	Downloads	Assist Setup.exe	Assist	-	PC
 synthetic	downloads	Downloads	CodePadUserSetup-x64-1.126.0.exe	CodePadUserSetup	-	PC
 synthetic	downloads	Downloads	mediaplay-3.0.23-win64.exe	mediaplay	-	PC
@@ -158,10 +108,7 @@ synthetic	downloads	Downloads	Unconfirmed 102804.crdownload	DECLINE	-	-
 synthetic	downloads	Downloads	desktop.ini	DECLINE	-	-
 synthetic	downloads	Downloads	README.md	DECLINE	-	-
 # ---------------------------------------------------------------------------
-# 2. A console-game subfolder, of the kind that sits inside a downloads
-#    directory. Invented rows carrying the conventions such a name prints --
-#    and a convention is nobody's property, as the header above says. No real
-#    folder is described here, none is counted, and none is sized here. One
+# 2. A synthetic console-game subfolder carrying naming conventions. One
 #    convention per row, in row order: an `[NSP]` container marker; an
 #    eight-byte Switch title id in brackets; a parenthesised region beside an
 #    `[NSZ]` marker; a parenthesised mod note; a `.rar.torrent` double
@@ -241,11 +188,9 @@ synthetic	nameable	consoles	Sample Game O.nds	Sample Game O	-	DS
 synthetic	nameable	consoles	Sample Game P.wux	Sample Game P	-	WIIU
 synthetic	nameable	consoles	Sample Game Q [3DS]	Sample Game Q	-	3DS
 # ---------------------------------------------------------------------------
-# 3. SYNTHETIC, GoG's own installer convention:
-#    setup_<slug>_<version>_(<arch>)_(<build id>).exe. Not one real GoG
-#    installer was available to read, so every row here is written from the
-#    specified shape.
-#    Every version here is the shape T-0156 measured as fatal to the match.
+# 3. Synthetic GoG-style installer names:
+#    setup_<slug>_<version>_(<arch>)_(<build id>).exe. Version text must not
+#    become part of the parsed title.
 # ---------------------------------------------------------------------------
 synthetic	gog	-	setup_marlows_gate_3_2.0.0.7_(64bit)_(38584).exe	marlows gate 3	-	PC
 synthetic	gog	-	setup_the_warlock_3_moon_rite_goty_4.0.0.15_(19752).exe	the warlock 3 moon rite goty	-	PC
@@ -253,7 +198,7 @@ synthetic	gog	-	setup_ashfall_2_1.02.exe	ashfall 2	-	PC
 synthetic	gog	-	setup_harbour_lantern_1.6.15_(46424).exe	harbour lantern	-	PC
 synthetic	gog	-	setup_herald_of_frost_and_flame_3_complete_4.0_(28740).exe	herald of frost and flame 3 complete	-	PC
 synthetic	gog	-	setup_sundrop_hollow_1.6.15_(64bit)_(46424).exe	sundrop hollow	-	PC
-synthetic	gog	-	setup_moor_1.9_(21474).exe	moor	-	PC
+synthetic	gog	-	setup_fable_quay_1.9_(21474).exe	fable quay	-	PC
 synthetic	gog	-	setup_mire_2_the_founding_of_a_kingdom_2.1.0.7.exe	mire 2 the founding of a kingdom	-	PC
 synthetic	gog	-	setup_regent_of_aurex_1_2_1.31_(45683).exe	regent of aurex 1 2	-	PC
 synthetic	gog	Marlow's Gate 3	setup.exe	Marlow's Gate 3	-	PC
@@ -311,32 +256,13 @@ synthetic	archive	Mire II The Founding of a Kingdom	setup.exe	Mire II The Foundi
 synthetic	archive	-	Blaze II RTX.iso	Blaze II RTX	-	PC
 synthetic	archive	-	Solar Pilgrim VII.iso	Solar Pilgrim VII	-	PC
 # ---------------------------------------------------------------------------
-# 7. Directory names handed over as entries (T-0183). The first rows of this
-#    corpus that are directories rather than files.
+# 7. Synthetic directory names handed over as entries. `Новая папка` is
+#    Windows' default new-folder name in Russian, and `(2)` is its duplication
+#    mark. The installer case is covered in `installer_naming_test.dart`.
 #
-#    THE FINDING, measured 2026-08-16 on a real folder of downloaded
-#    installers: a directory handed over as an entry is a different population
-#    from an installer file name, which is why T-0174 refused to invent any at
-#    the time. That folder is private and is not published, and no name of
-#    anything inside it appears here or anywhere in this repository.
-#
-#    The rows below are not that folder. They survive the removal because
-#    they are Windows' own vocabulary rather than anybody's data: `Новая папка`
-#    is what Windows itself names a new folder in Russian and `(2)` is its own
-#    duplication mark, identical on every Russian-locale machine. The installer
-#    that drives the first one is in `installer_naming_test.dart` and is
-#    deliberately not a row.
-#
-#    T-0183 wrote them all as titles, because that is what the parser emitted
-#    and what a name parser can honestly say about a Russian word; T-0189
-#    moved the numbered ones to DECLINE, and the reason they could move is
-#    not the language.
-#    The numbered folder carries Windows' duplication mark and nothing else --
-#    no extension, no version, no separator of its own -- so the mark is read
-#    as evidence about how the name was made, in any locale. The unnumbered
-#    one stays a title and is the residue: an UNNUMBERED locale-generated name
-#    carries no such evidence, and this corpus is where that is admitted
-#    rather than implied.
+#    Numbered OS-generated names decline because the duplication mark is
+#    evidence about how the name was made, regardless of locale. An unnumbered
+#    default name carries no such evidence and remains a title.
 # ---------------------------------------------------------------------------
 synthetic	folder	-	Новая папка	Новая папка	-	PC
 synthetic	folder	-	Новая папка (2)	DECLINE	-	-

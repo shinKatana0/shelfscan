@@ -41,7 +41,7 @@ void main() {
 
   group('what one folder hands over', () {
     test('a folder of installers is one entry per file', () async {
-      _file('setup_moor_1.9_(21474).exe');
+      _file('setup_fable_quay_1.9_(21474).exe');
       _file('Marlows.Gate.3.GOG.zip');
       _file('notes.txt');
 
@@ -52,7 +52,7 @@ void main() {
       expect([for (final entry in folder.entries) entry.name], [
         'Marlows.Gate.3.GOG.zip',
         'notes.txt',
-        'setup_moor_1.9_(21474).exe',
+        'setup_fable_quay_1.9_(21474).exe',
       ]);
       // Not the chosen folder: a container is read as a title when the entry's
       // own name carries none, and this one names the collection (T-0193).
@@ -327,12 +327,12 @@ void main() {
       // The one entry per subdirectory cannot be two works, so the folder
       // keeps the reading it had and the film in it is lost -- the cost
       // T-0349 stated rather than paid for by breaking the budget.
-      _file('Moor/setup_moor_1.9.exe');
-      _file('Moor/Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
+      _file('Fable Quay/setup_fable_quay_1.9.exe');
+      _file('Fable Quay/Harbour.Lantern.2007.1080p.BluRay.x264-MOOR.mkv');
 
       final item = (await _readings()).single.items.single;
 
-      expect(item.rawTitle, 'Moor');
+      expect(item.rawTitle, 'Fable Quay');
       expect(item.workKind, WorkKind.game);
     });
 
@@ -458,9 +458,9 @@ void main() {
 
     test('everything else is the filename source', () {
       final reading = source.read(const SourceEntry(
-          name: 'setup_moor_1.9_(21474).exe', container: 'Games'));
+          name: 'setup_fable_quay_1.9_(21474).exe', container: 'Games'));
 
-      expect(reading.items.single.rawTitle, 'moor');
+      expect(reading.items.single.rawTitle, 'fable quay');
       expect(reading.items.single.origin, DetectionOrigin.filename);
     });
   });
@@ -470,8 +470,8 @@ void main() {
       final concern = folderConcern(r'C:\Users\someone\Downloads');
       expect(concern, isNotNull);
       expect(concern, contains('Downloads is where files land'));
-      expect(concern, contains('not one of them is a game'));
-      expect(concern, contains('T-0158'));
+      expect(concern, contains('ExampleNotesInstaller.exe'));
+      expect(concern, contains('setup_fable_quay_1.9.exe'));
     });
 
     test('the personal and system folders are all questioned', () {
@@ -529,20 +529,14 @@ void main() {
           isNot(contains('where games are installed')));
     });
 
-    // The distinction T-0351 exists for: T-0158 measured a Downloads folder
-    // against an application installer, and nothing else. That a film comes
-    // back as a game is T-0162's third way for a name to be read wrong and
-    // carries no rate, so the citation stays behind the measured sentence
-    // rather than in front of both.
-    test('the T-0158 citation stays on the sentence T-0158 measured', () {
-      const measured = 'not one of them is a game -- it reads '
-          'NoteWellSetup.exe exactly as it reads setup_moor_1.9.exe (T-0158)';
+    test('the warning compares synthetic application and game installers', () {
+      const examples = 'It reads ExampleNotesInstaller.exe exactly as '
+          'it reads setup_fable_quay_1.9.exe.';
       final concern = folderConcern(r'C:\Users\someone\Downloads')!;
 
-      expect(concern, contains(measured));
-      expect('(T-0158)'.allMatches(concern).length, 1);
+      expect(concern, contains(examples));
       expect(concern.indexOf('a film can come back as a game'),
-          lessThan(concern.indexOf(measured)));
+          lessThan(concern.indexOf(examples)));
     });
   });
 }

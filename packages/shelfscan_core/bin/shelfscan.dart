@@ -41,12 +41,9 @@
 /// pipeline, which is what keeps the review list a list of games.
 ///
 /// The input contract is "a games folder", and it is enforced only here and in
-/// the app: nothing inside `shelfscan_core` can tell `NoteWellSetup.exe` from
-/// `setup_moor_1.9.exe`, and T-0158 measured the price of pointing this at the
-/// wrong directory: over a `Downloads` folder it titles every installer it
-/// finds and not one of them is a game. So a small list of well-known personal
-/// and system directories is refused outright, and every run says what it
-/// reads.
+/// the app: nothing inside `shelfscan_core` can tell an application installer
+/// from a game installer by name alone. So a small list of well-known personal
+/// and system directories is refused outright, and every run says what it reads.
 ///
 /// `resolve` re-runs ONLY the IGDB stage over the detections already in a
 /// review document: no photos are read and no vision provider is called.
@@ -835,7 +832,7 @@ class InstallDirectory {
 ///
 /// What each level is for:
 ///
-/// - the folder itself -- loose installers (`setup_moor_1.9.exe`) as one entry
+/// - the folder itself -- loose installers (`setup_fable_quay_1.9.exe`) as one entry
 ///   each, and every subdirectory as one entry named by the directory. A game
 ///   installed as `Games/Marlow's Gate 3/` has its title in the folder name and
 ///   nowhere else, and that name keeps the apostrophe and the capitals that
@@ -1028,13 +1025,10 @@ class InstalledGameSource implements DetectionSource {
 
 /// Directory names refused as a games folder, whatever is in them.
 ///
-/// The input contract is the only place this distinction exists, and T-0158
-/// measured why: over a `Downloads` folder the parser emitted a title for
-/// every name it did not decline, and **every one of those titles was an
-/// application** rather than a game. `test/corpus/installer_names.tsv`
-/// exercises the shapes it emitted on -- `mediaplay`, `cardstack`, `NoteWell`,
-/// a freenix image. Nothing in a name separates `NoteWellSetup.exe` from
-/// `setup_moor_1.9.exe`, and a list of known applications is unbounded, so no
+/// The input contract is the only place this distinction exists. The synthetic
+/// examples in `test/corpus/installer_names.tsv` include application installers
+/// and game installers with similar naming conventions. Nothing in a name
+/// separates `ExampleNotesInstaller.exe` from `setup_fable_quay_1.9.exe`, so no
 /// rule reading only the name can decline one and keep the other. A list of
 /// known NON-games folders is the opposite
 /// shape: short, closed, and wrong only in the direction that costs a retype.
@@ -1057,9 +1051,8 @@ String? gamesFolderError(String path) {
     return null;
   }
   return 'Not a games folder: $absolute. This reads NAMES, and no rule reading '
-      'a name tells NoteWellSetup.exe from setup_moor_1.9.exe -- run over a '
-      'Downloads folder it titles every installer it finds, and not one of '
-      'them is a game (T-0158). Point it at the directory your games '
+      'a name tells ExampleNotesInstaller.exe from setup_fable_quay_1.9.exe. '
+      'Point it at the directory your games '
       'are installed in.';
 }
 
@@ -1352,9 +1345,8 @@ Never _usage() {
       'only goggame-*.info -- plus, when the folder itself is called\n'
       'something like "New Folder", the one installer in it that names a\n'
       'game. Point it at a games folder and nothing else --\n'
-      'nothing in a file NAME tells NoteWellSetup.exe from setup_moor_1.9.exe,\n'
-      'so over a Downloads folder this titles every installer it finds and\n'
-      'not one of them is a game (T-0158). It writes the same review.json\n'
+      'nothing in a file NAME tells ExampleNotesInstaller.exe from setup_fable_quay_1.9.exe.\n'
+      'It writes the same review.json\n'
       'scan does, for the same resolve and export.\n'
       '\n'
       'scan-library reads GOG Galaxy\'s own local database instead, so a game\n'

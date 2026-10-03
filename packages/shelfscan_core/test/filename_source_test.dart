@@ -120,7 +120,7 @@ void main() {
       // rather than a game. What these two guard is the finding stated in the
       // corpus header, which carries no figure of its own because the folder it
       // was measured on is private: nothing in a name separates
-      // `NoteWellSetup.exe` from `setup_moor_1.9.exe`, and no list of known
+      // `ExampleNotesInstaller.exe` from `setup_fable_quay_1.9.exe`, and no list of known
       // applications is bounded, so the input contract has to be a games folder
       // -- T-0160 and T-0161's to enforce, and the most useful thing the
       // measurement said. The group holds one row per shape that header lists,
@@ -220,7 +220,7 @@ void main() {
           'herald of frost and flame iii',
       'setup_sundrop_hollow_1.6.15.exe': 'sundrop hollow',
       'setup_ashfall_2_1.02.exe': 'ashfall 2',
-      'setup_moor_1.9.exe': 'moor',
+      'setup_fable_quay_1.9.exe': 'fable quay',
     };
 
     for (final entry in measuredByT0156.entries) {
@@ -379,19 +379,19 @@ void main() {
         sources: const [
           SourceRun(FilenameSource(), [
             SourceEntry(name: 'readme.txt', container: 'Ashfall 2'),
-            SourceEntry(name: 'setup_moor_1.9_(21474).exe'),
+            SourceEntry(name: 'setup_fable_quay_1.9_(21474).exe'),
           ])
         ],
       );
       expect(document.declinedEntries.single.name, 'readme.txt');
-      expect(document.games.single.detection.rawTitle, 'moor');
+      expect(document.games.single.detection.rawTitle, 'fable quay');
     });
   });
 
   group('the row a title becomes', () {
     test('is a filename row, not authoritative, with the PC hint', () {
       final row = const FilenameSource()
-          .read(const SourceEntry(name: 'setup_moor_1.9.exe'))
+          .read(const SourceEntry(name: 'setup_fable_quay_1.9.exe'))
           .items
           .single;
       expect(row.origin, DetectionOrigin.filename);
@@ -446,10 +446,10 @@ void main() {
       // A GoG install's `goggame-*.info` is T-0157's; this source ignores the
       // text and reads only the name.
       final reading = const FilenameSource().read(const SourceEntry(
-        name: 'setup_moor_1.9.exe',
+        name: 'setup_fable_quay_1.9.exe',
         content: '{"name": "MOOR (1993)"}',
       ));
-      expect(reading.items.single.rawTitle, 'moor');
+      expect(reading.items.single.rawTitle, 'fable quay');
     });
   });
 
@@ -746,7 +746,8 @@ void main() {
       // keeps its title. Losing any of them would undo T-0183, whose whole
       // fix is reading the installer inside a folder like the one above.
       expect(parseMediaFileName('Moor (2).zip').title, 'Moor');
-      expect(parseMediaFileName('setup_moor_1.0 (2).exe').title, 'moor');
+      expect(parseMediaFileName('setup_fable_quay_1.0 (2).exe').title,
+          'fable quay');
       expect(parseMediaFileName('Moor 1.9 (2)').title, 'Moor');
       expect(parseMediaFileName('Tulip_Hospital (2)').title, 'Tulip Hospital');
     });
