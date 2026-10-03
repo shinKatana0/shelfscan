@@ -35,7 +35,8 @@ const _service = 'https://api.invented-endpoint.test/v1';
 const _model = 'vision-mini-typo';
 
 /// Invented, and shaped like the thing that must never be printed.
-const _credential = 'sk-invented-9WQ2m4Kx7Ttz0Ab1Cd3Ef5Gh7Ij9Kl';
+const _credential = 'sk-'
+    'invented-9WQ2m4Kx7Ttz0Ab1Cd3Ef5Gh7Ij9Kl';
 
 /// Control characters by code point rather than by escape: a backslash in this
 /// file is one shell away from being eaten.

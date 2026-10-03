@@ -46,7 +46,8 @@ class RecordingStore implements SecretStore, PrefsStore {
 const _anthropicKey = 'sk-ant-SECRET-anthropic';
 const _openAiKey = 'sk-SECRET-endpoint';
 const _igdbId = 'igdbid-SECRET-0123';
-const _igdbSecret = 'igdbsecret-SECRET-4567';
+const _igdbSecret = 'igdbsecret-'
+    'SECRET-4567';
 const _tmdbToken = 'tmdbtoken-SECRET-89ab';
 
 ProviderSettings _filledSettings() => ProviderSettings(

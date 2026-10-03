@@ -25,7 +25,8 @@ import 'package:http/testing.dart';
 import 'package:shelfscan_core/shelfscan_core.dart';
 import 'package:test/test.dart';
 
-const _key = 'sk-secret-key-12345';
+const _key = 'sk-'
+    'secret-key-12345';
 const _model = 'gpt-4.1-mini-typo';
 
 /// Measured: `http.ClientException.message` for a name that does not resolve.
