@@ -119,7 +119,7 @@ is. Both feed the review screen directly — a `Candidate` carries the canonical
 `matchedAlternativeName` that actually matched where a regional title diverged,
 the `releaseYear` that separates a remake from its original, and the candidate
 list a person picks from when nothing scored high enough to match on its own.
-Review is mandatory here (`PROJECT.md`, "Review is mandatory UX"), so removing
+Review is mandatory in the ShelfScan workflow, so removing
 either catalogue would take a required step apart and not merely an export.
 Both also fill three cells of the CSV export, which no Tonkatsu import reads.
 
