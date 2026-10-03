@@ -13,6 +13,11 @@ import '../models.dart';
 
 const _exportable = {ReviewStatus.approved, ReviewStatus.edited};
 
+/// Internal compatibility switch; change this default only after the released
+/// Tonkatsu importer has been validated against the card batch.
+const bool tonkatsuV45Export =
+    bool.fromEnvironment('tonkatsuV45Export', defaultValue: false);
+
 /// A cell an export writes that a spreadsheet evaluates instead of showing,
 /// named by the column it sits under so a reader can find it.
 typedef FormulaCell = ({String column, String value});
@@ -538,8 +543,8 @@ class CsvExporter extends Exporter {
 /// Format reference: hacan359/tonkatsu_box at `release/0.44`,
 /// `lib/core/import/sources/custom_file/` -- `custom_cards_parser.dart`,
 /// `custom_card_entry.dart` and `custom_cards_template.dart`. EXTERNAL
-/// CONTRACT, the same standing as [TonkatsuExporter]'s: upstream changes get a
-/// new writer rather than a mutation of this one.
+/// CONTRACT, the same standing as [TonkatsuExporter]'s: the legacy writer is
+/// preserved while a separate mapper prepares the v45 card shape.
 ///
 /// **The row this exists for.** An `.xcoll` item IS a pair of ids, so a row
 /// nothing resolved has none and [TonkatsuExporter] declines it -- correctly,
@@ -559,9 +564,14 @@ class CsvExporter extends Exporter {
 /// failure -- but that is upstream's property to change, so nothing here rests
 /// on it: [_card] refuses a row it cannot build and [render] omits it.
 class TonkatsuCardsExporter extends Exporter {
+  TonkatsuCardsExporter({bool? v45Export})
+      : v45Export = v45Export ?? tonkatsuV45Export;
+
+  final bool v45Export;
+
   /// The other target's rule, asked rather than restated.
   ///
-  /// The two Tonkatsu targets partition the approved rows, so this one's
+  /// In the default flow the two Tonkatsu targets partition approved rows, so this one's
   /// question is literally "would the other decline it?" -- and which catalogue
   /// a kind's `external_id` must come from is that exporter's rule and private
   /// to it. `review_screen.dart`'s `_pickReachesXcoll` holds an instance for
@@ -593,8 +603,10 @@ class TonkatsuCardsExporter extends Exporter {
   };
 
   @override
-  String get leftOutReason => 'carries only what .xcoll cannot -- an item with '
-      'a resolved match belongs in that file instead.';
+  String get leftOutReason => v45Export
+      ? 'carries only approved items with a title and supported type.'
+      : 'carries only what .xcoll cannot -- an item with '
+          'a resolved match belongs in that file instead.';
 
   /// The inverse of the default, and it points at the other file.
   ///
@@ -608,8 +620,9 @@ class TonkatsuCardsExporter extends Exporter {
   /// and then names the target the rows did go to, because exporting that one
   /// is the whole of what is left to do.
   @override
-  String get carriedNothingReason =>
-      'no approved item was left over for cards -- export .xcoll instead.';
+  String get carriedNothingReason => v45Export
+      ? 'no approved item has a title and supported type.'
+      : 'no approved item was left over for cards -- export .xcoll instead.';
 
   /// An empty array is `CustomCardsParseErrorCode.emptyFile` upstream, raised
   /// before any row is looked at (`custom_cards_parser.dart`, `release/0.44`),
@@ -617,7 +630,7 @@ class TonkatsuCardsExporter extends Exporter {
   @override
   bool get emptyFileIsUsable => false;
 
-  /// The rows the other Tonkatsu target leaves behind, and only those.
+  /// The rows the other Tonkatsu target leaves behind in the default flow.
   ///
   /// A partition rather than a second opinion: a row `.xcoll` can carry belongs
   /// in `.xcoll`, where the importer fetches metadata and a cover from an id.
@@ -628,8 +641,9 @@ class TonkatsuCardsExporter extends Exporter {
   /// here rather than listed again, so the shells' "carries none of the marked
   /// rows" and the file's contents cannot disagree.
   @override
-  bool canExport(ResolvedGame game) =>
-      !_xcoll.canExport(game) && _card(game) != null;
+  bool canExport(ResolvedGame game) => v45Export
+      ? _v45Card(game) != null
+      : !_xcoll.canExport(game) && _card(game) != null;
 
   @override
   String render(List<ResolvedGame> games) {
@@ -637,10 +651,10 @@ class TonkatsuCardsExporter extends Exporter {
     // is only called for rows [canExport] accepted, which holds for
     // [Exporter.export] and not for a caller with a hand-built list -- and
     // this is the target where that matters, because its whole subject is the
-    // rows nothing could resolve.
+    // rows nothing could resolve in the legacy flow.
     final cards = <Map<String, Object?>>[];
     for (final game in games) {
-      final card = _card(game);
+      final card = v45Export ? _v45Card(game) : _card(game);
       if (card != null) cards.add(card);
     }
     // A bare array: no envelope, so no clock. Unlike `.xcoll`, which stamps
@@ -652,7 +666,8 @@ class TonkatsuCardsExporter extends Exporter {
   /// One card, or null where this pipeline holds nothing honest to build one
   /// from.
   ///
-  /// **`title` and `type` are the whole of what upstream requires**, and the
+  /// In the legacy path, **`title` and `type` are the whole of what upstream
+  /// requires**, and the
   /// two optional keys below are the only ones this project can fill without
   /// inventing. Every other field of the import schema is refused on purpose:
   ///
@@ -691,6 +706,41 @@ class TonkatsuCardsExporter extends Exporter {
       if (rawTitle.isNotEmpty && rawTitle != title) 'alt_title': rawTitle,
       if (platform != null) 'platform': platform,
     };
+  }
+
+  /// Tonkatsu's forthcoming card contract. The existing array rendering is
+  /// retained pending validation of the released multi-card importer.
+  static Map<String, Object?>? _v45Card(ResolvedGame game) {
+    final best = TonkatsuExporter._externalId(game) == null ? null : game.best;
+    final title = best?.title ?? game.detection.rawTitle.trim();
+    final type = switch (game.detection.workKind) {
+      WorkKind.game => 'game',
+      WorkKind.movie => 'movie',
+      WorkKind.animation ||
+      WorkKind.animationFilm ||
+      WorkKind.animationSeries =>
+        'animation',
+      WorkKind.anime => 'anime',
+    };
+    if (title.isEmpty) return null;
+
+    final rawTitle = game.detection.rawTitle.trim();
+    final platform = best == null && game.best != null
+        ? _platformHint(game)
+        : _platform(game);
+    return {
+      'title': title,
+      'type': type,
+      if (rawTitle.isNotEmpty && rawTitle != title) 'alt_title': rawTitle,
+      if (best?.releaseYear case final year?) 'year': year,
+      if (platform != null) 'platform': platform,
+    };
+  }
+
+  static String? _platformHint(ResolvedGame game) {
+    if (game.detection.workKind != WorkKind.game) return null;
+    final text = game.detection.platformHint;
+    return text == null || text.isEmpty ? null : text;
   }
 
   /// The platform text for a card, or null where writing one would invent it.

@@ -1,11 +1,66 @@
-# What this integration depends on, and a smaller boundary proposed for it
+# Tonkatsu handoff and v45 card export preparation
 
-**Status: a design note. Nothing in production changes on the strength of it.**
-`.xcoll` stays the contract, no provider is removed, no exporter is replaced.
-What follows is an audit of what this project looks up and why, and an argument
-about a smaller handover the Tonkatsu Box maintainer has proposed. It ends in
-questions rather than in a decision, because the questions are not this
-project's to answer alone.
+**Status: legacy export is production/default.** `.xcoll` remains a supported
+`version: 2` contract, and `tonkatsu-cards` still carries only the approved
+rows `.xcoll` declines. A v45-compatible card path is prepared behind the
+disabled-by-default `tonkatsuV45Export` flag. No provider, review step, or
+existing exporter has been removed.
+
+The flag is a Dart compile-time environment value in
+`packages/shelfscan_core/lib/src/exporters/exporters.dart`. Its single default
+is `false`; an internal test or developer build may opt in with
+`-DtonkatsuV45Export=true` (Flutter: `--dart-define=tonkatsuV45Export=true`).
+The opt-in changes only the `tonkatsu-cards` target. Under it, that target
+serializes every approved or edited row it can map, including rows with a
+ShelfScan catalogue match. The review gate and empty-file handling remain.
+Exporting both Tonkatsu targets under the opt-in can therefore duplicate a
+matched row; the v45 cards target is the intended single handoff for an opt-in
+smoke test.
+
+The author supplied the individual v45 card schema: required `title` and
+`type`, with optional `alt_title`, `description`, numeric `year`, `genres`,
+`link`, `cover`, `platform`, `status`, `rating`, `comment`, `rewatch_count`,
+`started_at`, `completed_at`, `time_spent_minutes`, `favorite`, `tags`,
+`current_episode`, and `current_season`. Tonkatsu is expected to resolve on
+import using `title + type + year` and create a custom card if no source match
+is found. `custom` and `audio` do not undergo source lookup there. ShelfScan
+does no new resolution for this export, and an ordinary unmatched game remains
+`type: game` so Tonkatsu can attempt that resolution and fallback itself.
+
+The v45 mapper emits `title` and `type`, `alt_title` when the reviewed raw name
+differs from a trusted catalogue title, a game `platform` when known, and
+numeric `year` only from a candidate in the catalogue appropriate to that row.
+It never uses `Detection.sourceYear`: that value may describe a file or rip
+rather than the work. A stale candidate from another catalogue supplies no
+v45 title, platform, or year. Unknown hints are absent, and there are no
+invented descriptions, genres, URLs, covers, dates, ratings, status, comments,
+tags, or progress. Should a future trusted `link` or `cover` source be added,
+its value must be a plain HTTP(S) URL, never Markdown link syntax.
+
+The v45 `WorkKind` mapping is `game → game`, `movie → movie`,
+`animation`/`animationFilm`/`animationSeries → animation`, and
+`anime → anime`. Anime remains separate from animation. Tonkatsu's schema also
+supports `custom`, `tv_show`, `visual_novel`, `manga`, `book`, and `audio`, but
+ShelfScan has no corresponding current `WorkKind` for them and does not
+fabricate one to populate the format.
+
+The author has not yet confirmed the final top-level multi-card container.
+The existing `tonkatsu-cards` flow writes a bare JSON array, which v45 retains;
+card mapping is separate from array rendering so a later container change is
+small. This assumption requires validation against the released importer.
+
+**Future cutover, after release:**
+
+1. Tonkatsu v45 is released.
+2. Run end-to-end ShelfScan → Tonkatsu import smoke tests.
+3. Verify resolved and unresolved/custom-card cases.
+4. Flip the feature flag default to the v45 exporter.
+5. Keep the legacy exporter for a compatibility period.
+6. Remove legacy only in a separate explicitly approved cleanup task.
+
+The rest of this note records the earlier `release/0.44` audit and design
+discussion. Its references to a proposed boundary describe that historical
+state; the v45 contract and current code are described above.
 
 Every upstream claim below was read at `hacan359/tonkatsu_box`, branch
 `release/0.44`, and the file it came from is named beside it. Where this note
@@ -27,16 +82,16 @@ document.
   no title field in a light item and no cover: the importer fetches everything
   else from the id.
 - **`TonkatsuCardsExporter`** (registry key `tonkatsu-cards`, extension `json`)
-  writes the rows the first one declines, as a bare array of Custom Cards. A
+  writes the rows the first one declines by default, as a bare array of Custom Cards. A
   card carries `title` and `type`, plus `alt_title` and `platform` where this
-  pipeline holds them honestly. Four keys, and there is no fifth.
+  pipeline holds them honestly. The legacy card has four possible keys.
 
-Both live in `packages/shelfscan_core/lib/src/exporters/exporters.dart`. The two
-partition the approved rows: a row the first can carry belongs in `.xcoll`, and
-the second asks the first rather than restating its rule.
+Both live in `packages/shelfscan_core/lib/src/exporters/exporters.dart`. In the
+default flow they partition the approved rows: a row the first can carry belongs
+in `.xcoll`, and the second asks the first rather than restating its rule.
 
-So the boundary today is **ids where there are ids, names where there are
-not**, and the second half of that is new.
+So the default boundary is **ids where there are ids, names where there are
+not**.
 
 ## 2. The dependency matrix
 
@@ -293,9 +348,8 @@ became a one-decimal number rather than an integer, a field this project does
 not write, and *"older builds reject v3 files cleanly"*. So 2 is the wider
 compatibility and the pin is deliberate.
 
-If the upstream extension ever landed, the migration shape is **the same file,
-consumed differently** — not a third registry entry beside `tonkatsu` and
-`tonkatsu-cards`.
+The v45 preparation uses **the same `tonkatsu-cards` registry entry**, under
+the disabled flag, rather than adding a third Tonkatsu target.
 
 The argument for that is the one this whole section turns on: the file
 `TonkatsuCardsExporter` writes *is already* `{name, type}` plus hints, under
@@ -308,11 +362,10 @@ different spellings would be a second serializer for no gain, and it would put
 this project in the position of maintaining a format that only one mode of one
 importer reads.
 
-Two consequences worth stating so they are not rediscovered later. The rows
-that would flow through such a mode are exactly the rows `.xcoll` declines
-today, so nothing that currently imports well would change route. And a
-receiving app that never gains the flag still imports the same file as custom
-cards, which is what it does now — the migration has no flag day.
+The historical proposal below anticipated a mode for `.xcoll` leftovers.
+The actual v45 path instead includes approved matched rows as well, so it is a
+candidate replacement handoff after end-to-end validation, not a second file
+to import alongside `.xcoll` for the same reviewed document.
 
 ## 7. The compatibility abstraction, and why it is not being built
 
@@ -345,7 +398,7 @@ does not exist. If the minimal handoff is ever built, the evidence above says
 it arrives the same way: one class, one registry line, no recognition change —
 or, per section 6, no new class at all.
 
-## 8. Open questions for the maintainer
+## 8. Historical open questions for the maintainer
 
 Written to be asked as they stand. None of them assumes its answer.
 
