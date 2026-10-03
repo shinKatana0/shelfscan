@@ -20,6 +20,19 @@ is the authority behind it.
 
 Nothing yet.
 
+## [0.4.1] - 2026-10-03
+
+### Added
+- Prepared a Tonkatsu v45-compatible card export behind a disabled-by-default
+  feature flag. The existing Tonkatsu exports remain the default; the new
+  export path awaits validation against the released Tonkatsu importer.
+- Added repository checks for private tracked paths and accidental secrets.
+
+### Changed
+- Replaced test and documentation examples with synthetic fixtures and clarified
+  public contributor documentation. Local build distributions are excluded
+  from source control.
+
 ## [0.4.0] - 2026-09-04
 
 Both `pubspec.yaml` files read `0.4.0+5`. MINOR rather than PATCH because
