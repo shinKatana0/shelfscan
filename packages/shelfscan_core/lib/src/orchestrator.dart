@@ -436,14 +436,10 @@ class Orchestrator {
   /// byte-identical files. That is a guarantee this function can make on its
   /// own, unlike the same claim about two SCANS (see [dedupeDetections]).
   ///
-  /// It did not hold before T-0068. The key was `source_photo` then confidence
-  /// descending, and the local model reports confidence 1.0 for every
-  /// detection (doc/measurements.md), so within a photo the whole key was
-  /// constant and `List.sort` -- unstable, over a pool that returns completion
-  /// order -- handed back whichever order IGDB had answered in. Three live
-  /// resolves of a real hi-res document at concurrency 2 disagreed with the
-  /// first run's order on a third of its rows and more; three under this key
-  /// disagree in none and write the same bytes.
+  /// A key built only from photo name and model confidence could tie for
+  /// many rows. Concurrent catalogue replies then determined output order.
+  /// Include input position so identical resolve results serialize in the
+  /// same order regardless of completion timing.
   ///
   /// The tie-break is the input index and not the raw title because a title
   /// does not always discriminate: dedupe deliberately keeps one title read on
@@ -598,44 +594,11 @@ void _warnResolveFailures(
   });
 }
 
-/// Walks a scan's photos in the order the review document is grouped in: by
-/// photo name, then by the photo's position in [Orchestrator.runScan]'s input.
-///
-/// This is what hands [dedupeDetections] its input order, and dedupe keeps
-/// groups in first-seen order, so it is also what answers the question a
-/// merged detection asks and a single-photo one does not: **the earliest photo
-/// in this order that read the spine decides where the merged row sits.**
-///
-/// The alternative -- position it by the read that WINS the merge
-/// ([_photoYield], T-0027) -- is not a second candidate but the same key
-/// applied later, and it is already applied: [_byPhotoThenInput] groups the
-/// games by the winning read's `photoContext`. So the winner's photo decides
-/// which block a merged row lands in and this decides where inside that block,
-/// which puts it against the edge of the winner's block that faces the other
-/// photo. Deciding it twice would only mean deciding it once with a key that
-/// is not known until every photo has answered.
-///
-/// The name leads and the index breaks its ties, exactly as in
-/// [_orderedUnreadable] and for its reason: the file is grouped by name at
-/// both ends, so the two stage-1 lists must walk the photos the same way, and
-/// two [PhotoInput]s may carry one name. That is where T-0068's reasoning does
-/// NOT carry -- it took the input index over the raw title because a title can
-/// tie, but a title never enters here; what decides is the photo, and the
-/// photo has a name the rest of the document already sorts on.
-///
-/// Every key is fixed before the first photo is uploaded. Measured 2026-08-15
-/// on the five control photographs, at both resolutions, their detections
-/// merging down to the recorded row count -- replayed through
-/// two opposite completion orders: **more than a third of the rows sat in a
-/// different position** before this, and none after. The rows themselves are
-/// the same rows either way, field for field.
-///
-/// `CONTROL-HIRES` cannot show it and did not: no detection of one of its
-/// photos merges with another's, so a scan of it merges nothing at all -- one
-/// row per detection -- and every row is placed by the only photo that saw
-/// it. Only
-/// cross-photo merges move, which is also why the resolve stage (T-0068) and
-/// the unreadable list (T-0073) could both be pinned without this surfacing.
+/// Walk photo analyses by photo name and then input position. Dedupe keeps
+/// groups in first-seen order, so a merged row's position must not depend on
+/// which concurrent vision call finished first. The index breaks ties when
+/// two inputs share a name. The review document uses the same photo ordering
+/// for detections and unread reports.
 List<(int, PhotoAnalysis)> _orderedAnalyses(
     List<PhotoInput> photos, List<(int, PhotoAnalysis)> perPhoto) {
   return [...perPhoto]..sort((a, b) {
@@ -646,32 +609,11 @@ List<(int, PhotoAnalysis)> _orderedAnalyses(
     });
 }
 
-/// Orders the seen-but-unread spines of a whole scan: by photo, then by the
-/// photo's position in [Orchestrator.runScan]'s input, then by the spine's
-/// position in that photo's analysis.
-///
-/// Every part of the key is fixed before the first photo is uploaded, so the
-/// same reads always write the same list however the pool's answers arrive --
-/// the guarantee the old `sourcePhoto`-only key asserted and did not deliver
-/// (T-0073). That key sorted the pool's COMPLETION order and kept it only by
-/// accident of size: measured on Dart 3.13, `List.sort` leaves equal keys in
-/// input order up to n=33 and no longer does at n=40, so a real 9-entry
-/// hi-res document came out reproducibly ordered while a 12-photo scan of the
-/// same 3-per-photo shape would not have.
-///
-/// The tie-break is a position because nothing on an [UnreadSpineReport]
-/// discriminates: it carries a photo, a script and a free-text reason, and
-/// [UnreadSpineReport.titleless] writes the same script and the same reason on
-/// every row it makes. Measured on the hi-res control document -- 9 entries, 3
-/// per photo, and the 3 within a photo byte-identical, so no key over their
-/// fields could order them at all. That is where a spine differs from a
-/// [Detection]: T-0068 chose an index over the raw title because a title *can*
-/// tie, and here there is no content candidate to reject in the first place.
-///
-/// The photo name still groups, so this list runs through the photos in the
-/// same order [_byPhotoThenInput] runs the games through. The index below it
-/// covers the case the name cannot: two [PhotoInput]s may carry one name, and
-/// then the name ties as well.
+/// Orders unread reports by photo input order and position within each
+/// analysis. Those positions are fixed before concurrent reads complete;
+/// sorting only by photo name would leave equal keys dependent on completion
+/// order. Reports from one photo can also have identical script and reason,
+/// so their fields alone cannot break ties.
 List<UnreadSpineReport> _orderedUnreadable(
     List<(int, PhotoAnalysis)> perPhoto) {
   final rows = <(int, int, UnreadSpineReport)>[
@@ -817,44 +759,11 @@ List<Detection> dedupeDetections(List<Detection> detections) {
   return [for (final group in groups) group.best];
 }
 
-/// How many items each photo yielded, as this run's proxy for how legible
-/// that photo was (T-0027).
-///
-/// The signal has to come from somewhere other than `confidence`, which the
-/// local model pins at 1.0 for everything (doc/measurements.md), leaving the
-/// first read of a spine to win by accident of filename order. Measured on the
-/// five control photographs, at 1200x900 and at
-/// 4000x3000 -- every hi-res photo out-yields every low-res one, and the
-/// narrowest margin between them is a handful of spines. So this ranks reads
-/// of a spine already agreed to be the same spine and nothing else; it is not
-/// fit to decide whether two reads match.
-///
-/// This comment carried a wrong low-res split until T-0060. Two replays of the
-/// pair against qwen2.5vl:7b on 2026-08-15 reproduced the recorded one both
-/// times, agreeing with the three replays that opened T-0060, where the figure
-/// written here did not. A re-scan of the three hi-res photos in the same
-/// session reproduced their recorded split too, so that half was never wrong.
-/// The splits themselves are in the control record (doc/control-set.md), not
-/// here: they are a count of a private shelf (T-0246).
-///
-/// Two other signals were measured on the same photos and rejected.
-/// Legibility rate (read / read + unread) cannot be computed: since T-0028
-/// every photo reports an empty `unreadable` list, and before T-0028 it
-/// reported a constant 3 whatever the photo showed -- neither state
-/// distinguishes a sharp photo from a blurred one. Platform-hint presence is
-/// dead by construction: the hint gate above groups a detection only with
-/// hints that agree with its own or refine it, so presence never differs
-/// within a group.
-///
-/// Derived from the detections rather than passed in, so no caller can hand
-/// stage 2 a quality table that disagrees with the reads it is ranking.
-///
-/// A row that came off no photograph is counted under no photo at all
-/// (T-0155). Letting them share the empty key would rank a GoG install against
-/// a 4000x3000 shelf photo by how many OTHER installs the run happened to
-/// carry -- 200 of them would out-yield every photo ever measured here, and
-/// the number means nothing about either row. Those rows rank by
-/// [DetectionOrigin] instead ([_DedupeGroup.absorb]) and never by this.
+/// Number of detected items per photo, used only to rank two reads already
+/// known to describe the same spine. Model confidence is too coarse for that
+/// choice, while unreadable-report counts are not exact spine counts. Derive
+/// yield from this run's detections so callers cannot pass a stale quality
+/// table. Rows from non-photo sources use [DetectionOrigin] instead.
 Map<String, int> _photoYield(List<Detection> detections) {
   final counts = <String, int>{};
   for (final detection in detections) {

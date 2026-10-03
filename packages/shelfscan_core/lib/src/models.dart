@@ -787,14 +787,10 @@ enum SpineScript {
 
 /// One report of spines the model saw but could not read.
 ///
-/// A report, not a spine: `gpt-4.1-mini` answers a single entry naming two or
-/// three middle spines on `CONTROL-HIRES` `shelf-3`, 10 of 10 runs, against a
-/// hand count off the photograph that the entry never matches; and a second
-/// photo answers one entry on 8 runs and two on 2 for one and the same group
-/// of spines (T-0109). So a count of these is a
-/// lower bound on spines and never a count of them. The type was named
-/// `UnreadableSpine` until T-0154, and that name is what taught four separate
-/// sites to count spines (T-0151).
+/// A report may describe several spines, and repeated reads may group the
+/// same unread area differently. Counting reports gives a lower bound on
+/// unread spines, never an exact spine count. The old single-spine name
+/// encouraged callers to present that count as exact.
 ///
 /// Deliberately NOT a [Detection] and never merged into one: T-0007 forbids
 /// an unread item from entering `items`, and this type exists so that

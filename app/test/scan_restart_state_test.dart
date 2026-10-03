@@ -103,7 +103,7 @@ void main() {
     expect(_warnings, findsNothing);
     expect(_status, findsNothing);
     expect(_inside(_rejected, 'notes.txt'), findsOneWidget,
-        reason: 'the file is still rejected -- T-0039');
+        reason: 'the file is still rejected');
     expect(find.byKey(const Key('rejected-photos-heading')), findsOneWidget);
 
     vision.hold!.complete();

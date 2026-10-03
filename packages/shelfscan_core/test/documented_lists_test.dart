@@ -468,7 +468,7 @@ void main() {
         }
 
         expect(inlined, isEmpty,
-            reason: 'since T-0082 this string is what clearing the Ollama '
+            reason: 'this string is what clearing the Ollama '
                 'field in Settings means, and the field hint is the string '
                 'itself, so a copy of it that is not a declaration changes '
                 'what clearing that field does: $inlined');

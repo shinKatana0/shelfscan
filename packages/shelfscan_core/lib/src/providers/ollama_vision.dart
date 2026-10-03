@@ -12,78 +12,26 @@ import '../http_timeout.dart';
 import '../unreachable.dart';
 import 'vision.dart';
 
-/// The local defaults, defined once for the whole repository (T-0087).
-///
-/// They live beside the provider because these two are the values a caller
-/// that passes nothing actually gets; anywhere else is a copy that has to
-/// agree. Since T-0082 they are also the *meaning* of a cleared Ollama field
-/// in Settings, whose `hintText` is the string itself -- so a drifted copy
-/// would change what clearing that field does and say so in the hint.
-///
-/// `documented_lists_test.dart` fails on a literal of either value written
-/// anywhere but its own `const` line, and on `.env.example` or README.md
-/// stating a default these no longer hold.
-///
-/// **The model is the owner's ruling of 2026-09-04 (T-0466), and it brings
-/// none of this project's figures with it.** Every quality figure here -- the
-/// tables in README.md and doc/guide.md, doc/measurements.md, the control sets
-/// -- was measured on `qwen2.5vl:7b`, the default until that date, and stays
-/// attached to it. What is known about the id below is
-/// [testedOllamaInstructModel]'s one comparison and nothing else.
-///
-/// It holds the same string as that constant and is not the same decision:
-/// what ships by default and what has been tested here move independently, so
-/// neither constant reads the other.
+/// The provider owns the local defaults used by both shells and by a cleared
+/// Settings field. Keep the shipped default separate from the model used in
+/// historical quality measurements; changing one must not silently rewrite
+/// claims about the other.
 const defaultOllamaUrl = 'http://localhost:11434';
 const defaultOllamaModel = 'qwen3-vl:8b-instruct';
 
 /// Any fixed value would do; this one is the date it was chosen (T-0053).
 const _defaultSeed = 20260814;
 
-/// The generation cap this request carries, and why the ceiling that bounds it
-/// is [timeout] rather than the context window (T-0281).
+/// Bound generated output so a model caught in repetition reaches a named
+/// truncated-response failure before the request timeout. A dense synthetic
+/// input can trigger repetition without producing valid JSON; a finite cap
+/// makes that failure diagnosable. The cap must leave room for honest answers
+/// and remain reachable within the timeout on an ordinarily loaded server.
+/// Under heavy contention the timeout can still win first.
 ///
-/// Without one, this model repeats itself under greedy decoding and generates
-/// until the context window is full. **Repetition is the mechanism; density is
-/// one trigger for it and not the only one** (T-0427) -- a frame carrying no
-/// more readable titles than one that scans cleanly reaches the same fixed
-/// point if it also holds many narrow strips that look like a spine and carry
-/// no title, because the model cannot tell one from the next. So this cap
-/// bounds a loop whatever started it, and the branch below has to say which
-/// one it was. Measured past the density ceiling on a synthetic 176-spine
-/// frame, first ask: 27836 tokens after a 4932-token prefill -- `4932 + 27836
-/// = 32768` exactly -- 296 s, and what comes back is not JSON, so the photo
-/// yields nothing. `temperature` 0 is why nothing escapes: greedy decoding has
-/// no draw to break a repetition fixed point with. The same frame and the same
-/// first-ask sequence under this cap stops at 8192 tokens exactly with
-/// `done_reason: length` in 93 s, which is the branch below -- the user
-/// reaches [visionTruncatedFailure] and the advice that fits their frame three
-/// times sooner.
-///
-///   floor    a frame that answers must not be cut off and called truncated.
-///            Output is linear at ~48 tokens a row; T-0278's densest honest
-///            rung generates 5504 (120 spines), and a synthetic 120-spine
-///            frame here answered in 4690 with `done_reason: stop`. 4096 also
-///            stops the loop, in 46 s, and is rejected because it sits under
-///            both.
-///   ceiling  the cap only helps if generation REACHES it inside [timeout].
-///            Past that the call is aborted as a stall, the user is told the
-///            server went quiet, and the advice that fits is never printed.
-///            The cold-ask budget measured here is 8.6 s to load the model,
-///            3.5 s to prefill and 103.8 generated tokens/s, so 120 s buys
-///            about 11200 tokens: 12288 needs ~130 s and would never fire.
-///
-/// 8192 clears the honest maximum by half again and lands at 93 s of a 120 s
-/// bound. Both bounds are throughput-dependent and the throughput is not:
-/// T-0278 measured 24-105 tokens/s on one machine depending only on what else
-/// was running, so under contention no cap is reachable and the stall message
-/// is what the user gets. This value buys the uncontended case, which is the
-/// ordinary one.
-///
-/// That it equals `_maxOutputTokens` in openai_compatible_vision.dart is two
-/// arguments arriving at one number rather than a shared constant -- that one
-/// clears a reasoning model's tail, this one clears a dense shelf -- so
-/// neither moves the other.
+/// This cap is independent of the cloud provider's output cap: the local
+/// bound is about repetition, while the cloud bound also accounts for
+/// reasoning tokens.
 const _numPredict = 8192;
 
 /// Named because two of the messages below quote the route the 404 came from,
@@ -130,79 +78,12 @@ const ollamaModelAdvice =
     'image-capable models work and are simply not validated here.';
 
 class OllamaVisionProvider implements VisionProvider {
-  /// Sampling is stated rather than inherited (T-0053). Ollama's documented
-  /// default is temperature 0.8, but qwen2.5vl:7b's own Modelfile sets
-  /// `temperature 0.0001`, so every figure this project recorded before this
-  /// change was near-greedy by the model's accident and not by request -- a
-  /// re-pull, a different tag or a different model moves it silently.
-  ///
-  /// [temperature] 0 buys repeatability, not quality, and the two were
-  /// measured apart: against the pre-T-0053 request (no `options` at all) the
-  /// detections come back identical on both control sets, same counts, same
-  /// titles, same hints -- see the doc comment on [detectionPromptRules] for
-  /// the repeat counts behind them.
-  ///
-  /// What that repeatability is, exactly (T-0086, 2026-08-15, `CONTROL-HIRES`
-  /// against a server started for the measurement, `OLLAMA_NUM_PARALLEL=1`,
-  /// its request log accounting for all 18 requests it served):
-  ///
-  ///   5 consecutive repeat runs      byte-identical documents
-  ///   3 runs, prompt cache dropped   byte-identical to each other, and
-  ///                                  differing from the five on about a third
-  ///                                  of one photo's rows -- case, TM/(R), one
-  ///                                  diacritic; no count, hint or item moved
-  ///   3 runs under competing traffic byte-identical to the isolated five
-  ///                                  (30 of 50 requests overlapped in time)
-  ///   3 runs on a second server       both documents reproduced to the byte,
-  ///     process, 3.5 h later          1 first ask and 2 repeats
-  ///
-  /// So a photo this server process has already answered comes back to the
-  /// byte; a photo it has not is answered once and reproducibly in the other
-  /// typography. llama-server logs `cached n_tokens = 4890` of 4891 on a
-  /// repeat and 15 on a first ask, so the two are not the same arithmetic.
-  ///
-  /// **There is a third state, and it has no document (T-0106, 2026-08-15).**
-  /// The cache matches a token PREFIX and the photo's tokens come first -- of
-  /// the 4891 tokens a hi-res photo makes, the prompt text is the last 860 --
-  /// so `cached n_tokens` also reads 4031-4885 when the same photo has been
-  /// asked under a DIFFERENT prompt text, the image staying cached while the
-  /// text is re-prefilled from where the two texts diverge. It holds several
-  /// photos at once: three consecutive `CONTROL-HIRES` scans logged 4890 on all
-  /// six asks of runs 2 and 3, and a scan of the set under a changed prompt put
-  /// all three photos of the second pass at 4817. So an ordinary prompt A/B
-  /// lands there, not just a single-photo alternation.
-  ///
-  /// In it the model answers 3 phantom `unreadable` entries for a photo whose
-  /// hand-counted truth is none, two of them byte-identical, while every count
-  /// on both control sets holds. Three on 18 of 34 asks and none on the other
-  /// 16:
-  /// 2 of 2 whole-set A/B runs; from `ollama stop`, 5 of 5, 3 of 3 and 2 of 2
-  /// at three of the five divergence points tried and 0 of 3 at the other two,
-  /// so where the change sits does not predict which; 4 of 14 on a server left
-  /// running, where 13 of those 14 also read one bilingual spine without its
-  /// non-English half, which [titleKey] does not fold. The one line that keeps
-  /// a measurement out of it is `ollama stop` immediately before the run --
-  /// doc/measurements.md, "A third cache state", carries the table and the
-  /// recipe.
-  ///
-  /// Concurrency was the first suspect and it cannot bite at
-  /// `OLLAMA_NUM_PARALLEL=1`, which is Ollama's default and what every run
-  /// above used: overlapping requests queue rather than share a batch. Four
-  /// runs on a server at `OLLAMA_NUM_PARALLEL=4` say what happens where they can: its
-  /// two isolated runs agreed with each other and differed from the np=1
-  /// document on 3 rows, one of them a title read without its first half --
-  /// which [titleKey] does NOT fold -- and 1 of 2 runs under competing traffic
-  /// moved one further row. The setting is not this repository's to set, which
-  /// puts it in the same class as the Modelfile temperature above. Both
-  /// callers do send local photos one at a time (`visionConcurrency` 1 for
-  /// ollama in `bin/shelfscan.dart` and in the app's `ProviderPolicy`), so a
-  /// single scan never overlaps itself whatever the server allows.
-  ///
-  /// [seed] is inert while [temperature] is 0 -- greedy decoding never draws,
-  /// and seeds 1 / 12345 / 99 give byte-identical output. It is a constructor
-  /// parameter rather than a bare constant anyway, because sampling is how a
-  /// caller finds out how wide the distribution behind a single historical
-  /// figure was, and that measurement needs the seed to move.
+  /// State sampling explicitly so a server or model default cannot change
+  /// repeatability silently. Greedy decoding and a fixed seed help compare
+  /// runs, but the model's prompt cache has its own state: a repeated image,
+  /// a cold image, and an image cached under different prompt text can produce
+  /// different answers. Compare prompt changes from the same cache state.
+  /// The seed stays configurable for controlled sampling experiments.
   OllamaVisionProvider({
     this.baseUrl = defaultOllamaUrl,
     this.model = defaultOllamaModel,
@@ -582,16 +463,12 @@ final _outwardCheck = checkOutsideThisApp(
 /// minutes" is the case a longer budget serves, but only a shell knows whether
 /// its user can set one (T-0152), so the next clause is [stallRemedy]'s.
 const _stalledOllama =
-    'A model runner that has wedged stalls exactly like this. qwen2.5vl:7b '
-    'answers a 4000x3000 photo in about 25 s when it is healthy, so check the '
+    'A model runner that has wedged stalls exactly like this. Check that the '
     'server is alive (ollama ps) before assuming the model is merely slow -- '
-    'though a model too large for the machine is the one case measured here '
-    'that legitimately takes minutes.';
+    'a model too large for this machine may also take longer than the bound.';
 
-/// The statuses worth another attempt: Ollama's own overload answer, and the
-/// three a crashed or dying model runner comes back with (doc/measurements.md
-/// records `qwen2.5vl:32b` losing a whole photo to a retried 500 for want of
-/// VRAM).
+/// Retry temporary overload and failures from a crashed or dying model
+/// runner. Repeated failure still leaves the photo named as unresolved.
 const _retryableStatuses = {429, 500, 502, 503};
 
 /// The exception for a non-2xx answer from Ollama.

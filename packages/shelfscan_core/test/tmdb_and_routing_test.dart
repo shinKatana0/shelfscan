@@ -642,8 +642,7 @@ void main() {
 
       final exporter = TonkatsuExporter();
       expect(exporter.canExport(resolved), isTrue,
-          reason: 'before T-0369 every animation row was unmatched, so this '
-              'clause refused it however well the person answered');
+          reason: 'a resolved animation row must remain exportable');
 
       final item = ((jsonDecode(exporter.export(_doc([resolved]))) as Map)
           ['items'] as List).single as Map<String, Object?>;

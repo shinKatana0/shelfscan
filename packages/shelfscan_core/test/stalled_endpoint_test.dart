@@ -508,7 +508,7 @@ void main() {
       }
 
       expect(offenders, isEmpty,
-          reason: 'an unbounded request is the whole of T-0104');
+          reason: 'the request must have a finite bound');
     });
   });
 

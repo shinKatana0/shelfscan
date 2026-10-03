@@ -26,32 +26,12 @@ import 'vision.dart';
 /// in the model rather than in the sampling.
 const _defaultSeed = 20260814;
 
-/// The output cap, under whichever name the endpoint takes (see [_adjustable]).
-///
-/// A cap, not a reservation: only generated tokens are billed. Measured live
-/// against api.openai.com on `CONTROL-HIRES` `shelf-1.jpg`, 2026-08-15 --
-/// `gpt-5.6-terra` answered in 2553 completion tokens of which **842 were
-/// reasoning**, and `gpt-5.4-mini` answered `shelf-2.jpg` in 976 with 0. So a
-/// reasoning model spent a third of its answer before it wrote a character,
-/// and 4096 cleared the worst case measured then by 1.6x.
-///
-/// **4096 was inside the distribution, not above it (T-0120, 2026-08-16.)**
-/// The same photo, `shelf-1.jpg`, through `gpt-5.5`, four live runs:
-/// completion 3046 (1536 reasoning, `finish_reason: stop`), 4093 uncapped, and
-/// **4096 twice with `finish_reason: length` and an empty `content`** -- the
-/// model spent the whole budget reasoning and wrote nothing. Two photographs
-/// of three were lost that way, as a bare `FormatException` on runs where the
-/// request shape was already correct; since T-0111 that photo fails with a
-/// sentence naming this cap instead. Reasoning spend is where the
-/// variance lives, so the cap has to clear the tail rather than the mean:
-/// 8192 is 2x the largest completed answer anyone here has measured.
-///
-/// Raising it is not a cost decision -- a cap is not a reservation, only
-/// generated tokens are billed, and the four runs above show the model
-/// stopping on its own well under either value. It is bounded by what the
-/// model will accept: a cap above a model's own ceiling is refused outright,
-/// this repository can reach one endpoint of the seven (T-0089), and such a
-/// refusal now degrades to dropping the cap with a note rather than silently.
+/// The output cap is a limit, not a token reservation. Reasoning models may
+/// spend part of it before producing visible text, so a cap sized only for
+/// visible rows can yield an empty answer. Leave room for that reasoning
+/// tail while staying within the model's accepted limit. If an endpoint
+/// rejects the cap field, the request-shape learner below handles the
+/// refusal rather than silently losing the whole photo.
 const _maxOutputTokens = 8192;
 
 /// The fields this provider sends that a request can do without.
@@ -98,14 +78,10 @@ const _adjustable = {
 /// in this family has always taken means the only way to be wrong is the loud
 /// one (decision 0012: a silent failure is worse than a loud one).
 ///
-/// **What a correction costs**: one 400 per photo in flight, once per
-/// correction per provider. The endpoint validates parameters before it looks
-/// at the image, so the call is free in tokens; it is not free in the upload,
-/// which is the whole photograph. Measured: 1.9 s for the refused call against
-/// 6.8-25 s for the accepted one. On `gpt-5.5` at `visionConcurrency` 3 that
-/// is two refusals for each of the first three photos and none afterwards; on
-/// `gpt-4.1-mini` there are none at all, and that path is byte-for-byte the
-/// request T-0090 measured.
+/// A rejected optional parameter may require another request for each
+/// photo already in flight. Rejections are free of generation tokens but
+/// still upload the photograph, so the provider remembers each correction
+/// for the rest of the run.
 ///
 /// Each attempt carries its own [timeout], so a corrected photo can cost up to
 /// three budgets rather than one -- which does not re-open the hang T-0104
@@ -371,10 +347,8 @@ class OpenAiCompatibleVisionProvider implements VisionProvider {
         : choices.first as Map<String, dynamic>;
     final message = choice['message'] as Map<String, dynamic>?;
     final text = message?['content'] as String?;
-    // Read before the content, because T-0120 measured the truncation that
-    // arrives with `content` EMPTY -- the whole budget spent on reasoning
-    // tokens, 4096 of them, twice in four runs of one photo. A cast of that to
-    // String is the one thing this branch must beat (T-0111).
+    // Read the finish reason before casting content: a reasoning model may
+    // spend the whole output budget and return no visible text.
     if (choice['finish_reason'] == 'length') {
       throw visionTruncatedFailure(
         service: baseUrl,

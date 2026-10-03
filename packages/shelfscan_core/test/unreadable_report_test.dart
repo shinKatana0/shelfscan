@@ -1,19 +1,5 @@
-/// What the CLI's scan summary says about spines the model could not read
-/// (T-0109).
-///
-/// The defect was a unit, not an arithmetic bug: the type was one entry per
-/// spine by construction -- its name (`UnreadableSpine`, until T-0154), its
-/// doc comment, `unreadableByPhoto` and the summary line all said so -- and on
-/// `gpt-4.1-mini` one entry describes several spines. Measured over 10 runs of
-/// CONTROL-HIRES's shelf-3, every run answers exactly one entry
-/// naming two or three middle spines against a hand count off the photograph
-/// it never matches; a second photo answers one entry on 8 runs and two on 2
-/// for one and the same group of spines. So the shipped line said
-/// "Unreadable spines: 1" about a photograph carrying more of them than that,
-/// and said 1 or 2 about a photograph that had not changed.
-///
-/// The case below is that measured answer, verbatim. What is asserted is the
-/// text a human reads, because the text was the whole defect.
+/// A report can describe several unread spines, so the CLI must label its
+/// count as reports. Synthetic fixtures check the text a person sees.
 library;
 
 import 'package:shelfscan_core/shelfscan_core.dart';
@@ -29,11 +15,11 @@ ReviewDocument _doc(List<UnreadSpineReport> unreadable) => ReviewDocument(
       unreadable: unreadable,
     );
 
-/// The one entry all 10 runs answered for that photograph.
+/// A synthetic report that describes more than one unread spine.
 UnreadSpineReport get _grouped => UnreadSpineReport(
       sourcePhoto: 'shelf-3.jpg',
       script: SpineScript.latin,
-      reason: 'two/three spines in the middle are too blurred to read',
+      reason: 'two or three imaginary spines in the center are blurred',
     );
 
 void main() {
@@ -59,10 +45,9 @@ void main() {
     });
 
     test("the model's own wording is where the several spines are visible", () {
-      // The only truthful answer to "how many?" on this photograph is the
-      // sentence the model wrote; a number derived from it would be the
-      // fabricated count T-0028 removed.
-      expect(lines, contains(contains('two/three spines in the middle')));
+      // The model wording is preserved; parsing a number out of prose would
+      // invent a more precise count than the report provides.
+      expect(lines, contains(contains('two or three imaginary spines')));
     });
 
     test('the per-photo breakdown counts the same unit as the head', () {
@@ -75,11 +60,10 @@ void main() {
     });
   });
 
-  test('the 8-of-10 and 2-of-10 answers differ only in the number of reports',
+  test('different report counts keep the same unit',
       () {
-    // Same two spines on the same photograph, one report on 8 runs and two on
-    // 2. Both are now reported in an honest unit, so the figure moving no
-    // longer reads as the shelf changing.
+    // Repeated reads may group the same unread area differently; report
+    // counts keep the unit honest in either case.
     final one = unreadableReport(_doc([_grouped]));
     final two = unreadableReport(_doc([_grouped, _grouped]));
     expect(one.first, contains('reports: 1'));

@@ -335,7 +335,7 @@ void main() {
           matching: TitleMatching.keyless,
         ),
         isA<SkipResolver>(),
-        reason: 'The same, on the combination T-0367 made keyed: a token that '
+        reason: 'The same for a configured catalogue: a token that '
             'now keys a run by default must still lose to an explicit choice',
       );
     });

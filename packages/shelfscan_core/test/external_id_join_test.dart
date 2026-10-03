@@ -427,7 +427,7 @@ void main() {
       );
       final resolved = await run.resolved;
       expect(run.calls.games, hasLength(1));
-      expect(resolved.best, isNull, reason: 'the T-0165 tie rule still fires');
+      expect(resolved.best, isNull, reason: 'the ambiguous tie is still refused');
       expect(resolved.candidates, hasLength(2));
     });
   });

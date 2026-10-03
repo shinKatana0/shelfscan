@@ -112,11 +112,8 @@ void main() {
   group('an apostrophe inside a word (T-0062)', () {
     test('the two readings of one spine are one row, in every spelling of '
         'the apostrophe', () async {
-      // Measured on a real run under T-0032: qwen2.5vl:7b read the PS5 spine
-      // as FALCON'S CREED II, gemma3:12b read the same spine as FALCONS
-      // CREED II, and both reached the review document. Folded to a space the
-      // possessive is not even a truncation of the plain spelling, so nothing
-      // downstream could rescue it.
+      // Synthetic apostrophe variants exercise dedupe when two readers render
+      // the same title with and without punctuation.
       for (final apostrophe in const ["'", '’', 'ʼ', '＇']) {
         expect(
           await _scanTwoPhotos(
@@ -440,11 +437,8 @@ void main() {
 
     test('a spine whose HEAD is hidden is two rows, and that is the recorded '
         'decision (T-0054)', () {
-      // Measured 2026-08-14 on the five control photos and checked against the
-      // 1200x900 frame by eye: a black object standing in front of the shelf
-      // covered the FIRST WORD of a two-word head, so the model read only what
-      // was left of the spine. The reads below reproduce that shape; the title
-      // it happened to is not published.
+      // A partially obscured title can retain a suffix that looks like a
+      // separate release. Synthetic reads below exercise that shape.
       expect(
         dedupeDetections([
           _item('SOLAR PILGRIM® VII REMAKE INTERBLOOM', 'right.jpg',
@@ -505,14 +499,9 @@ void main() {
   });
 
   group('one platform read at two legibility levels (T-0146)', () {
-    // T-0112 measured gpt-5.5 reading the printed Switch 2 band per spine, so
-    // the same case now answers SWITCH 2 off a photo that shows the band and
-    // SWITCH off one that does not -- and the photo that cannot see the band
-    // is often the one that also cuts the title short.
-    //
-    // "COLD ARCHIVE req" is a constructed cut, not a measured one. The four
-    // truncations T-0112 actually recorded are pinned further down, where the
-    // measurement is that they do NOT merge.
+    // A visible platform band can yield a more specific platform reading
+    // than a cropped view; dedupe must reconcile both readings.
+    // Constructed title cuts below also test cases that must stay separate.
 
     test('a cut SWITCH read joins its full SWITCH 2 twin, and the band '
         'survives the merge', () {

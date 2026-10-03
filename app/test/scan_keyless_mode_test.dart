@@ -287,7 +287,7 @@ void main() {
         _consequence(tester),
         isNot(contains('Twitch')),
         reason: 'This run is keyed, so the register-with-Twitch note would be '
-            'a false statement on screen -- the defect T-0367 was filed on',
+            'a false statement on screen',
       );
     });
 

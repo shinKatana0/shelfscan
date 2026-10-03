@@ -1,64 +1,17 @@
 /// Vision backend policy and wiring for the app.
 ///
-/// Platform policy (product decision, not a technical constraint):
-///   - Windows: user chooses local (Ollama) or a cloud endpoint.
-///     Default: LOCAL -- a desktop next to the shelf can run its own model.
-///   - Android: local is OFFERED and is never the default (T-0361);
-///     [VisionBackend.cloud] is, by elimination rather than by preference --
-///     a default that cannot work until an address is typed would be a
-///     broken first launch, and an endpoint the user names is never a
-///     default anywhere, so the cloud backend is what is left. The
-///     phone runs no model of its own -- "on-device models are too weak for
-///     spine OCR" is a measurement taken ON the phone, it stands unchanged,
-///     and nothing here overturns it. What local means on this platform is
-///     the other thing the word can mean: an Ollama the user names on their
-///     own network -- the same model on the same desktop hardware that
-///     already serves the desktop app, one hop away. Two claims about two
-///     machines; neither settles the other, and no text in this file may
-///     read as though the second retired the first.
-///     Three consequences live here rather than on a screen. The address
-///     cannot default, because loopback on a phone IS the phone, so it is a
-///     [BackendCheck.blocker] until one is typed. A loopback address typed
-///     anyway is refused at the tap rather than left to time out -- it is
-///     the one wrong address that is knowably wrong. And local stops meaning
-///     "nothing leaves the machine": here it carries a privacy warning of
-///     its own, because the photographs cross the network in the clear
-///     (T-0069's rule, that local was never a synonym for offline, is
-///     visible on this platform rather than merely true). The platform half
-///     of the cleartext question -- what Android would and would not let
-///     this app express about it -- is argued in
-///     `android/app/src/main/AndroidManifest.xml`.
-///   - "Cloud" is a choice of endpoint (T-0006): Anthropic's own API, or
-///     any OpenAI-compatible one the user names. Neither is ever the
-///     default where a local model can run, and both carry a privacy
-///     warning wherever they can be selected -- differently worded, because
-///     only the named-endpoint one risks a free tier training on what is
-///     submitted to it. Screens render [BackendCheck.warning] and
-///     [BackendCheck.advice]; the wording of both is here (T-0058, T-0070),
-///     and the advice is the half that has to know which platform it is on.
-///   - ONE control chooses it: the scan screen's switch, which answers with
-///     [BackendCheck] at the tap and persists (T-0040, T-0076). The settings
-///     screen had a second copy of the same button over the same stored
-///     value, staged until Save -- so one preference had two meanings of a
-///     tap, and the copy that could not state a blocker without telling the
-///     reader to go to Settings from inside Settings was the one that went
-///     (T-0115). Settings configures every backend and selects none.
-///   - ONE reader per photo. `VisionWorker` takes an optional second one
-///     and the app never supplies it (T-0061); the CLI's `--fallback`
-///     does, and the CLI is the validation harness (ARCHITECTURE.md). It
-///     was measured once, qwen2.5vl:7b primary + gemma3:12b second on the
-///     three 4000x3000 control photos: 15 added rows for twice the wall
-///     clock, and every one of them wrong -- most of them re-readings of
-///     spines the primary had already read correctly, kept apart by one
-///     character, the rest invented or welded out of two spines (T-0032).
-///     An ANTHROPIC
-///     second reader,
-///     which is the only one this app could ever have built, is unmeasured
-///     -- no cloud key was available -- and would cost two
-///     calls per photo and upload every photo of a private home for a
-///     merge whose one measurement lost. A user who wants Anthropic to
-///     read the shelf selects it as the primary above: same upload, half
-///     the calls, and a warning already attached.
+/// Platform policy:
+///   - Windows defaults to a local Ollama model; users can choose a cloud endpoint.
+///   - Android offers local Ollama at an address supplied by the user. Loopback
+///     addresses refer to the phone and are rejected. Network traffic to a
+///     local Ollama endpoint is unencrypted, so the UI shows a privacy warning.
+///   - Cloud endpoints are selectable and carry their own privacy warnings.
+///     The named OpenAI-compatible endpoint may have provider-specific data
+///     handling terms. Screens render [BackendCheck.warning] and advice.
+///   - The scan screen selects the active backend; Settings configures it.
+///   - The app uses one vision reader per photo. A second reader is optional
+///     in the core and CLI, but adds latency and another image upload without
+///     an established quality gain for the app.
 ///
 /// Keep this the single place that knows the policy; screens ask it.
 library;

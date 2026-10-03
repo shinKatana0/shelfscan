@@ -108,13 +108,10 @@
 ///   endpoint you name, and free tiers are commonly funded by training on
 ///   what is submitted to them -- check the service's data policy first.
 ///
-/// SHELFSCAN_VISION_TIMEOUT=<seconds> bounds ONE vision call, per photo, for
-/// whichever provider is in use, fallback included. Unset is 120 s, which is
-/// ~3.5x the slowest read measured here and deliberately below the one model
-/// this project measured above it (`qwen2.5vl:32b`, ~360 s per hi-res photo
-/// for want of VRAM -- doc/measurements.md). Point the tool at something that
-/// large and this is the variable that lets it finish. 1 to 1800; anything
-/// else is refused rather than quietly replaced by the default.
+/// SHELFSCAN_VISION_TIMEOUT=<seconds> bounds one vision call per photo,
+/// including a fallback call. Unset uses a finite default; a user running a
+/// slower model can raise it within the supported range. Invalid values are
+/// refused rather than silently replaced.
 ///
 /// Fallback: a SECOND model that re-reads every photo, results merged
 /// (T-0011, T-0032). Off unless asked for; when on it doubles the vision cost
@@ -136,12 +133,10 @@
 /// safety net, so the choice is the user's, per run, and it is all photos or
 /// none.
 ///
-/// Worth knowing before switching it on: the only second reader measured here
-/// (gemma3:12b behind qwen2.5vl:7b, three 4000x3000 photos) added 15 rows and
-/// took 70 s to 146 s, and every added row was wrong -- most re-readings of
-/// spines already read, the rest invented or misread outright.
-/// Both models' reads
-/// are merged, so a second model's mistakes land in the review list too. That
+/// A second reader increases latency and can add incorrect rows to the
+/// review list. Keep the choice explicit so the user can weigh that cost.
+/// Both models' reads are merged, so a second model's mistakes land in the
+/// review list too. That
 /// is what the review step is for, and a wrong row can be rejected there while
 /// a missing one cannot -- but the trade is real and it is not free.
 ///
@@ -241,9 +236,8 @@ class HeicConversion {
 
 /// Converts every path in one call and answers for each of them.
 ///
-/// A batch rather than one call per file because the ~2.1 s of PowerShell
-/// start-up dominates the ~0.8 s a photo actually takes, and because a host
-/// that cannot convert at all should say so once.
+/// Batch conversion avoids paying for shell startup on every file and lets
+/// a host that cannot convert at all report that failure once.
 typedef HeicConverter = Map<String, HeicConversion> Function(List<String> paths);
 
 /// Reads a tab-separated `source<TAB>target` list and writes one JPEG per
@@ -253,8 +247,7 @@ typedef HeicConverter = Map<String, HeicConversion> Function(List<String> paths)
 /// Dart: no pub package decodes HEIC (`image` cannot, and every HEIC package
 /// on pub.dev is a Flutter plugin), while WIC ships with the OS and needs
 /// nothing installed beyond the HEIF extension the camera app already pulls
-/// in. Quality 95 is not a guess: it is what produced `photos/hires/`, whose
-/// scan is what this feature is measured against.
+/// The conversion quality is a product setting for readable HEIC inputs.
 ///
 /// One process for the whole batch, and a stopwatch inside the loop so the
 /// reported per-file cost excludes the start-up the batch pays once.
@@ -318,10 +311,8 @@ String? heicConversionUnsupported(String operatingSystem) =>
 /// either with bytes or with a reason, because a HEIC that goes unmentioned
 /// is the exact failure T-0025 exists to prevent.
 ///
-/// Measured on the three 4000x3000 control photographs: 1251 / 536 / 516 ms each
-/// (the first pays for the codec warming up), 3.4 s wall clock for the batch
-/// against ~25 s of vision per photo. The JPEGs it produced are byte-identical
-/// to `photos/hires/`.
+/// Conversion runs before the slower vision stage. The shell uses the same
+/// Windows codec as the app's HEIC path.
 Map<String, HeicConversion> windowsHeicToJpeg(List<String> paths) {
   if (paths.isEmpty) return const {};
   Map<String, HeicConversion> allFailed(String reason) => {
@@ -559,8 +550,8 @@ List<String> skipReport(PhotoDirectory listing, {required bool convertsHeic}) {
 
 /// Stdout lines naming every file that was converted before it was read.
 ///
-/// Per photo rather than a total, so the cost sits next to the ~25 s vision
-/// call it is compared against and a slow file cannot hide in an average.
+/// Report conversion time per photo so a slow file cannot hide in a
+/// batch average and the cost can be compared with its vision call.
 List<String> conversionReport(PhotoDirectory listing) {
   if (listing.converted.isEmpty) return const [];
   return [
@@ -588,16 +579,9 @@ String scanScope(PhotoDirectory listing) => listing.skipped.isEmpty
 /// out of `games` by design (T-0007), so without them a photo of unread
 /// Japanese spines looks like an empty shelf.
 ///
-/// They no longer say "Unreadable spines: N". The type was built as one entry
-/// per spine and named `UnreadableSpine` for it; on `gpt-4.1-mini` it is not.
-/// Measured over 10 runs of CONTROL-HIRES's shelf-3.jpg, every run
-/// answers exactly ONE entry whose text names two or three middle spines,
-/// against a hand count off the photograph that the entry never matches; a
-/// second photo answers one entry on 8 runs and two on 2, for one and the
-/// same group of spines both times (T-0109). So the number moved while the
-/// photograph did not, and
-/// it was never the number the label promised. `qwen2.5vl:7b` hid this because
-/// since T-0028 it answers an empty array.
+/// The model may describe several spines in one report and may group the
+/// same unread area differently on repeated runs. A report count therefore
+/// cannot be presented as a spine count.
 ///
 /// The fix is not a better count. The entry carries prose, and deriving a
 /// number from prose would be the fabricated count T-0028 removed. So the line
@@ -669,10 +653,9 @@ String absoluteFilePath(String path) =>
 ///
 /// The output side of [scanPathError] and [reviewPathError], and `scan` is why
 /// it exists: the write is the last statement of a run that has already paid
-/// for the vision stage -- 35 s warm on three photos, minutes on a larger
-/// shelf -- so a mistyped `-o` used to throw the whole scan away with a
-/// `PathNotFoundException` and exit 255 (T-0051). Absolute and normalised for
-/// the same reason as the other two, and the missing-directory case names both
+/// for vision, so a mistyped output path must be caught before the scan.
+/// Paths are absolute and normalised for the same reason as the other two,
+/// and the missing-directory case names both
 /// paths because the missing part is the one the user did not type.
 ///
 /// A missing parent is refused rather than created: `-o repots/x.csv` would
@@ -862,17 +845,10 @@ class InstallDirectory {
 /// Nothing below that is enumerated at all, so a game's `data/`, `Saves/` and
 /// `Redist/` subtrees never reach core.
 ///
-/// **The scanned directory's own name is not a container and is never handed
-/// over (T-0193).** [SourceEntry.container] is a parent a title may be read
-/// off when the entry's own name carries none, and that fallback is written
-/// for a game's own folder -- one level down, where `Marlows Gate
-/// 3/setup_mg3_2.0.0.7.exe` keeps the apostrophe the file threw away. The
-/// directory the user pointed at is the other thing entirely: it names the
-/// collection. Passing it filled that field with a name no entry can honestly
-/// take, and `New Folder`, `Screenshots` and `Saves` each took it -- three
-/// rows titled `Downloaded games` that stage 2 then merged into one plausible
-/// game (measured 2026-08-16). Entries at this level therefore go over with no
-/// container at all, and a name that titles nothing declines by name.
+/// The scanned directory itself names the collection, not an individual
+/// game. Only an entry's own parent can supply a title when its name carries
+/// none. Passing the chosen root as a container could title unrelated entries
+/// after the root and merge them into a plausible but false row.
 ///
 /// The subdirectory entry is emitted even when the directory holds an `.info`,
 /// which is the case both sources can claim. Suppressing it would mean the
@@ -1379,7 +1355,7 @@ Never _usage() {
       'two reads are merged. It is off unless you ask for it and it doubles\n'
       'the vision cost of the run -- with a cloud fallback, every photo is\n'
       'uploaded. It does not decide for itself which photos need it: the\n'
-      'local model cannot report the spines it failed to read (T-0028), so\n'
+      'local model cannot report the spines it failed to read, so\n'
       'there is nothing to decide on.\n'
       '\n'
       'Vision providers: ollama (local, the default), openai, anthropic.\n'
@@ -1447,15 +1423,9 @@ String? envValue(Map<String, String> env, String name) {
 /// Names the bound one vision call is given, in whole seconds.
 const visionTimeoutVar = 'SHELFSCAN_VISION_TIMEOUT';
 
-/// The widest bound this accepts, in seconds.
-///
-/// 5x the slowest read this project has measured -- `qwen2.5vl:32b` at ~360 s
-/// per 4000x3000 photo, 29 GB of weights and context against 24 GB of VRAM
-/// (doc/measurements.md) -- which is the configuration the variable exists
-/// for. A ceiling is what keeps [visionCallTimeout]'s second argument true:
-/// the local path sends photos one at a time, so a wedged server is reported
-/// after photos x bound, and a bound nobody outlasts is the unbounded wait
-/// T-0104 removed, typed in by hand rather than left in by omission.
+/// The widest bound this accepts, in seconds. A finite ceiling ensures a
+/// wedged local server is eventually reported, even when the user raises the
+/// default for a slower model.
 const maxVisionTimeoutSeconds = 1800;
 
 /// The clause core's stall sentences deliberately stop short of (T-0152).

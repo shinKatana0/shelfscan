@@ -13,331 +13,16 @@ import '../models.dart';
 import '../unreachable.dart';
 import '../workers/base.dart';
 
-/// The reading rules every provider must put in front of its model.
+/// Shared reading rules for every vision provider. A missed spine can be
+/// reviewed, while an invented title or platform can look like a confident
+/// match. The prompt asks the model to transcribe visible text, to report
+/// unreadable spines without naming them, and to omit uncertain hints.
 ///
-/// Single source of truth on purpose: these rules used to be copy-pasted
-/// into each provider, so a fix landed in one model's prompt and silently
-/// missed the other (T-0007). Providers compose their prompt from this
-/// const plus [detectionJsonSchema] and add nothing beyond provider-specific
-/// framing.
-///
-/// The anti-invention rules are not cosmetic wording. A confidently wrong
-/// item survives human review far more easily than an obviously missing
-/// one, which makes invention the most expensive failure mode this pipeline
-/// has (decision 0007: model confidence is not trustworthy).
-///
-/// **Every count of the control photographs left this comment under T-0246**
-/// (the audit of 2026-08-18). A detection total, a per-photo split, a stack
-/// size or a per-platform tally is a measurement of a private collection, so
-/// the figures live in `doc/control-set.md` beside the photographs and only
-/// the direction of each result is here. Counts of *runs*, of prompt variants
-/// and of seeds are not disclosures and are kept, because they are what says
-/// how much weight a result carries. What this record exists to do is unchanged
-/// and is the reason it is long: nothing below should be retried blind.
-///
-/// The `platform_hint` rule (T-0021) is the same principle applied to the
-/// second field, and it is not redundant with the title rules. Listing
-/// `SWITCH` in [detectionJsonSchema]'s menu alone took one photograph from
-/// no hint at all to a hint on every spine, but one of them was `N64` for
-/// HARBOUR STARBURST -- a red Switch 2 case whose branding says nothing of the
-/// sort. The model was answering from what it knows about the game, which the
-/// title rules forbid for titles and said nothing about for platforms. With
-/// "READ, not recalled" added, two consecutive runs answered every spine of
-/// that photograph from the branding, with no N64. Console branding is printed
-/// text naming the platform, so reading it is not the logo-inference T-0007
-/// bans;
-/// that distinction has to be stated or the two rules read as contradicting
-/// each other.
-///
-/// Side effect from the same runs, worth knowing before reverting any of
-/// this: `media_type` on that photograph went from `unknown` on every row to
-/// `cartridge` on every row, which is correct for Switch cases.
-///
-/// T-0026 carried that rule to re-releases, measured on three 4000x3000
-/// photos whose readable spines were counted by hand off the images. It
-/// started from two defects: almost every item on one photograph answered
-/// the bare wordmark `NINTENDO`, which `platformIds` does not key, and a
-/// large minority of another answered `PS2` -- every one of them a
-/// PlayStation-2-era classic in a red Switch case. What moved the results:
-///   - "Name the console, not the manufacturer" took that stack from almost
-///     none correct to every row correct. Constraining the model to the token
-///     the map already holds was chosen over adding a `NINTENDO` key, because
-///     that word is equally the branding of a NES, N64 or Wii case: unmapped
-///     only drops the platform filter, while mapping it to Switch would filter
-///     an NES search down to nothing.
-///   - Naming WHERE the branding sits -- console icon at one end of the
-///     spine, publisher wordmark at the other -- is what reached the
-///     re-releases: the wrong hints roughly halved. It also recovered
-///     spines no earlier run had read, with zero invented.
-/// Four edits that read as obvious improvements and measured flat or worse,
-/// all reverted; do not re-add one without a run:
-///   - "name to yourself the printed mark you are reading it off": no change.
-///   - "not the one the game first appeared on" in the schema line: the same
-///     items answered `PS4` instead of `PS2`. Changing which console gets
-///     recalled is not the same as getting one read, and `PS4` is the harder
-///     of the two for a human reviewer to catch.
-///   - splitting the re-release clause into its own bullet: slightly worse.
-///   - "a Japanese-language title changes none of this": back to the
-///     pre-T-0026 error rate, undoing the gain above. The bullet is at its
-///     dilution limit.
-/// Residual, and the reason this is a partial fix: the そらのは spines still
-/// answer `PS2`. Every other hint is correct, and the PlayStation control held
-/// at every row correct through every variant above, its PS4 titles included.
-///
-/// That same T-0026 edit cost T-0007's zero-invention guarantee at 1200x900,
-/// where the Japanese Switch 2 spines are illegible rather than merely
-/// untranslatable (T-0034). Bisected on the two low-res photos, four runs per
-/// prompt state, runs containing an invented title:
-///   a8e6eca^ T-0007  0/4      a8e6eca  T-0011  0/4
-///   9284c6f  T-0021  0/4      80c7038  T-0026  4/4
-///   e729f5f  T-0028  4/4
-/// From 80c7038 on, the model names those spines (`MUSHROOMS AND THE
-/// GREAT WOODEN SWORD`, `DOLCE & GABBANA SHIELD`, at T-0028 `MUSHROOMS &
-/// COOKING ADVENTURE` and `DOLCESTORM SHIELD`) and drops the real `Mythéon
-/// Shield` beneath them, so the stack gains a row it should not have.
-///
-/// The cause is adjacency, not length: T-0026 put 14 lines of branding prose
-/// immediately after the Japanese-transcription rule, which is the only rule
-/// governing those spines. Moving that bullet down to sit between
-/// `confidence` and `unreadable` -- no word of any bullet changed -- restores
-/// 0/4 while leaving every hi-res figure where T-0026 left it. The bullet
-/// ORDER is load-bearing; re-sorting this list for tidiness is a measured
-/// change, not a cosmetic one.
-///
-/// A prompt change is measured on BOTH photo sets from here on, because
-/// neither exercises what the other does -- the hi-res photos read those
-/// spines correctly or not at all, so they cannot fail this way, and four
-/// consecutive prompt edits were signed off on them alone.
-///   low-res, 2 photos, before: two invented rows, one real row displaced
-///   low-res, 2 photos, after:  0 invented, back to the recorded baseline
-///   hi-res, 3 photos, before and after: unmoved on every figure -- count,
-///     per-photo split, 0 invented, hints
-/// The low-res result is T-0007's recorded baseline reproduced exactly; the
-/// drop against the run before it is the two invented rows leaving, and
-/// `Mythéon Shadow` returning pays for one of them.
-///
-/// Three rewrites measured flat or worse and were reverted; do not retry one
-/// without a run:
-///   - platform bullet compressed to 9 lines AND the list split into headed
-///     steps (which items to list / their fields / what went unread): still
-///     4/4 invented. Position beats wording here.
-///   - platform bullet moved to the very end: 0/4 invented, but the hi-res
-///     re-releases fell back to `PS2` and the correct-hint figure fell --
-///     reopening the defect T-0026 exists to close.
-///   - platform bullet moved one place later, after `confidence`: 1/4
-///     invented, a rarer failure rather than a fix.
-///
-/// T-0033 re-measured that same move against the OTHER field it turns out to
-/// govern, and found it already fixed. On one 1200x900 photograph -- one
-/// photo, one set of pixels, the same 2990 characters in the two orders --
-/// `platform_hint` answers (6 runs each):
-///   T-0028 order: almost every row `NINTENDO`, a couple `SWITCH`, and one
-///                 extra detection
-///   this order:   every row `SWITCH`, no `NINTENDO`
-/// So a low-resolution `NINTENDO` is not the icon becoming illegible: the
-/// same pixels answer either way depending on where this bullet sits. Asked
-/// on that photo to describe the two ENDS of each spine and name no title,
-/// the model reports a logo at the left end of every one -- "likely
-/// Nintendo", perceived but not resolved into the Switch pictogram -- and
-/// transcribes the right end as `NINTENDO` on all but a few, which say
-/// `SQUARE ENIX`. Those few are exactly the ones that answer `SWITCH` under
-/// the order that invents. The `Nintendo` pill is the transcribable mark and
-/// wins whenever this bullet is placed where the model reaches for it.
-/// Over all five photos through `dedupeDetections` the T-0028 order leaves
-/// substantially more review rows than this one does. Two different present
-/// hints stay two rows (T-0018-02), so every `NINTENDO` read was refused a
-/// merge; here nearly all of the low-res reads merge into their hi-res row.
-/// The ones that do not are truncations rather than hints: `MOONLIGHT`
-/// (ambiguous among three Moonlight titles, the case [isTruncatedRead]
-/// accepts by design) and
-/// `PILGRIM VII REMAKE INTERBLOOM` (leading word behind an object in the
-/// photo, T-0054).
-/// Hi-res control re-measured at this order and unmoved, twice: every figure
-/// as recorded, 0 invented.
-///
-/// EVERYTHING ABOVE THIS LINE was measured before the request said what
-/// sampling it wanted (T-0053), so each of those results is a single draw or a
-/// handful of them. They are near-greedy draws rather than wild ones --
-/// qwen2.5vl:7b's own Modelfile carries `temperature 0.0001` and that, not
-/// anything this project did, is why they held still -- and the two re-run
-/// under the pinned options came back exactly: T-0034's low-res figures and
-/// the hi-res ones above. Treat the rest as evidence, not as constants.
-///
-/// Re-established WITH the sampling pinned (T-0053, 2026-08-14, qwen2.5vl:7b
-/// / Ollama 0.32.9 / RTX 5090 Laptop), every figure counted off the
-/// photographs by eye rather than against another run's JSON:
-///   low-res, 2 photos, 8 runs: the recorded counts exactly, 0 invented, every
-///     detection hinted and every hint correct. Legible Latin spines at the
-///     dim bottom edge of one photograph are dropped, and
-///     MOONLIGHT 3 comes back truncated to `MOONLIGHT`; the Japanese spines
-///     omitted as they should be, and every readable spine of the other
-///     photograph read.
-///   hi-res, 3 photos, 8 runs: the recorded counts exactly, 0 invented, every
-///     detection hinted, and one photograph correct on every row. Every
-///     Latin spine on the three photographs; the wrong hints are all T-0029's
-///     そらのは re-releases.
-/// The 8 runs per set are 4 repeats at the default seed plus seeds 1, 12345
-/// and 99, all byte-identical to each other AND to the 4 pre-change runs that
-/// sent no options at all. So temperature 0 bought repeatability here without
-/// moving quality, and the seed is inert while it is 0. All 8 were repeat asks
-/// on one loaded server, which T-0086 measured to be the condition the BYTES
-/// hold under; the counts hold without it.
-///
-/// What the pinning is worth shows at temperature 0.8, Ollama's documented
-/// default, one run per seed on the same pixels and the same prompt:
-///   hi-res detections: five different totals across five seeds, all but one
-///     below the pinned figure
-///   low-res detections: four different totals across five seeds, on both
-///     sides of the pinned figure
-///   invented titles on 3 of the 5 seeds at each resolution -- そらのは
-///     spines named as titles of a well-known JP series, Mythéon spines
-///     named as games that are not on the shelf, a Japanese-script spine
-///     given a title
-///   `platform_hint` answered with this file's schema example verbatim on
-///     every row of one low-res photo and every row of one hi-res photo
-///     (T-0014, T-0028 -- see [detectionJsonSchema])
-/// The anti-invention rules are therefore a property of near-greedy decoding
-/// as much as of their wording: a prompt measured at another temperature is a
-/// measurement of a different system.
-///
-/// Reproducible is not byte-exact, and the exception is measured rather than
-/// assumed: the model has TWO answers for these photos, not a distribution of
-/// them. Each is reproducible on its own; they differ on one photo only -- one
-/// hi-res photograph, a third of its rows, in typography alone (`Frost
-/// Wake™` for `Frost Wake`, `IRON HERALD™ SÜNFALL` for `IRON HERALD SUNFALL`).
-/// Item counts, item identity and every platform hint were unmoved, and
-/// [titleKey] folds ™ and the diacritic away, so the review rows are the same
-/// rows. The other two hi-res photos never differed, and neither did the
-/// low-res pair over 15 runs across three loads.
-///
-/// Which of the two comes back was recorded here as the cold/warm boundary --
-/// "the first scan after Ollama loads the model" -- and T-0086 measured that
-/// wrong on 2026-08-15. It is the first ask for a given PHOTO by a given
-/// SERVER PROCESS: a server that had been loaded and busy on two other photos,
-/// asked for this one for the first time, answered with the first-ask
-/// typography exactly, and answered the repeat with the other one exactly. An
-/// unload correlates only because it drops the prompt cache with the model.
-/// See [OllamaVisionProvider] for the run counts and the cache figures.
-///
-/// The `unreadable` bullet stops the model padding that array (T-0028; the
-/// copied example it padded with is documented on [detectionJsonSchema]).
-/// What it does not do is make the array a count. Against a hand-counted
-/// truth taken off the three photos, with the example removed qwen2.5vl:7b
-/// answers zero on all three, and on a repeat run names a couple of spines it
-/// had already read and listed. Across every T-0028 variant it never once
-/// reported a spine it had actually skipped: on the first photo it lists
-/// exactly the spines it read and never mentions the Japanese Switch 2
-/// cases beside them. So the local 7B has no perception to report here, and
-/// the honest zero it now gives is a fix to the cost (T-0011 escalated every
-/// photo of every run on a fabricated trigger) and to the count shown to the
-/// human (T-0012), not a working signal. What measured flat at zero and is not
-/// worth re-trying blind: asking it to count the visible spines and subtract
-/// the ones it listed; naming the concrete cases (too small, Japanese,
-/// art-only, logo-only) that belong here.
-///
-/// **That zero is conditional on the prompt cache and not on any wording here
-/// (T-0106, 2026-08-15).** Asked for `shelf-2.jpg` on a server that
-/// has already answered that photo under a DIFFERENT prompt text -- which is
-/// what the second pass of any prompt A/B is -- these rules answer three
-/// entries where a first ask and a repeat both answer none: one `unknown` and
-/// two byte-identical `japanese`, which the bullet above forbids in as many
-/// words. Three on 18 of 34 such asks, none on the other 16, never another
-/// number and never on another photo; item counts, titles and hints unmoved on
-/// both control sets. No wording is at fault and none was found that helps, so
-/// a nonzero `unreadable` measured that way is evidence about the cache and
-/// not about this text. `ollama stop` before the run is what avoids it;
-/// doc/measurements.md, "A third cache state", carries the run counts and the
-/// recipe.
-///
-/// **T-0074 asked for the Nintendo Switch 2 band and did not get it. Nothing
-/// below is shipped; the prompt this comment sits on is unchanged.** A Nintendo
-/// Switch 2 case's band prints the console icon with a `2` beside it, and a
-/// hint naming that 2 is worth a measurable number
-/// of extra auto-matches -- re-confirmed live under this prompt, see
-/// [platformIds]. Thirteen wordings, one hi-res run each at temperature 0 and
-/// seed 20260814, every result taken off the photographs by eye. Baseline for
-/// the whole table: the recorded hi-res figures, 0 invented, every detection
-/// hinted with the そらのは cases wrong.
-///
-/// The columns are `band` -- was the Switch 2 band read on the cases that
-/// carry one, none / some / all -- and `cost`, against that baseline.
-///
-///    #  what was tried                          band   cost
-///    1  replaced "Read that mark."               none   one detection lost,
-///                                                       hints worse
-///    2  inside the icon list                     none   one detection lost
-///    3  appended to "Read that mark"             none   one detection lost,
-///                                                       hints worse
-///    4  own line at the END of the bullet        none   one detection lost
-///    5  `SWITCH2` in the schema menu, ONLY       some   false SWITCH2 on
-///                                                       Switch 1 spines
-///    6  menu + "check each spine separately"     all    false SWITCH2 on
-///                                                       every Nintendo spine
-///    7  menu + "SWITCH2 is the exception"        some   schema line copied
-///                                                       into rows
-///    8  that rule, menu as it ships              none   schema line copied
-///                                                       into rows
-///    9  rule only, one token, exception framing  none   one detection lost
-///   10  menu + that rule shortened               all    false SWITCH2 on
-///                                                       every Nintendo spine
-///   11  "a digit goes on the end of the hint"    none   one detection lost,
-///                                                       hints worse
-///   12  "read the characters inside that band"   none   one detection lost,
-///                                                       hints worse
-///   13  "any digit printed in it included", at
-///       the HEAD of the bullet                   none   one detection lost
-///
-/// Two mechanisms, and they are exclusive. With `SWITCH2` absent from
-/// [detectionJsonSchema]'s menu no wording gets the band read at all (1-4, 9,
-/// 11-13): prose naming the console ("a Nintendo Switch 2") is inert. With it
-/// present the model answers it wholesale (5, 6, 10) -- every Nintendo spine
-/// on 6 and 10, and on 5 the answer is chosen per PHOTO rather than per row,
-/// photo 1 answering `SWITCH` on every row while photo 2 answers `SWITCH2` on
-/// most -- each token carried across its whole frame, including the rows it
-/// does not fit. So the menu token decides the value and no restraint wording
-/// moved it; "the exception and never the default" (10) restrained nothing.
-///
-/// A bare uppercase token in the RULES re-opens T-0014/T-0028 at temperature
-/// 0, which wording alone was thought to hold shut there. On 7 photo 1
-/// answered the literal string `SWITCH2 | SWITCH` on every row; on 8 photo 2
-/// answered `SWITCH2 | N64 -- omit this field entirely if the platform is
-/// unclear` on most rows and the same tail after `PS2` on the そらのは. The
-/// model builds a pipe menu out of whatever tokens the rules put near each
-/// other, whether or not the schema also carries them.
-///
-/// 7 is the only variant that ever discriminated: photo 2 answered `SWITCH2`
-/// for COLD ARCHIVE requiem and Ashes of the Kingdom Nintendo Switch 2
-/// Edition and `SWITCH` for the rest, no false positive. The same prompt
-/// destroyed photo 1. Nothing was found that gets one without the other.
-///
-/// Low-res, 1200x900, 4 runs each:
-///   5 (menu only):     the recorded counts, 0 invented, all 4 runs -- and
-///     every Switch spine answers `SWITCH`, not `SWITCH2`. The contagion above
-///     is resolution-dependent, so hi-res alone would not have found this
-///     either.
-///   10 (menu + rule):  2 INVENTED on 3 of the 4 runs --
-///     `MUSHROOM-CHOKUKEI NO TAKA` for a Japanese-script spine and
-///     `Duskthorn Shield` displacing the real `Mythéon Shadow`, so the
-///     photograph gains a row. That is T-0026's and T-0034's failure, in the
-///     same
-///     bullet's neighbourhood, for the third time, against T-0007's Critical
-///     guarantee.
-///
-/// Cost that every rules-bullet edit paid regardless of wording: Starweave
-/// Chronicles 3 on photo 1 was lost, one detection off the hi-res total. Only
-/// 5, the schema-only variant, held the total.
-///
-/// Ask the model what it sees, again (decision 0002). Throwaway prompts on photo
-/// 1, same model and sampling, no title asked for: "describe the left end of
-/// every spine" degenerates into one line of "icon only" per spine; asked
-/// which digit is printed inside the red band at the left end of the spines
-/// at the top of the stack, character by character, it answers `2` on each of
-/// them, correct; "compare the top spine's mark with Mythéon Shadow's"
-/// answers "The console marks are identical". So the 2 is perceived and
-/// transcribable, and what the 7B cannot do is carry that discrimination
-/// across a whole photo of spines while also reading their titles. That is a
-/// capacity limit rather than a wording one, which is why the table above
-/// stops at 13.
+/// Rule placement matters: moving the platform instruction next to the
+/// Japanese-script rule changed whether the model invented titles on small
+/// text. Keep the order and test both high- and low-resolution inputs before
+/// changing this prompt. Example values can also be copied into responses,
+/// so examples must not look like plausible titles or platform answers.
 const detectionPromptRules = '''
 You identify video games on a photo of a collector's shelf.
 The photo shows game cartridges and/or disc cases, possibly spines only.
@@ -386,113 +71,16 @@ Reading rules -- follow them exactly:
   the normal result, not a failure. Report it, do not title it -- there is
   no title field there, and it never counts as an item.''';
 
-/// Shared for the same reason [detectionPromptRules] is: one copy per
-/// provider drifts per provider.
+/// One response schema is shared by every provider. The platform menu is
+/// vocabulary for the model, not an exhaustive enum. The unclear case must
+/// instruct the model to omit the field rather than provide a literal value
+/// it could copy. Unreadable reports carry no title, so they cannot become
+/// guessed items. Keep schema examples neutral: models have copied example
+/// values into both platform hints and unreadable reasons.
 ///
-/// `platform_hint` names an ACTION for the unclear case, not a value
-/// (T-0014). It used to end with `... | null if unclear`, and qwen2.5vl:7b
-/// did the literal thing: it answered with the four-character string
-/// "null" on most of a low-res control run, which travelled all the way to
-/// the review UI and the CSV export as a platform name.
-///
-/// Two things were measured on the real photos before settling on this
-/// wording, and both are easy to undo by accident:
-///
-///   - Removing the unclear branch and demonstrating JSON null in a second
-///     example item instead made the model INVENT: with no escape from the
-///     `SNES | PS1 | N64 | ...` menu it answered "N64" for those same
-///     items. A wrong platform survives human review far more easily than a
-///     missing one, so the menu must always carry an explicit way out.
-///   - With this wording the model stops writing the word and answers `""`
-///     instead. That is honest absence, and [Detection.fromJson] maps it to
-///     null -- the parse-side normalization is what makes the result
-///     correct, this const only stops provoking the bad value.
-///
-/// The menu is a vocabulary, not an enum: a console it does not name is a
-/// console the model will not answer with. It listed `SNES | PS1 | N64 | ...`
-/// until T-0021, and every Switch detection came back with no hint at all
-/// while every PlayStation one was correct -- the ellipsis did not stand in
-/// for the missing value. Adding `SWITCH` is what recovered
-/// them. The model still answers the branding it reads (`NINTENDO SWITCH`),
-/// not the menu token, which is why `platformIds` keys both spellings.
-///
-/// That last sentence no longer describes qwen2.5vl:7b at temperature 0: it
-/// answers the menu token verbatim, `SWITCH` wherever it reads that branding
-/// in the hi-res control. A vocabulary this model copies exactly is also one it
-/// cannot be given a second entry of. **Do not add `SWITCH2` here** -- T-0074
-/// measured that edit alone and with four rules meant to restrain it, and the
-/// model then answers `SWITCH2` for whole photos off Switch 1 bands, worse
-/// with a restraining rule beside it than without one. The full table and the
-/// low-res invention it costs are on [detectionPromptRules].
-///
-/// `unreadable` (T-0011) is the counterpart of the omit rule: T-0007 made an
-/// unread spine disappear silently, which is correct for `items` and blind
-/// for everything downstream. Its entries carry no title field, so they can
-/// be counted for the human without giving the model a second place to guess
-/// in. [SpineScript.parse] maps anything unrecognized to unknown.
-///
-/// Neither value here may read as a fillable answer, and that is the same
-/// lesson as `platform_hint` above, measured a third time (T-0028). This
-/// block used to show `"script": "japanese | latin | unknown"` with
-/// `"reason": "why you could not read it, e.g. 'characters too small'"`, and
-/// across eight T-0026 runs plus one re-measured baseline here the model
-/// answered with exactly that entry, three times per photo, on all three
-/// photos -- including the one that carries no Japanese spine at all. It was
-/// the example being copied, not a count:
-///   - deleting only the `e.g.` value changed every reason string on the
-///     next run and dropped one of the phantom entries on one photo;
-///   - naming the script as a description rather than a bare menu broke the
-///     constant `japanese` block: scripts and reasons then differed within
-///     one photo.
-/// Two edits measured worse and were reverted; do not re-add one without a
-/// run:
-///   - "a spine you listed in items is never also in unreadable": the
-///     phantom entries stayed and one real detection was lost.
-///   - asking the reason to say WHERE the spine sits: that detection lost
-///     again, and the repeated-reason block came back.
-/// What this does NOT buy is a true count -- see [detectionPromptRules].
-///
-/// `notes` earns nothing and is kept anyway, and both halves of that were
-/// measured (T-0093, 2026-08-15, temperature 0, both control sets).
-///
-/// **The model never uses it.** Asked for it on every row, qwen2.5vl:7b
-/// answers the **empty string on every row of both control sets**.
-/// Not a parse artifact: read off the wire, before [Detection.fromJson] folds
-/// `""` to null. So the line costs prompt tokens on every call plus a
-/// `"notes": ""` per row of output, and carries content on none.
-///
-/// **Deleting the line is worse.** With it gone every recorded count holds on
-/// both control sets -- detections, per-photo split, hints and the platform
-/// split, all folding to the same [titleKey] row set as the run before the
-/// edit -- but `shelf-2.jpg` starts reporting **2 unreadable
-/// spines where the shipped schema reports 0**, deterministically: five cold
-/// loads each, alternating, 2/2/2/2/2 against 0/0/0/0/0. They are the T-0028
-/// phantom: every readable spine of that photo is in `items` including every
-/// Japanese one, one entry claims `script: japanese` regardless, and on
-/// a cold load the two entries carry byte-identical reason strings, which
-/// [detectionPromptRules] explicitly forbids. `unreadable` is on the control
-/// record's must-not-differ list (decision 0004); it differed, so the edit was
-/// reverted. One line's presence in the `items` object governs the
-/// `unreadable` array -- the same adjacency T-0026/T-0034 measured and the
-/// second time one bullet has moved an unrelated-looking field.
-///
-/// **The cold loads are what make that pair comparable (T-0106).** They put
-/// every ask above in the same cache state -- a first ask. Asked instead
-/// straight after the same photo under another prompt text, the SHIPPED schema
-/// answers phantom entries of its own on that photo, so an `unreadable` count
-/// taken without that discipline measures the cache and not the schema.
-///
-/// [Detection.notes] therefore stays a live channel rather than dead weight:
-/// a human writes one on a manual add or a hand-edited document, and since
-/// T-0093 the review row shows it.
-///
-/// Every result above predates T-0053's pinned sampling and is a single draw
-/// from a near-greedy model. The copy-the-example hazard itself is not
-/// historical: at temperature 0.8 the `platform_hint` line below comes back
-/// verbatim AS the value, on every row of one low-res photo and every row of
-/// one hi-res photo. Wording fixed it at 0.0001 (T-0014) and wording alone
-/// does not hold it at 0.8 -- which is the argument for stating the sampling
-/// on the request rather than inheriting whatever the model shipped with.
+/// The notes field remains even when the model usually leaves it empty;
+/// removing it has changed the adjacent unreadable output. Compare changes
+/// with the same model cache state before deciding that a field is inert.
 const detectionJsonSchema = '''
 {
   "items": [
@@ -847,64 +435,14 @@ class RetryableVisionApiException extends RetryableException {
   String toString() => message;
 }
 
-/// A CLOUD vision call that never reached a status: nothing answered, the
-/// connection died before the answer did (T-0103), or nothing came back inside
-/// the budget (T-0104).
+/// A cloud vision call that reached no HTTP status, whether the connection
+/// failed or the call timed out. There is no response body to classify, so it
+/// shares the endpoint-unreachable handling used by other providers.
 ///
-/// Not a [VisionApiException] for the reason [OllamaUnreachableException] is
-/// not one either -- there is no status and no body to explain. Both, and
-/// IGDB's, are [UnreachableEndpoint]s, which is the type a caller asking "was
-/// the endpoint unreachable?" catches (T-0105).
-///
-/// Deliberately NOT retryable, and the argument is the one thing about this
-/// class that is not obvious. Three failures reach it, measured
-/// with package:http 1.6.0 against loopback and an undefined name, 2026-08-15:
-///
-///   refused connection       2.1 s, `ClientException` that also implements
-///                                   `SocketException`
-///   name does not resolve   22.3 s, same
-///   connection dropped      <0.1 s, plain `ClientException`
-///                                   (`Connection closed before full header
-///                                   was received`)
-///
-/// The first two are settled facts about the network for as long as
-/// a scan lasts, and [Worker] would spend 2+4+8 s of backoff per photo to
-/// re-learn each of them -- 42 s of sleep on a three-photo offline run before
-/// the one line that explains it, and on a name that does not resolve every
-/// one of those attempts pays the 22 s lookup again on top.
-/// The dropped connection is the one that would repay a retry, and
-/// separating it is possible but not free: the only reliable discriminator is
-/// `error is SocketException`, which would put `dart:io` in a `lib/` that has
-/// none (the boundary ARCHITECTURE.md keeps so the same pipeline runs
-/// anywhere), and the message text cannot stand in for it -- the OS half comes
-/// back in the display language, measured in a non-English one as T-0097
-/// measured for Ollama.
-/// Against that: each retry re-uploads a whole photograph to an endpoint that
-/// has just dropped one, and no cloud endpoint has ever been called from this
-/// repository (decision 0011), so the policy would be a guess about a wire
-/// nobody here has watched. Retrying would also cost the type --
-/// [RetryableVisionApiException] carries a message and nothing else, so the app
-/// could no longer tell that the base URL, a Settings field, is what to offer
-/// (T-0102).
-///
-/// [timedOut] is the fourth failure and it is the same type on purpose (T-0104):
-/// an endpoint that accepted the connection and then said nothing is, to
-/// everything downstream, the same fact as one that was never there -- no
-/// status, no body, and the same Settings field to offer. Reusing the type is
-/// what gets the new failure the app's existing handling for free; since T-0105
-/// a class of its own would at least inherit [UnreachableEndpoint], but it would
-/// still be a second name for one fact.
-///
-/// It is not retryable either, and for a different arithmetic. [Worker] gives 4
-/// attempts and 2+4+8 s of backoff, so a retried timeout costs
-/// 4 x [visionCallTimeout] + 14 s = 494 s **per photo** -- 24 minutes on a
-/// three-photo scan that sends photos one at a time, which re-creates the hang
-/// this bound exists to end rather than surviving it. The one attempt costs
-/// 120 s. What a retry would buy is unknown in a way the refused connection's
-/// was not: nothing here can tell a proxy that will stall forever from a model
-/// runner that would answer on the next ask, and each attempt re-uploads a
-/// whole photograph (3.32 MB as base64, measured T-0090) to an endpoint that
-/// has just failed to answer one.
+/// Do not retry automatically: an unavailable host would incur repeated
+/// waits, and a timeout could re-upload the same photograph without knowing
+/// whether the server will ever answer. Keep the endpoint and configured
+/// model visible in the diagnostic so the user can correct them.
 class VisionUnreachableException extends UnreachableEndpoint {
   VisionUnreachableException(
     http.ClientException error, {
@@ -1081,44 +619,12 @@ Exception visionApiFailure({
       diagnostics: _refusalDiagnostics(statusCode, body, headers),
     );
 
-/// What [statusCode] means for the person who typed the model id.
-///
-/// [service] leads the sentence: `Anthropic` for the native API, the base URL
-/// for the OpenAI-compatible family, where it is the only thing that tells six
-/// endpoints apart. [model] is named in every branch that the model could
-/// explain, because since T-0067 the id is user-typed on both surfaces and is
-/// therefore the likeliest thing to be wrong.
-///
-/// Bodies measured against api.openai.com on 2026-08-15, one call each:
-///   - 404: `The model `gpt-4.1-mini-typo` does not exist or you do not have
-///     access to it.` (`code: model_not_found`) -- so the endpoint's own
-///     wording is worth quoting, the "or no access" half especially.
-///   - 400: `Unsupported parameter: 'max_tokens' is not supported with this
-///     model. Use 'max_completion_tokens' instead.` -- the T-0089 case, and
-///     the reason a 400 quotes the provider at all: that sentence is the fix.
-///   - 401: `Incorrect API key provided: sk-not-a*********-000.` The key
-///     is echoed back with its ends intact -- the redaction is the endpoint's
-///     choice and not ours, which is why 401 and 403 never quote
-///     `error.message` and never route through [providerDetail]. They take
-///     [_errorTokens] instead: `error.type` and `error.code` alone, the two
-///     enum-like fields a credential is not written into.
-///
-/// **No 403 body from this family has been measured here at all** (T-0435),
-/// which is why the 403 sentence claims less than the 401 one rather than
-/// more. A 403 says access was refused and does not say by whom: a proxy in
-/// front of the endpoint can answer one having put no question to it, so the
-/// sentence neither blames the key nor reports that the key was taken.
-///
-/// **What HAS been measured is the connection (2026-08-27): one endpoint, one
-/// key and one model answered 403 over one network and 200 over another, with
-/// nothing configured in between.** That is why the 403 sentence sends the
-/// reader to try another connection before checking anything they typed --
-/// it is the one cause of the four that costs nothing to rule out, and it is
-/// the one that was actually hit here. The fields naming what answered are
-/// [VisionApiException.diagnostics] and stay off this sentence (T-0437).
-/// Anthropic answers the same `error.message` shape (`{"type":"error",
-/// "error":{"type":"not_found_error","message":"model: ..."}}`), unmeasured
-/// here: no Anthropic key was available.
+/// Explain an API refusal without exposing credentials. Name the endpoint
+/// and model when they help locate a wrong setting. A provider response may
+/// contain useful detail for a missing model or unsupported parameter, but
+/// authentication failures must use only sanitized error tokens: some APIs
+/// echo credential material in the body. A forbidden response may also come
+/// from an intermediary, so do not assume the key was rejected.
 String visionApiMessage({
   required String service,
   required String model,
@@ -1638,13 +1144,9 @@ enum _CapRoad {
 /// OpenAI shape, `stop_reason: max_tokens` from Anthropic, `done_reason:
 /// length` from Ollama -- and until T-0111 none of them looked.
 ///
-/// **Two shapes, one cause** (T-0120, live, 2026-08-16). Two of three photos
-/// came back `finish_reason: length` with `completion_tokens: 4096` and an
-/// EMPTY `content`: the reasoning model spent the whole budget before it wrote
-/// a character. The half-JSON form is the one the defect was filed for. Both
-/// arrive here, and [wroteNothing] is the only thing that separates them,
-/// because "your answer was cut short" is a lie about a photo that produced no
-/// answer at all.
+/// A capped answer may have no content when a reasoning model exhausts its
+/// budget before writing, or it may contain incomplete JSON. Both arrive
+/// here; [wroteNothing] distinguishes them for accurate advice.
 ///
 /// **Two roads reach this cap and until T-0427 the message knew one** (see
 /// [answerRepeatsItself]). [looped] picks between them, and the difference is
@@ -1662,8 +1164,7 @@ enum _CapRoad {
 /// that the model id was fine, that the shelf held more than one answer can
 /// hold, and that fewer spines was the fix. Only the first clause was true,
 /// and the action offered cannot work -- a model that spends the budget
-/// reasoning spends it on any frame, however few spines are in it. That was
-/// reported live, on three photographs a different model read. So the road is
+/// reasoning can exhaust the budget regardless of frame density. The road is
 /// picked once, ahead of every clause, and each clause switches on it
 /// exhaustively: a fourth condition then fails to compile rather than
 /// inheriting somebody else's conclusion, which is exactly how this one
@@ -2138,31 +1639,10 @@ String? _explanationIn(Object? data) {
 
 const _apiUrl = 'https://api.anthropic.com/v1/messages';
 
-/// The cap the Anthropic request carries, named rather than written twice so
-/// the message reporting a `stop_reason: max_tokens` cannot quote a number the
-/// request did not send.
-///
-/// **The lowest of the three this repository sends, and the only one nobody
-/// has priced** (T-0281). The other two are 8192: `_maxOutputTokens` in
-/// openai_compatible_vision.dart clears a reasoning model's measured tail,
-/// `_numPredict` in ollama_vision.dart clears a dense shelf inside the call
-/// timeout. They are not one constant and should not become one -- three
-/// different models, three different things being bounded.
-///
-/// What 4096 is worth flagging for is arithmetic and **not a measurement**
-/// (T-0284). T-0278's ladder ran at ~48 output tokens a row, which would put
-/// this at about 85 rows, with an 84-spine frame at 3023 tokens and a
-/// 120-spine one at 5504 -- but that ladder is `qwen2.5vl:7b` through Ollama,
-/// and tokeniser, verbosity and how many optional fields a model fills all
-/// move tokens per row. No key for this provider has ever been available to
-/// check it, which is the same reason the class comment below gives for every
-/// other number on it.
-///
-/// **Left at 4096 because reaching it is not silent**: `stop_reason:
-/// max_tokens` is read below and raised as [visionTruncatedFailure] before the
-/// answer is parsed, so a dense frame is declined with the advice to shoot the
-/// shelf in sections rather than accepted short. Moving the number wants one
-/// key, one dense frame, one call, and that model's own tokens per row.
+/// Keep the Anthropic output cap separate from local and OpenAI-compatible
+/// caps: different providers spend output tokens differently. Reaching the
+/// cap is detected as truncation before parsing, so a dense input is declined
+/// with guidance instead of accepted as a partial list.
 const _anthropicMaxOutputTokens = 4096;
 
 /// Vision provider backed by the Anthropic Messages API.
@@ -2172,79 +1652,12 @@ const _anthropicMaxOutputTokens = 4096;
 /// and every count in [detectionPromptRules] -- was taken from `qwen2.5vl:7b`
 /// through Ollama, and none of it is evidence about a cloud model.
 class AnthropicVisionProvider implements VisionProvider {
-  /// Sampling is stated rather than inherited (T-0057), following
-  /// [OllamaVisionProvider] and T-0053. Sending nothing does not mean sampling
-  /// is off: it means the endpoint picks, and unlike a local model there is no
-  /// Modelfile to read the choice out of afterwards.
-  ///
-  /// **[temperature] 0 buys a stated setting, not repeatability, because this
-  /// API has no seed.** The Messages API takes `temperature`, `top_p` and
-  /// `top_k` and nothing else -- there is no seed parameter to send (checked
-  /// against the Messages API reference, 2026-08-15), and Anthropic documents
-  /// no bit-exactness guarantee at any temperature. So two cloud scans of the
-  /// same photo may legitimately differ, and a difference between them is not
-  /// by itself a defect. `top_p` and `top_k` are deliberately left unset: at
-  /// temperature 0 the distribution they would truncate is already degenerate,
-  /// and Claude 4+ rejects `temperature` and `top_p` sent together.
-  ///
-  /// The 0 is argued from local evidence and nothing else. T-0053 measured
-  /// this prompt on `qwen2.5vl:7b` at temperature 0.8: invented titles on 3 of
-  /// 5 seeds at each resolution, and `platform_hint` returned as the
-  /// [detectionJsonSchema] example text verbatim on whole photos -- the
-  /// T-0014/T-0028 defect that prompt wording alone does not hold shut once
-  /// decoding stops being near-greedy. Whether a frontier cloud model degrades
-  /// that way is **unmeasured**. Near-greedy is chosen here because it is the
-  /// decoding every rule in [detectionPromptRules] was written against, not
-  /// because the local numbers were shown to transfer.
-  ///
-  /// [temperature] is nullable because the parameter is model-gated: sampling
-  /// parameters were removed from Claude Opus 4.7 and later, Sonnet 5 and
-  /// Fable 5, where a request carrying one returns 400 (Messages API
-  /// reference, 2026-08-15). The default [model] accepts it. Pass
-  /// `temperature: null` to point this provider at one of those models -- and
-  /// record in the run notes that the sampling was then the endpoint's, which
-  /// is the unrecorded state this whole task exists to end.
-  ///
-  /// ## Measurement recipe -- for whoever gets a key
-  ///
-  /// None of this has been run. It is written down so the first person with a
-  /// key executes the method this project already paid for locally (T-0034,
-  /// T-0053) instead of re-deriving it, and so their numbers are comparable
-  /// with the local ones rather than a separate island.
-  ///
-  /// Control sets: **both**, always. The low-res pair at 1200x900 and the
-  /// hi-res three at 4000x3000. They do not exercise the same failures -- four
-  /// prompt edits were signed off on hi-res alone and the low-res
-  /// anti-invention guarantee broke silently underneath them (T-0034). The
-  /// local scores on those sets are in the control record; that is the
-  /// yardstick
-  /// for "did the cloud model read more spines", not a target to reproduce.
-  ///
-  /// Repeats: 8 runs per set per setting, as T-0053 used -- enough that one
-  /// stable draw cannot pass as a constant. Here all 8 are plain repeats since
-  /// there is no seed. On [OpenAiCompatibleVisionProvider] spend 3 of the 8 on
-  /// seed changes instead, which is the only way to find out whether that
-  /// endpoint honours the field.
-  ///
-  /// Compare, per photo and per run:
-  ///   - detection count and the titles themselves;
-  ///   - invented titles -- a title with no matching spine **on the
-  ///     photograph**, verified by eye. Never JSON against JSON: that is how
-  ///     invented titles survived four prompt edits;
-  ///   - `platform_hint` correct / wrong / absent per row, and separately
-  ///     whether any row echoed the [detectionJsonSchema] example text as its
-  ///     value (T-0014, T-0028);
-  ///   - the Japanese spines the model must omit rather than guess, and
-  ///     the そらのは re-releases answered `PS2` locally (T-0029) -- the
-  ///     two defects a cloud model is being bought for;
-  ///   - stability: how many of the 8 runs are byte-identical, and where they
-  ///     differ, whether it is typography or an item ([titleKey] folds the
-  ///     first away, so only the second changes review rows).
-  ///
-  /// Record the model id, the date, and the temperature actually sent
-  /// alongside every number. A cloud model id is not a frozen artifact the way
-  /// a pulled Ollama tag is, so a figure without those three cannot be
-  /// repeated even in principle.
+  /// State sampling explicitly where the model supports it. This API offers
+  /// no seed or bit-exactness guarantee, so identical requests can differ.
+  /// Near-greedy sampling matches the conditions under which the shared
+  /// prompt was developed, without claiming local-model measurements transfer
+  /// to Anthropic. Some newer model families reject a temperature parameter;
+  /// callers omit it for those models.
   AnthropicVisionProvider({
     required this.apiKey,
     this.model = 'claude-sonnet-4-6',

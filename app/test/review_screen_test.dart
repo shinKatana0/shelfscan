@@ -1132,9 +1132,8 @@ void main() {
           findsOneWidget);
     });
 
-    // The measured case (T-0109): one entry, two or three spines. 10 of 10
-    // runs of gpt-4.1-mini on CONTROL-HIRES shelf-3 answer this one
-    // entry against a hand count off the photograph it never matches.
+    // A single report can describe several spines. This synthetic fixture
+    // checks that the UI reports the unit honestly.
     testWidgets('one report naming several spines is not read as one spine',
         (tester) async {
       final doc = _doc([], unreadable: [

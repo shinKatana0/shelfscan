@@ -103,7 +103,7 @@ void main() {
         _game(1100000058, 'Regent of Aurex', [_pc], year: 1993),
         _game(1100000009, 'Regent of Aurex', [_pc], year: 2016),
       ]);
-      expect(resolved.best, isNull, reason: 'T-0165 refuses the tie');
+      expect(resolved.best, isNull, reason: 'the ambiguous tie is refused');
       expect(resolved.candidates.map((c) => c.releaseYear), [1993, 2016]);
       // Everything else on the two rows is identical, which is the defect.
       expect(resolved.candidates.map((c) => c.title), everyElement('Regent of Aurex'));

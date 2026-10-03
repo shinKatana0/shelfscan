@@ -50,7 +50,7 @@ const _retry = 'Retry the flag now -- one line plus one build:\n'
     'pin; the deprecated Project.android accessor and the newDsl option '
     'warning go with it. If it still dies, put the flag back and move the '
     'pin in this file to the version you are on.\n'
-    'Either way re-prove the release-signing refusal (T-0398) afterwards: '
+    'Either way re-prove the release-signing refusal afterwards: '
     'it is bound to gradle.taskGraph.whenReady, and a DSL change can move '
     'what `this` is there.\n'
     'flutter build apk --config-only does NOT answer this -- it writes the '
@@ -153,7 +153,7 @@ void main() {
       expect(match, isNotNull,
           reason: 'app/$_properties no longer sets android.newDsl at all. '
               'AGP 9 defaults it to true, so an absent line is the value '
-              'T-0399 measured to be unbuildable.\n$_retry');
+              'that has prevented builds.\n$_retry');
       expect(match![1], 'false',
           reason: 'android.newDsl is no longer false, so either this block '
               'has been taken deliberately -- in which case delete this '

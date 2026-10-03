@@ -91,7 +91,7 @@ void main() {
       expect(detection.origin.isAuthoritative, isTrue);
       expect(detection.sourceEntry, 'goggame-1100000022.info');
       expect(detection.sourcePhoto, isEmpty,
-          reason: 'nothing was read off a photograph (T-0052)');
+          reason: 'nothing was read off a photograph');
       expect(detection.confidence, 1.0);
       expect(detection.mediaType, MediaType.unknown);
     });

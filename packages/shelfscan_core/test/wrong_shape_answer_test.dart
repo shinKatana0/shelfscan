@@ -174,7 +174,7 @@ void main() {
         final message = await _messageOf(p.analyze('42'));
 
         expect(message, p.hasKey ? contains('Your key') : isNot(contains('key')),
-            reason: 'T-0097: the local path names no key it does not have');
+            reason: 'the local path names no key it does not have');
       });
 
       test('the remedy offered is the model id', () async {

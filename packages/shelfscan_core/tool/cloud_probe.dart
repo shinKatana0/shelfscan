@@ -391,7 +391,7 @@ Map<String, int> _sorted(Map<String, int> counts) =>
       ..sort((a, b) => b.value.compareTo(a.value)));
 
 const _usage = '''
-cloud_probe -- a control set through a cloud endpoint, repeated (T-0112)
+cloud_probe -- a control set through a cloud endpoint, repeated
 
   dart run tool/cloud_probe.dart run  CONTROL-HIRES|CONTROL-LOWRES|all N OUT
   dart run tool/cloud_probe.dart rows OUT [run]

@@ -28,36 +28,11 @@ const builtinTitleAliases = <String, String>{
   'seiken densetsu': 'mana',
 };
 
-/// Successively shorter leading prefixes of [query], longest first, for the
-/// retry [ResolverWorker] makes when IGDB answers a query with nothing at all.
-///
-/// A long compound title is IGDB's own failure mode, not this project's:
-/// measured live 2026-08-15 with no platform filter, `そらのは 真3 そらのは3 別伝
-/// grey tides` returns **0**, `そらのは 真` returns **1** (Path of Ember: True, which
-/// carries `そらのは 真` in its `alternative_names`) and `そらのは` returns
-/// **4**. It is not a Japanese problem: `solar pilgrim i-vi collection edition
-/// anniversaire / anniversary edition` returns 0 under a Switch filter and
-/// `solar pilgrim i-vi collection` returns the right game.
-///
-/// **Halving rather than dropping one token at a time.** Dropping one is more
-/// precise -- the longest prefix that answers is the least generic one -- and
-/// costs a request per token: the `solar pilgrim i-vi` read needed 5 drops to
-/// reach a hit, and one control set has 9-token titles in it. Halving
-/// reaches the same forms in `log2` requests (at most 3 for a 9-token title)
-/// and the extra genericness costs nothing, because the shortened form is
-/// never scored -- see [ResolverWorker.process].
-///
-/// **A digit starts a token even without a space.** The vision model types the
-/// volume number both ways on the same shelf, and which one comes back is the
-/// prompt cache (T-0086, correcting T-0053's cold/warm reading): a repeat ask
-/// reads `そらのは 真2`, the first-ask read in this task's filing was
-/// `そらのは0 約束の丘`. Measured live, `そらのは0` returns **0 hits**
-/// unfiltered, so a whitespace-only split leaves the first-ask spelling with
-/// nothing shorter to try.
-///
-/// Prefixes are cut out of [query] itself rather than rejoined from tokens, so
-/// the retry carries the spacing and punctuation IGDB was going to be sent --
-/// phrase structure is load-bearing for this endpoint (see [stripLegalMarks]).
+/// Yield shorter leading prefixes of a query, longest first, when the full
+/// title returns no IGDB hit. Halving the token count bounds API requests;
+/// a returned candidate is still scored against the original title. Treat a
+/// digit as a token boundary even without a space, and preserve the query's
+/// original spacing and punctuation in each prefix.
 Iterable<String> shortenedQueries(String query) sync* {
   final starts = _tokenStarts(query);
   final seen = <String>{};
@@ -90,34 +65,10 @@ bool _isDigit(String char) {
   return code >= 0x30 && code <= 0x39;
 }
 
-/// Below this the match stays a candidate, not "best".
-///
-/// Re-measured live 2026-08-15 on both control sets (T-0100): auto-match
-/// scores cluster hard at 1.000 on both sets, thin out through 0.95-0.99 and
-/// again through 0.90-0.95, and the lowest auto-match on either set is 0.905.
-/// The band sizes are counts of a private shelf and are in the control record
-/// (T-0246). Moving this to 0.90 still changes no outcome; 0.95 demotes
-/// correct matches across the two sets and removes no false positive.
-///
-/// **What no longer holds is the argument, not the number.** T-0008 read
-/// "nothing at all sits between 0.85 and 0.90" as a gap the threshold could
-/// live in; that was measured on Latin full-title reads, and a normalised edit
-/// distance has no such resolution anywhere else. Rows of the same two
-/// control sets, all right or wrong by eye against the photographs:
-///
-/// | read | matched | score | |
-/// |---|---|---|---|
-/// | `PILGRIM VII REMAKE INTERBLOOM` | Solar Pilgrim VII Remake Interbloom | 0.829 | right, below |
-/// | `そらのは 真3 そらのは3 別伝 Grey Tides` | Path of Ember: True 3 & Grey Ties | 0.852 | right, above |
-/// | `そらのは 真2` | Path of Ember: True | 0.857 | **wrong**, above |
-///
-/// One character of a 6-character Japanese title is 0.143 and one character of
-/// a 30-character Latin one is 0.033, so the same threshold cannot mean the
-/// same thing for both, and the wrong row here outscores a right one: no value
-/// of this constant separates the last two. What does separate them is not a
-/// score at all -- see [volumeNumbersAgree] -- which is the same conclusion
-/// T-0002 reached for the console: the threshold is not the knob, the gates
-/// on [ResolverWorker._best] are.
+/// Below this score, a match remains a candidate for human review. A single
+/// edit-distance threshold cannot distinguish all close titles, especially
+/// across scripts and title lengths. Platform and volume checks provide the
+/// independent gates before a candidate becomes the best match.
 const minAutoScore = 0.85;
 
 /// How a candidate's platform relates to the hint read off the case.
@@ -129,27 +80,10 @@ enum PlatformAgreement {
   unknown,
 }
 
-/// Compares the detection's platform hint with one candidate's platform.
-///
-/// A hint that [platformIds] can turn into ids already constrains the IGDB
-/// query, so this only re-states that. The load-bearing case is the hint it
-/// cannot: "NINTENDO" is left unmapped on purpose (it is equally an NES, an
-/// N64 and a Wii), the query then runs unfiltered, and IGDB answers with one
-/// hit per (game, platform) pair -- a dozen of which tie at 1.000. Measured on
-/// T-0008's Run A: all but one of its confident false positives were the right
-/// game on the wrong console, picked by IGDB's ordering alone -- a Switch
-/// title answered as Android, and the rest of that group the same way.
-///
-/// The unmapped case falls back to the platform *name*, which is what such a
-/// hint is: "NINTENDO" is a subset of "Nintendo Switch" and of "Nintendo
-/// Switch 2", but not of "Xbox Series X|S". A family hint therefore narrows
-/// without pretending to pick a console.
-///
-/// A mapped hint agrees with any console it can mean, so `SWITCH` agrees with
-/// both 130 and 508 rather than sinking the Switch 2 one. Sinking it is what
-/// made the console un-pickable: [ResolverWorker._best] refuses a mismatch, so
-/// a hint that named the wrong half of the family would have taken every
-/// Switch 2 exclusive to no auto-match at all.
+/// Compare a case's platform hint with a candidate. A mapped hint already
+/// constrains the search by platform ID. An unmapped family hint still narrows
+/// by platform name without pretending to identify one console. A family
+/// hint can agree with more than one generation of that console.
 PlatformAgreement platformAgreement(
   String? hint, {
   required int platformId,
@@ -177,42 +111,11 @@ Set<String> _words(String text) => text
     .where((word) => word.isNotEmpty)
     .toSet();
 
-/// Whether the spine and the IGDB name it matched print the same numbers, in
-/// the same order -- the one thing a length-normalised edit distance throws
-/// away and this project has twice concluded is a volume marker rather than a
-/// variation (T-0055 for arabic digits, T-0059 for roman numerals, both in
-/// `isTruncatedRead` in `title_key.dart`, both about dedupe).
-///
-/// It transfers because the failure has the same shape and, unlike a score, it
-/// does not shrink with the title. `そらのは 真2` against IGDB's `そらのは 真`
-/// is 0.857 -- above [minAutoScore], and the wrong game, a separate case on
-/// the same shelf. `MOONLIGHT` against `Moonlight 2` is the identical relation
-/// in Latin and scores 0.818, below it. Nothing about the two claims differs
-/// except that one title is 6 characters and the other 9, which is a fact
-/// about the metric and not about the shelf.
-///
-/// Measured on every candidate of both control sets and of the hi-res set with
-/// the そらのは `PS2` hints hand-written to the band, 2026-08-15: of the
-/// candidate observations that carry a digit on either side, a minority
-/// disagree, and **exactly one of those disagreements scores at or above
-/// [minAutoScore]** -- the sibling above. Every other one is a DLC or edition
-/// name (`Chronos 3 Remade: Nocturne 5 Gold EX BGM Set` against a
-/// `CHRONOS 3 REMADE` spine), i.e. this disagrees with the answer where the
-/// answer is wrong anyway. Cost on the auto-matches: **none, on the hi-res
-/// set, the low-res set and the corrected hints alike.** (The candidate and
-/// row counts behind that are counts of a private shelf and are in the control
-/// record, T-0246.)
-///
-/// **Arabic digits only, deliberately.** Roman numerals are the harder half of
-/// that rule (T-0059: `i/v/x/l/c/d/m` are also how a genuine cut ends) and
-/// folding them is not needed here: `FALCON'S CREED II` auto-matches at 1.000
-/// against IGDB's own `Falcon's Creed II`, and its arabic sibling name
-/// `Falcon's Creed 2: Deluxe Edition` is a different candidate scoring 0.531.
-/// Full-width digits are folded, because a first ask reads one of these spines
-/// as `そらのは０ 約束の丘` (T-0065) and ０ and 0 are one volume, not two.
-///
-/// Identity implies agreement, so this cannot narrow T-0065's `score == 1.0`
-/// bar -- it is a second reason to refuse, never a new reason to accept.
+/// Require Arabic volume numbers in a detection and candidate to agree in
+/// order. Edit distance alone can rank the wrong numbered sibling highly,
+/// especially for short titles. This is a refusal gate, never an additional
+/// reason to accept. Roman numerals remain in the separate title rules;
+/// full-width digits are normalized to their Arabic equivalents.
 bool volumeNumbersAgree(String spine, String candidateName) =>
     _volumeKey(spine) == _volumeKey(candidateName);
 
@@ -467,51 +370,11 @@ class ResolverWorker extends CatalogueWorker {
   static bool _sameMatch(Candidate a, Candidate b) =>
       a.externalId == b.externalId && a.platformId == b.platformId;
 
-  /// The store product id joined to IGDB, or null for "carry on as usual"
-  /// (T-0159).
-  ///
-  /// **Where it runs: first, instead of the search, never as a confirmation.**
-  /// Running it as a tiebreak would pay the search anyway and would then have
-  /// to reconcile a disagreement between a guess and a fact, which is a failure
-  /// mode this path exists to not have. Running it first costs a row that
-  /// joins exactly one request where the ordinary path costs one search plus up
-  /// to four more on `shortenedQueries`' ladder, and costs a row that does not
-  /// join one request more than today.
-  ///
-  /// **What an exact join means for the gates: none of them apply.**
-  /// [minAutoScore], [platformAgreement], [volumeNumbersAgree] and the tie rule
-  /// all make a *string* match safe, and there is no string here -- IGDB itself
-  /// says this uid is this game. `score` is 1.0 because identity is the honest
-  /// reading of it; nothing scores it, and [MatchMethod.externalId] is what
-  /// says so downstream, because 1.0 alone reads as a string measurement and on
-  /// 18 of the 394 joins it would be a false one (T-0170).
-  ///
-  /// **How `platformId` is picked, which is the one real question, because
-  /// 270 of the 394 joined games below are listed on more than one platform.**
-  /// The `external_games` row carries no platform of its own
-  /// ([externalGameSources]), so it comes from the detection's own hint through
-  /// [platformIds] -- `GogMetadataSource.platformHint` is `PC` -> {6}, the same
-  /// table and the same answer T-0156 measured for this source. Exactly one hit
-  /// on those ids auto-matches; anything else refuses and hands the human every
-  /// platform IGDB lists, sorted by id because IGDB's own order is not stable.
-  ///
-  /// Measured live 2026-08-16 on the 394 joins: **385 are listed on 6 and
-  /// auto-match; 9 are not.** Five of the nine are listed only somewhere else
-  /// (two on 13 DOS, two on VR platforms, one on 150 TurboGrafx; the library is
-  /// a real one, not published, and the rows are not named) and reach review
-  /// with the right game and the platforms it
-  /// really has; four are listed on nothing at all and never get here, because
-  /// a hit is a (game, platform) pair and [IgdbClient.gamesByExternalId]
-  /// returns none.
-  ///
-  /// Claiming 6 for those nine would be the silent failure decision 0012
-  /// names: a `.xcoll` row asserting a Windows release IGDB does not record, on
-  /// the one path in this product whose whole claim is that it does not guess.
-  ///
-  /// **A uid IGDB does not know is not a dead end.** Null here and the ordinary
-  /// resolver runs on `rawTitle`, which for this source is the title the
-  /// installer wrote -- the same row the product would have produced with no
-  /// join at all, one request later. 86 of the 480 sampled ids take it.
+  /// Join a store product ID to IGDB before title search. An exact external
+  /// ID establishes game identity, but it does not establish platform: use
+  /// the detection's platform hint and auto-match only when exactly one hit
+  /// agrees. Otherwise retain the candidates for human review. If the ID is
+  /// unknown to IGDB, return null and run the ordinary title resolver.
   Future<ResolvedGame?> _joinExternalId(Detection task, String sourceId) async {
     // `gog:1100000022` -- the namespace is the source's own prefix and the rest
     // is the store's id verbatim, so this splits at the FIRST colon only.
@@ -565,149 +428,17 @@ class ResolverWorker extends CatalogueWorker {
       _bestScore(queries, hit.title) == 1.0 ||
       hit.alternativeNames.any((name) => _bestScore(queries, name) == 1.0);
 
-  /// The auto-match, or null when the pipeline is not entitled to one.
+  /// Choose an automatic match only when independent checks agree. Refuse a
+  /// candidate that contradicts the platform hint, and refuse equally scored
+  /// candidates that disagree on platform. On one platform, a tie can stand
+  /// only when release years agree; a source year may separate a tie when
+  /// exactly one candidate matches it. Source years break ties but never filter
+  /// the search, because a filename's year can describe something other than
+  /// the release.
   ///
-  /// Two rejections beyond the score. A candidate contradicting the hint is
-  /// never `best`: a wrong auto-match reads plausibly and survives review,
-  /// while a missing one forces the human to look (decision 0007, "the
-  /// resolver refuses what it cannot decide").
-  ///
-  /// And nothing auto-matches while two equally scored candidates disagree
-  /// about the console, because then `best` is IGDB's ordering rather than a
-  /// judgement -- a Switch-family title scores 1.000 on both Switch and
-  /// Switch 2 under a "NINTENDO" hint, and the sort takes the Switch 2 row
-  /// whether or not that is the case on the shelf: it was right on a minority
-  /// of the group. Measured with the hints stripped from every hi-res
-  /// detection, which is the state T-0001 measured:
-  /// the tie rule refuses every wrong-console auto-match and costs correct
-  /// ones that are themselves coin tosses -- a title tied 1.000 on PS5 and on
-  /// the PS3 original is decided by nothing but the order they arrive in.
-  ///
-  /// Since T-0023 this fires on the hint the model actually produces, not only
-  /// on a stripped or coarse one: `SWITCH` covers both consoles, so a game
-  /// IGDB lists on both ties across them. Measured on the same set: it refuses
-  /// the one wrong auto-match this project had left (a back-catalogue title
-  /// read off a Switch 2 band) and costs correct ones -- back-catalogue titles
-  /// IGDB lists on both consoles, and the others like them on the same
-  /// photograph.
-  /// The two groups are the same shape in the IGDB data; what
-  /// separates them is printed on the case and is not in the hint. A hint that
-  /// named the console -- `NINTENDO SWITCH 2` -- takes the same run to a band
-  /// of further auto-matches, still none wrong.
-  ///
-  /// **Both figures re-measured live 2026-08-16 (T-0165), replayed through
-  /// this code on the control capture's own detections.** Hints stripped:
-  /// without the rule more than half the auto-matches are on the wrong
-  /// console; with it, none are. So it still refuses every one of them, and it
-  /// now costs more correct ones than it did. Under the model's own hints
-  /// it refuses the same rows as T-0023 measured -- but IGDB now returns
-  /// 508 before 130 for all of them, so what it refuses today is wrong almost
-  /// everywhere T-0023 saw it refusing right, and right where T-0023 saw it
-  /// wrong: the verdict inverted. Nothing here
-  /// changed; a third party's ordering did, which is the argument for the rule
-  /// rather than against it.
-  ///
-  /// **A tie on ONE platform is refused too, unless the two rows carry the
-  /// same release year** (T-0165). A hint mapping to a single id -- `PC` ->
-  /// {6}, `PS4` -> {48}, `PS5` -> {167}, `SWITCH2` -> {508} -- leaves every
-  /// surviving row on that id, so the clause above can never fire and two
-  /// *different games* at an identical score were decided by IGDB's ordering.
-  /// Measured live on the desktop titles of T-0156: `moor` auto-matched
-  /// Moor (2016) while The Ultimate Moor (1995) tied at 1.000 on an
-  /// alternative name, and `regent of aurex` and `cabalists` each returned two
-  /// identically named games, 1993 against 2016 and 1993 against 2012.
-  ///
-  /// **The year is what makes refusing them affordable.** Refusing every
-  /// same-platform tie costs auto-matches on the hi-res set and on the
-  /// low-res set (Solar Pilgrim XVI against its own Collector's Edition,
-  /// the same 2023-06-22 release on PS5), and more with every Switch-family
-  /// hint forced to 508 (that pair, plus IGDB's two separate 2023-08-17
-  /// entries for Old Dusk Reckonings). Every row that costs is one release
-  /// under two entries; every collision it catches is two releases. Exempting
-  /// an equal year therefore refuses every desktop collision and costs
-  /// **no rows at all on any of the four console conditions**. An absent year
-  /// -- a small fraction of the games one control run touches -- refuses, like
-  /// any other unanswered question here.
-  ///
-  /// **A year the SOURCE carries separates rather than refuses, and since
-  /// T-0171 it reaches here** on [Detection.sourceYear]. Off a photograph
-  /// there is still none: no read of either control set contains a
-  /// four-digit year, because no spine prints one, so every photographed row
-  /// takes the branch above unchanged. Off a filename there is one, and it
-  /// answers two of the three collisions above — T-0158's corpus parses
-  /// `Regent.of.Aurex.1993.DOSBox.GOG.zip` and `Cabalists.1993.GOG-Razor1911`
-  /// to 1993, the year of the release a GoG install of each actually is, while
-  /// `setup_fable_quay_1.9_(21474).exe` carries no year and stays refused.
-  /// Folding it into the title instead is not the shortcut it looks like:
-  /// `regent of aurex 1993` scores 0.750 and `regent of aurex (1993)` 0.682,
-  /// both under [minAutoScore], and [volumeNumbersAgree] disagrees as well, so
-  /// such a read is refused two gates before this one — and exempting
-  /// four-digit numbers from that key would break the case where the number
-  /// *is* the volume (`Punter PFL 2004` against `Punter PFL 2005`, a
-  /// distinction T-0158's own corpus turns on).
-  ///
-  /// **It breaks a tie and it never filters** (T-0171). The parse rule is
-  /// positional, so the value is whatever the namer put in that slot — a rip
-  /// year rather than a release year is a shape nobody has measured a rate
-  /// for. Narrowing the IGDB query or dropping candidates on it would put
-  /// every filename row at the mercy of that claim, including the rows that
-  /// resolve correctly today; deciding a tie with it can only act where this
-  /// method already returns null, so a wrong year costs the refusal that was
-  /// happening anyway. The tie-break is deliberately narrower than the
-  /// exemption beside it: it fires only when the tied rows sit on one platform
-  /// (where they sit on two it is the console the human has to decide, and a
-  /// year cannot answer that) and only when **exactly one** of them carries
-  /// the source's year, so a wrong claim matching nothing, or matching two
-  /// rows, leaves the refusal in place.
-  ///
-  /// A hit reached through [shortenedQueries] or through
-  /// [IgdbClient.searchAlternativeNames] faces string identity instead of
-  /// [minAutoScore]. Both fire only where IGDB could not find the title at
-  /// all, so a fallback form that comes back with something scoring 0.9
-  /// against the spine has, by construction, found a title IGDB holds that is
-  /// **not** the spine's -- which is the definition of a sibling.
-  ///
-  /// **[minAutoScore] cannot do this job, and since T-0095 it demonstrably
-  /// does not.** Re-measured live with hints hand-written to the band so the
-  /// platform gate is out of the way: `そらのは 真` -> Path of Ember: True **1.000**
-  /// (right game, and identity only because the candidate is trimmed),
-  /// `そらのは 真2` -> Path of Ember: True **0.857** (wrong sibling, one character of
-  /// title away), `そらのは 真3 そらのは3 別伝 Grey Tides` -> Path of Ember: True 3 &
-  /// Grey Ties **0.852** (right game). The wrong answer now outscores a right
-  /// one and both straddle 0.85, so no threshold on this metric separates
-  /// them -- a 6-character Japanese title spends 0.143 on one character, while
-  /// a 30-character Latin title differing by one digit scores 0.967.
-  ///
-  /// So the bar is 1.000: one of the spine's own spellings equal to a name
-  /// IGDB knows the game under. The price is the 0.852 row, refused although
-  /// it is right; against it, T-0002 spent a whole task removing eleven
-  /// confident wrong matches and this is the door they would come back
-  /// through. On `CONTROL-HIRES` as it actually reads the price is zero: the
-  /// hint on all four is `PS2` (T-0029), so no retry hit passes
-  /// [platformAgreement] either way.
-  ///
-  /// **The third rejection is [volumeNumbersAgree], and it is what actually
-  /// separates the two siblings** (T-0100). The identity bar above refuses the
-  /// 0.857 row only for as long as it arrives through the retry: let IGDB
-  /// answer `そらのは 真2` with anything at all -- one indexing change on a
-  /// third party's catalogue -- and `fromFallbackQuery` is false, 0.857 clears
-  /// [minAutoScore], and the wrong sibling auto-matches. Refusing it on the
-  /// volume number instead holds whichever path it arrives by, and it does not
-  /// touch the 0.852 row, whose numbers agree: that one stays a candidate for
-  /// the human, refused by the identity bar and for the identity bar's reason.
-  /// Measured cost on the auto-matches: none, on the hi-res set, the low-res
-  /// set and the hand-corrected hints alike. It sinks nothing and hides
-  /// nothing --
-  /// IGDB holds no Japanese name for True 2, only Chinese ones, confirmed
-  /// under T-0094 against the 12 games whose alternative names carry
-  /// `そらのは`, so the sibling is the whole of what the review screen has to
-  /// offer that row.
-  ///
-  /// Relaxing the identity bar to [minAutoScore] for retry hits whose volume
-  /// numbers agree was measured here and not taken: it promotes exactly one
-  /// row, the 0.852 above, and only under the corrected hints -- one example
-  /// against the eleven confident wrong matches T-0002 removed, on a path that
-  /// exists because IGDB could not find the title at all.
+  /// A hit found through a shortened query or alternative name must still
+  /// satisfy title identity, and numbered volumes must agree. IGDB's ordering
+  /// is not evidence: a tie left unresolved goes to human review.
   static Candidate? _best(
       List<
               ({
@@ -779,12 +510,8 @@ class ResolverWorker extends CatalogueWorker {
 
   /// Normalized Levenshtein similarity, 0..1.
   ///
-  /// A token-based metric (rapidfuzz `token_set_ratio`) was this task's
-  /// original scope and the measurement withdrew it: across T-0008's
-  /// detections, word order, subtitle noise and regional titles caused zero
-  /// misses, all but one of the misses never reached the scorer at all (IGDB
-  /// returned nothing), and the one row a token metric would move is a bundle
-  /// it would probably get wrong. The platform, not the string, was the failure.
+  /// Token-based similarity was considered, but it cannot help when a
+  /// catalogue returns no candidate and may overmatch bundled editions.
   ///
   /// **Surrounding whitespace is not part of a title, and IGDB stores some.**
   /// An alternative name of game 1100000003 is `" そらのは 真"` with a leading

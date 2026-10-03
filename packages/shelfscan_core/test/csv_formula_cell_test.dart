@@ -67,7 +67,7 @@ const _decisionOrDocument =
     'If the group "the four characters are written through verbatim" above is '
     'green, the exporter still writes all four leaders through untouched and '
     'it is the page that moved: restore the sentence, or move this needle '
-    'with it. If that group is red too, the T-0185 decision itself has '
+    'with it. If that group is red too, the exporter decision itself has '
     'changed, and this file and the README section then have to move together '
     '-- which is what this file exists to force.';
 

@@ -23,62 +23,17 @@ const _exportableStatuses = {ReviewStatus.approved, ReviewStatus.edited};
 /// the rule is `canExport`'s, and a copy of it here would rot.
 final _xcoll = TonkatsuExporter();
 
-/// What a row `.xcoll` cannot carry says, in the slot the absent `score N%`
-/// leaves free.
-///
-/// 36 characters, measured against the widest subtitle the breakpoint below
-/// is set from. Only the unmatched rows pay it, and they are the ones that
-/// never carry a score or a canonical platform name, so nothing that exports
-/// gets longer.
-///
-/// The only one of the three that asks for a tap, so [_noXcollClauseFor]
-/// decides which rows have earned it: the ones holding a candidate this file
-/// would take. The wording is T-0123's and the owner's own, so it is not
-/// re-decided here -- it is withheld from the rows that cannot follow it,
-/// which is the third narrowing of it and the first that is not about a kind.
+/// An unmatched row uses its free subtitle slot to explain how to fix it.
+/// Only a row with a candidate offers the tap action.
 const _noXcollClause = 'not in .xcoll -- tap to pick a match';
 
-/// The same slot for the OTHER reason `.xcoll` refuses a row: an animation
-/// item states film or series in `platform_id` and nothing here knows which,
-/// so the row is dropped however well it matched. Picking a match would not
-/// help, and saying so would be the clause telling the user to do a thing that
-/// cannot work. 32 characters, inside the budget measured above.
-///
-/// **Unchanged by T-0368, which is the point worth recording.** The question
-/// it asks is now answerable -- the row's sheet carries film and series since
-/// the owner ruled that the person decides -- and the row was tappable all
-/// along, so the clause needed no instruction added to it and no character
-/// changed. It also stopped being every animation row: it is shown only where
-/// the answer is still missing, which is a row corrected to `Animation` and
-/// left there. Never an `Anime` row (T-0456): that kind states no
-/// film-or-series bit at all, so this question is not one it is asked.
+/// Animation needs a film-or-series choice for `.xcoll`. Picking another
+/// catalogue candidate cannot answer that question, so this clause asks for
+/// the missing kind only when the row still needs it. Anime is distinct.
 const _noXcollKindClause = 'not in .xcoll -- film or series?';
 
-/// The same slot again for a row no pick can rescue, whatever its kind.
-///
-/// Two routes reach it, refused for different reasons, which is why the guard
-/// asks the exporter rather than the kind. A film row's `media_type` implies
-/// TMDB and every candidate on it is IGDB's, IGDB being the only catalogue
-/// either shell wires, so `TonkatsuExporter` declines the id however well it
-/// matched (T-0313). A row the resolver answered with nothing has no
-/// candidate to offer at all, and only the sheet said so, after the tap had
-/// been spent (T-0318). Both rows said `tap to pick a match`, and in both the
-/// person did exactly what the screen asked and the row did not move -- the
-/// failure [_noXcollKindClause] was written one kind over to prevent.
-///
-/// It spends its width on where the row still goes rather than on why this
-/// file will not take it. Neither reason is one the reader can act on: a film
-/// row is refused by the whole run rather than by anything about itself, and
-/// an empty candidate list is a search that has already happened. Meanwhile
-/// `.xcoll` refusing a row, read alone, says the row is lost -- both of the
-/// other two targets carry it, which is the claim [_keylessBanner] already
-/// makes unconditionally for a whole run of such rows. 35 characters.
-///
-/// `cards` and not the registry key `tonkatsu-cards` (T-0460): the key does
-/// not fit beside `csv` inside the 36 measured above, and one word has to
-/// serve all three sentences and the export sheet, whose button reads
-/// `Export: tonkatsu-cards` and holds it. Named first because it is the one
-/// of the two that imports into the app this row was refused by.
+/// A row with no usable `.xcoll` match can still leave through cards or CSV.
+/// Name those available targets without asking for a pick that cannot help.
 const _noXcollCsvClause = 'not in .xcoll -- cards/csv carry it';
 
 /// Which of the three a refused row gets.
@@ -167,17 +122,9 @@ String _boxClause(int count) => 'maps to $count entries -- tap to expand';
 /// a row that once more holds the match it was matched to.
 const _reresolveClause = 'kind corrected -- nothing looks it up';
 
-/// What a row says instead of `score N%` when nothing scored it (T-0172).
-///
-/// It replaces the percentage rather than sitting beside it: an exact join
-/// writes 1.0 into `score` because that was the only field, and on 18 of
-/// T-0159's 394 live joins the store title is not IGDB's canonical name, so a
-/// percentage on those rows is a string measurement nobody took. Text rather
-/// than a badge, for the reason the mark buttons already carry one (T-0043):
-/// the subtitle is what spells a row out, and colour or an icon alone says
-/// nothing to a screen reader. 19 characters against the 10 of `score 100%`,
-/// on a row class that did not exist when the 88 below was measured -- no
-/// detection off a photograph carries a source id.
+/// An exact store ID join establishes identity without a string score.
+/// Say so in text instead of showing a misleading percentage; the subtitle
+/// also remains readable without relying on a colour or icon.
 const _exactIdClause = 'matched by store id';
 
 /// What a row says when the year had to be dropped to find the match at all
@@ -213,12 +160,9 @@ const _namedDrops = 10;
 
 /// Below this the photo goes above its rows instead of beside them.
 ///
-/// Measured on a real run: the widest row subtitle is 88
-/// characters and the 90th percentile is 61, which needs ~380 logical px of
-/// bodySmall text; a [ListTile] spends another ~128 on its padding and the
-/// two mark buttons. 528 for the rows plus a 280 px photo pane and the gap
-/// lands just under Material 3's 840 dp "expanded" boundary, so that is the
-/// line. The Windows window opens at 1280 and is on the wide side of it.
+/// The breakpoint gives a long row subtitle, action buttons and a photo
+/// pane room to sit side by side. Narrower windows stack the photo above
+/// the rows; the tap-to-enlarge viewer remains available on either layout.
 const double _wideLayout = 840;
 
 /// Wide enough to judge a shelf at a glance; reading a spine is what the
@@ -248,23 +192,10 @@ BoxDecoration _unmatchedFrame(ColorScheme scheme) => BoxDecoration(
       borderRadius: BorderRadius.circular(12),
     );
 
-/// The clauses that say which of two otherwise identical rows this is.
-///
-/// The year is four characters and IGDB has none for a small fraction of the
-/// games one control run touches, so an absent one prints nothing at all
-/// rather than a placeholder -- the same treatment every other optional clause
-/// here gets, and the only one that does not read as a claim. Worst case it
-/// takes the 88-character subtitle measured for [_wideLayout] to 95.
-///
-/// [_yearlessRetryClause] is the one clause here that is ADDED rather than
-/// substituted, so unlike T-0311's and T-0313's it cannot be free: 21
-/// characters of row with its separator. It is also the only one no row in
-/// that measurement could have carried. A film is the only kind TMDB's retry
-/// reaches, and a film candidate has no platform at all (decision 0016), so
-/// the rows that pay it print no platform clause where the rows the 88 came
-/// from print a catalogue platform name -- and since T-0340 they do not print
-/// the `?` that stood in for one either, which hands 4 characters back with
-/// its separator.
+/// Optional row details appear only when the reviewed item supplies them.
+/// A missing year prints no placeholder. The year retry note is added for a
+/// film whose year filter had to be dropped, rather than replacing a platform
+/// clause that film candidates never have.
 List<String> _identity(Candidate candidate) => [
       if (candidate.releaseYear case final year?) '$year',
       if (candidate.matchedAlternativeName case final name?)
@@ -634,23 +565,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
     }
   }
 
-  /// The prompt: T-0011 recorded what the model saw and could not read, so
-  /// the screen can say that items are missing instead of leaving the user to
-  /// notice on their own.
-  ///
-  /// "At least", because the list counts reports and one report can describe
-  /// several spines: `gpt-4.1-mini` answers one entry naming two or three
-  /// middle spines, 10 of 10 runs on `CONTROL-HIRES` `shelf-3`, against a
-  /// hand count off the photograph the entry never matches (T-0109). The
-  /// report count is the only bound
-  /// available -- reading "two or three" out of the entry's prose would be
-  /// the fabricated count T-0028 removed. Under-reporting is the expensive
-  /// direction here: this prompt exists to make the owner type in what the
-  /// scan missed, so a number they read as exact costs them the rest.
-  ///
-  /// One Add per photo, not one for the prompt: the counts were already per
-  /// photo, and an item typed against "shelf2.jpg: 1" is an item that
-  /// belongs in shelf2's group (T-0052).
+  /// Ask the person to review missing items without claiming an exact spine
+  /// count. One model report may describe several spines, and its prose is
+  /// not a reliable number to parse. Keep the report grouped by photo.
   Widget? _unreadablePrompt() {
     final byPhoto = widget.document.unreadableByPhoto;
     if (byPhoto.isEmpty) return null;
@@ -785,11 +702,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
   /// Nothing here re-derives `canExport`. Which rows csv carries is the
   /// exporter's rule and stays there; this says which lookup did not happen.
   ///
-  /// Dense, and two lines rather than three. This screen has no spare
-  /// height: at 800x600 the third photo group is the last thing that fits,
-  /// and a full-size banner pushed it past the fold (measured 2026-08-22,
-  /// `flutter test`). The clause it replaces cost every unmatched row part
-  /// of a subtitle, so the trade is a fixed 64 px against a per-row one.
+  /// Keep this banner compact so photo groups remain visible in the review pane.
   Widget _keylessBanner() => _runBanner(
         key: const Key('keyless-run-banner'),
         background: Theme.of(context).colorScheme.secondaryContainer,
@@ -987,11 +900,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
   /// What the folder held and no row came of, by reason, names behind a tap.
   ///
-  /// Neither silence nor one line per entry: a games folder declines more than
-  /// it accepts and a game's own directory the other way round -- the measured
-  /// rates are in T-0158's report, because a rate over a real folder times its
-  /// size is a count of that folder's contents -- so the folded form is one
-  /// line per distinct reason, a closed set of four in `FilenameSource`, and
+  /// A folded summary avoids exposing or assuming the size of a source folder.
+  /// It uses one line per distinct reason, a closed set in `FilenameSource`, and
   /// the names sit under the disclosure. Counted lines lose the one thing the
   /// user needs when a game is missing, which is whether *their* game is in
   /// the skipped list.
@@ -1389,10 +1299,8 @@ class _PhotoViewerState extends State<_PhotoViewer> {
 
   @override
   void dispose() {
-    // A full-resolution photo decodes to ~50 MB, half of Flutter's default
-    // 100 MB image cache. Dropped on the way out so the full-size decode
-    // lives only while it is being looked at; the JPEG bytes stay, and they
-    // are an order of magnitude smaller.
+    // Evict the full-size decode when the viewer closes. The original JPEG
+    // bytes remain available without occupying the image cache.
     _image.evict();
     super.dispose();
   }
