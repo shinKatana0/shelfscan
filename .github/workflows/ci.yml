@@ -15,6 +15,28 @@ permissions:
   contents: read
 
 jobs:
+  public-paths:
+    name: public tracked paths
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test tool/check-public-paths.test.cjs
+      - run: node tool/check-public-paths.cjs
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Two jobs because the core package is pure Dart and must stay that way
   # (ARCHITECTURE.md, "Platform boundary rules": shelfscan_core has no Flutter
   # dependency). Installing Flutter for it would hide a regression in exactly
@@ -33,8 +55,8 @@ jobs:
           sdk: stable
       - run: dart pub get
       - run: dart analyze
-      # Nine suites spawn CLI children and run them off one kernel snapshot
-      # (T-0217). `dart test` builds it on demand anyway, so this step buys no
+      # The CLI suites spawn children from one kernel snapshot.
+      # `dart test` builds it on demand anyway, so this step buys no
       # speed -- it moves the one-time build out of whichever suite would
       # otherwise pay it inside its own @Timeout on a cold runner, and gives a
       # compile failure its own red step instead of nine failing setUpAlls.
@@ -53,7 +75,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      # Since T-0194 app/windows/ is committed, so the runner checks it out.
+      # The committed app/windows/ directory is checked out by the runner.
       # Nothing below needs it -- `flutter test` runs on the flutter_tester --
       # and nothing below builds it, which is why there is still no
       # `flutter create` step. A `flutter build windows` job is possible now
@@ -75,7 +97,7 @@ jobs:
 
 # No `env:` block, and deliberately: no key, no token, no network. Both
 # suites were run with IGDB_CLIENT_ID/IGDB_CLIENT_SECRET cleared to verify
-# it (T-0197). Anything needing credentials belongs in a manual workflow,
+# it. Anything needing credentials belongs in a manual workflow,
 # never here.
 #
 # windows-latest, not ubuntu: every figure in this repository was measured
