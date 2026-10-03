@@ -56,8 +56,9 @@ Three independent findings, each reproduced more than once:
    shipped schema reports none, repeatedly under the same sampling settings. A line in one object of the schema governs the contents of a different
    array.
 
-The counts behind all three are in [`doc/measurements.md`](../measurements.md);
-they are not repeated here.
+The qualitative conclusions are in
+[`doc/measurements.md`](../measurements.md), "Control-photo methods and
+conclusions".
 
 ## Consequences
 

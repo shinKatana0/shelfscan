@@ -31,8 +31,8 @@ is stated as a condition on every figure rather than assumed.** Three parts:
 
 ## The measurement that settled it
 
-Recorded in `doc/measurements.md` under "What temperature 0 actually bought"
-and "A third cache state, and the counted figure that moves in it":
+The qualitative conclusion is in `doc/measurements.md`, "Control-photo
+methods and conclusions":
 
 - Before any of this, nothing in the repository asked for the sampling that every
   figure depended on. The answers came back nearly greedy anyway, because the
@@ -42,7 +42,8 @@ and "A third cache state, and the counted figure that moves in it":
   own request log accounting for every request served. Repeat runs were
   byte-identical. Runs with the cache dropped were byte-identical *to each other*
   and differed from the repeats in typography on the private control — letter
-  case, trademark signs, one diacritic; no count, no item and no hint moved. Runs
+  case, trademark signs and diacritics; no detection or platform conclusion
+  changed. Runs
   deliberately overlapped with a second process were byte-identical to the
   isolated ones, which is what eliminated concurrency as the cause on that
   configuration.
@@ -54,25 +55,21 @@ and "A third cache state, and the counted figure that moves in it":
   cache matches a token prefix, so scanning the control photographs under a
   changed prompt puts every photo of the second pass into a state that is neither
   a first ask nor a repeat. That is exactly what a prompt A/B test is. In that
-  state one counted figure moves — a photograph hand-counted at zero unread
-  spines answers a small number of phantom entries — and where in the prompt the
-  change sits does not predict whether it happens.
+  state a control answer gains phantom unreadable entries. The position of the
+  prompt change does not predict whether that happens.
 
 ## Consequences
 
 - The wrong explanation had to be retracted from six places once it was
-  disproved. The corrected condition remains in the
-  public measurement archive: `doc/measurements.md` keeps the superseded claim visible with the
-  condition it was missing, rather than quietly correcting it.
+  disproved. The corrected claim states the cache condition explicitly rather than
+  promising unconditional byte reproduction.
 - Anyone running a prompt comparison must drop the cache between passes, or the
   comparison lands in the third state and one of its figures is not the prompt's
   doing. This is one line, and it is why it is written into the recipe rather
   than into someone's memory.
-- Figures taken before 2026-08-15 are readable but not all of them are
-  reproducible; `doc/measurements.md` says which class each belongs to. The
-  resolver's own numbers were re-taken (see
+- Earlier results are not all byte reproducible. The resolver comparison was
+  rerun with controlled sampling (see
   [0007](0007-the-resolver-refuses-what-it-cannot-decide.md)).
 - Two hidden dependencies of this kind are now known — the model file's own
   temperature, and the server's parallelism setting — and neither is something
-  this repository sets. They are named in the archive so a figure taken on
-  someone else's machine can be read correctly.
+  this repository sets. Record them with a comparison so another reader can interpret it.

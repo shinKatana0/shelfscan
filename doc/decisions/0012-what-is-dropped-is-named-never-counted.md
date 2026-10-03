@@ -81,7 +81,8 @@ distinct reason, from a closed set, with the names behind a tap.
   decided a prompt question: a partial read of a spine the camera frame cut is
   *reported* rather than suppressed, because on one control set those fragments
   are the only signal the pipeline gives that a whole column of games was cut off.
-  That analysis is in `doc/measurements.md`, "A cropped column's fragments".
+  The qualitative conclusion is in `doc/measurements.md`,
+  "Control-photo methods and conclusions".
 - **One inconsistency is open and named rather than quietly tolerated.** The type
   carrying an unread-spine report is still named for the wrong unit, which is what
   taught three separate sites to count spines in the first place. The rename is

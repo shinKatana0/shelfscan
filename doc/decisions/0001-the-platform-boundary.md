@@ -46,8 +46,9 @@ apart, and both came out against the package:
 - **Image manipulation.** Splitting each photograph into overlapping
   strips before the vision call was implemented and measured. It found no
   additional item, invented titles the whole-photo read got right, and lost every
-  platform hint — the numbers are in `doc/measurements.md`, "Pre-segmentation,
-  measured and rejected". The relevant part for this decision is the second
+  platform hint. The qualitative result is in `doc/measurements.md`,
+  "Control-photo methods and conclusions". The relevant result for this
+decision is the second
   finding: the `image` package the cropping needed pulls in six transitive
   packages, and it bought nothing. The feature was reverted and core stayed
   `http`-only.

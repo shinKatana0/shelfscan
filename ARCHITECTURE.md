@@ -263,7 +263,8 @@ Platform boundary rules:
   of those is one row, and which source owns an entry is stated by the shell
   rather than guessed from the entry. The seam is drawn below.
 - ~~Shelf pre-segmentation (split wide photos into strips)~~ — built,
-  measured and rejected; see doc/measurements.md for the numbers.
+  measured and rejected; see doc/measurements.md for the qualitative
+  result.
   It slots into `VisionWorker.process` cleanly enough, but on the real photos
   it found no additional item and invented titles the whole-photo read got
   right. A truncated read is now mergeable, but only when the

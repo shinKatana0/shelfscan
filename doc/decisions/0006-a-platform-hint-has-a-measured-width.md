@@ -51,8 +51,9 @@ differently each time — which is the whole point.
   The one row it buys is a title the database does not list on Windows at all.
   Rejected.
 - **Switch: a union.** A Switch 2 case and a Switch case are the same plastic;
-  the printed band that distinguishes them defeated thirteen prompt wordings on
-  the local model (`doc/measurements.md`, "The Switch 2 band"), and a file
+  the printed band that distinguishes them defeated several prompt wordings
+  on the local model (see `doc/measurements.md`, "Control-photo methods and
+  conclusions"). A file
   container carries no band at all. Mapping `SWITCH` to the Switch id alone sank
   every Switch 2 release into a mismatch. The union rescued rows the
   database had answered with nothing and removed the last wrong auto-match, at
@@ -73,8 +74,9 @@ spans systems — a PlayStation package that is equally PS3, PS4 and Vita; an
 archive extension that is a Vita package *and* a Valve archive — can only claim a
 hint that is wrong for some of its files. A measurement showed the cost:
 misread spines carry a hint for the wrong console. The row is lost to
-the platform filter *before* it is lost to anything else, so the two defects are conjunctive and fixing either alone moves nothing. The offline
-four-cell measurement is in `doc/measurements.md`, "One spine, two gates".
+the platform filter *before* any other check. The defects are conjunctive,
+so fixing either alone moves nothing. See `doc/measurements.md`,
+"Control-photo methods and conclusions".
 Those containers therefore decline.
 
 ## Consequences

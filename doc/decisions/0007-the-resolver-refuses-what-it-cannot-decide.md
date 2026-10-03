@@ -1,8 +1,7 @@
 # 0007 — The resolver refuses what it cannot decide, and the refusal is visible
 
 **Status:** accepted, 2026-08-15, extended 2026-08-16
-**Measurements:** `doc/measurements.md` — "The resolver, measured at last", "The
-tie nobody could see, and what a release year buys"
+**Measurements:** `doc/measurements.md` — "Resolver and source methods"
 
 ## Context
 
@@ -63,11 +62,11 @@ identical rows and the only difference is the rule. Sixteen variant runs cost
 nothing after the first.
 
 The result is the reason the rule is conditional rather than simply widened:
-refusing every same-platform tie costs a handful of correct console rows, and
-exempting an equal release year costs **none** of them back. Every row the
+refusing every same-platform tie discards valid console matches, while
+exempting an equal release year preserves them. Every row the
 exemption keeps is one release under two database entries; every collision it
-still refuses is two genuinely different releases, decades apart. The tables are
-in `doc/measurements.md` and are not repeated here.
+still refuses is two genuinely different releases, decades apart. The method and qualitative conclusion are in
+`doc/measurements.md`, "Resolver and source methods".
 
 ## Consequences
 

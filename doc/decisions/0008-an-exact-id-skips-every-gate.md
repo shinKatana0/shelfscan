@@ -1,8 +1,7 @@
 # 0008 — When a source carries the store's own product id, join on it and skip every gate
 
 **Status:** accepted, 2026-08-16
-**Measurements:** `doc/measurements.md` — "The exact join: IGDB does carry GoG
-ids, and 82% of them"
+**Measurements:** `doc/measurements.md` — "The exact join: IGDB does carry GoG ids"
 
 ## Context
 
