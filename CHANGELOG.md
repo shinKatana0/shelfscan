@@ -10,15 +10,27 @@ to list here. What the work before it decided, and why, is in
 [`doc/measurements.md`](doc/measurements.md).
 
 **"Verified" is used sparingly here and always means the same thing:** run
-from one end to the other, into another program, and checked. One path has
-that — photographs → `.xcoll` → an import into Tonkatsu Box. Everything else
-is written and tested, and where it has been run at all the entry says how
-far. [`doc/measurements.md`](doc/measurements.md) bounds every such claim and
-is the authority behind it.
+from one end to the other, into another program, and checked. The Tonkatsu
+`.xcoll` and v0.45-compatible JSON paths have both had that check. Other
+paths are described with the extent of their validation. The historical
+measurements are in [`doc/measurements.md`](doc/measurements.md).
 
 ## [Unreleased]
 
 Nothing yet.
+
+## [0.5.0] - 2026-10-04
+
+### Changed
+- Tonkatsu Box v0.45-compatible JSON card export is now the default handoff.
+  Tonkatsu resolves imported items against its catalogue sources, retaining
+  ambiguous or unmatched items as custom cards rather than guessing. The
+  legacy Tonkatsu export remains available with the explicit
+  `tonkatsuV45Export=false` build override, and `.xcoll version: 2` remains
+  supported.
+- Validated the v0.45 handoff through real-world imports and added regression
+  coverage for the exported JSON contract, feature flag and legacy path.
+- Strengthened publication checks for private files and secrets.
 
 ## [0.4.1] - 2026-10-03
 
