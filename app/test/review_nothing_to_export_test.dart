@@ -42,14 +42,6 @@ ResolvedGame _row(String rawTitle, {Candidate? best}) => ResolvedGame(
       status: ReviewStatus.approved,
     );
 
-Candidate _match() => Candidate(
-      externalId: 'igdb:41',
-      title: 'Harrowgate Mire',
-      platformId: 410,
-      platformName: 'PlayStation 4',
-      score: 0.9,
-    );
-
 Future<void> _pump(
         WidgetTester tester, ReviewDocument doc, ExportSaver saver) =>
     tester.pumpWidget(MaterialApp(
