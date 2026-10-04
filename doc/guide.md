@@ -59,12 +59,22 @@ choosing between them:
   show — and the app is named where the two differ. Keyless and full apply
   to it unchanged: which keys you hold is not which interface you drive.
   On Windows a tagged release carries the built app, so you download it
-  rather than build it (`README.md`, *Windows: download and run*); on any
+  rather than build it (`README.md`, *Download and run*); on any
   other platform you build it yourself — [`build.md`](build.md), with
   Android in [`android-build.md`](android-build.md).
 
 You can start keyless and add the key later: the key affects one stage, and
 that stage can be re-run on its own over a scan you have already paid for.
+
+**Using the Windows zip?** Download it from
+[Releases](https://github.com/shinKatana0/shelfscan/releases/latest),
+extract the whole folder, and start `shelfscan_app.exe` inside it.
+Running the executable from the zip preview leaves its neighbouring DLLs
+behind. The build is not code-signed, so Windows may show a SmartScreen
+warning. If `VCRUNTIME140.dll` or `MSVCP140.dll` is missing, install the
+[Microsoft Visual C++ Redistributable for x64](https://aka.ms/vs/17/release/vc_redist.x64.exe).
+The app needs no Dart or Flutter installation. Ollama and the vision model
+are separate downloads if you choose local photo recognition.
 
 ---
 
@@ -804,6 +814,22 @@ an ordinary export has no such cell in it:
 Those names are yours and were exported exactly as they are; nothing rewrites
 a cell. In the app the same information arrives as a snackbar with a **What to
 do** button.
+
+### CSV columns
+
+A photo-only export has `title,platform,media_type,external_id,source_photo`.
+`external_id` is a catalogue id with its source prefix (`igdb:` or
+`tmdb:`) when available; `source_photo` is empty for rows not read from a
+photograph. `media_type` describes the physical carrier, not whether the
+work is a game or a film.
+
+A run that also reads disk sources adds `source_entry,origin,source_id`.
+These identify the file or folder, the reading route, and a store id when
+one exists. Map columns by name if your script consumes both kinds of
+export. To inspect the CSV in a spreadsheet, import the columns as Text
+instead of opening the file directly: otherwise leading `=`, `+`, `-`
+or `@` may be evaluated as a formula. ShelfScan leaves those names
+unchanged for collection importers.
 
 ---
 

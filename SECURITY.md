@@ -70,7 +70,7 @@ cropped, sampled, cached or retained by this project.
   local. It can only be turned on from the command line; no environment
   variable can make a local run cloud.
 - **IGDB and TMDB** receive the title strings the model read — IGDB for
-  game rows, TMDB for film and anime rows. **Neither catalogue is ever
+  game rows, TMDB for film and animation rows. **Neither catalogue is ever
   sent an image.** Each takes its own credential: your Twitch client id
   and secret go to `id.twitch.tv` for an access token, your TMDB API Read
   Access Token goes to TMDB with every search. Rows whose catalogue you
@@ -79,5 +79,5 @@ cropped, sampled, cached or retained by this project.
 
 **There is no telemetry, no analytics and no crash reporting** of any kind.
 
-The full per-provider breakdown is [Where your photos
-go](README.md#where-your-photos-go) in the README.
+For provider setup and data flow, see
+[Step 2 of the guide](doc/guide.md#step-2--choose-a-vision-backend).

@@ -4,7 +4,7 @@
 A `v*` tag builds `ShelfScan-win-x64.zip` on a Windows runner and attaches it
 to that release (`.github/workflows/release.yml`), so a reader who wants to
 *run* the app on Windows downloads and extracts it and never comes to this
-page. `README.md`'s *Windows: download and run* is that whole route.
+page. `README.md`'s *Download and run* is that whole route.
 
 **Everything else is still built here and nowhere else.** No installer, no
 apk, no macOS or Linux binary is published, so this repository remains the
