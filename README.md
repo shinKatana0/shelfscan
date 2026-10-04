@@ -29,7 +29,8 @@ choose.
   metadata where available.
 - Your GOG Galaxy library on Windows, including games that are not installed.
 - Media folders you select in the app. Supported file names can also yield
-  film, animation, and anime rows; check their kind during review.
+  film and animation rows. You can correct their kind, including to anime,
+  during review.
 
 You can combine sources in one scan. ShelfScan groups duplicates before
 review, but it does not assume every title or platform it reads is right.

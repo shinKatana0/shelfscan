@@ -69,9 +69,10 @@ cropped, sampled, cached or retained by this project.
   cloud second reader uploads every photo even on a run whose primary was
   local. It can only be turned on from the command line; no environment
   variable can make a local run cloud.
-- **IGDB and TMDB** receive the title strings the model read — IGDB for
-  game rows, TMDB for film and animation rows. **Neither catalogue is ever
-  sent an image.** Each takes its own credential: your Twitch client id
+- **IGDB and TMDB** receive title strings from matching rows — IGDB for
+  game rows, TMDB for film and classified animated-film or animated-series
+  rows. Anime rows are not looked up by ShelfScan. **Neither catalogue is
+  ever sent an image.** Each takes its own credential: your Twitch client id
   and secret go to `id.twitch.tv` for an access token, your TMDB API Read
   Access Token goes to TMDB with every search. Rows whose catalogue you
   hold no credential for go unmatched, and that catalogue is not
