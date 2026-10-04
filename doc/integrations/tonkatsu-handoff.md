@@ -1,29 +1,28 @@
-# Tonkatsu handoff and v45 card export preparation
+# Tonkatsu handoff and v0.45 card export
 
-**Status: legacy export is production/default.** `.xcoll` remains a supported
-`version: 2` contract, and `tonkatsu-cards` still carries only the approved
-rows `.xcoll` declines. A v45-compatible card path is prepared behind the
-disabled-by-default `tonkatsuV45Export` flag. No provider, review step, or
-existing exporter has been removed.
+**Tonkatsu Box v0.45-compatible Custom Cards JSON is the default.** The
+`tonkatsu-cards` target writes every approved or edited row it can map,
+including rows ShelfScan already matched to a catalogue. Tonkatsu performs
+source lookup when it imports the file with lookup enabled: a unique match
+becomes a catalogue-backed card, while zero or multiple matches remain custom
+cards. This flow was validated with real-world mixed game imports, including
+successful catalogue matches and intentional ambiguity fallback.
 
 The flag is a Dart compile-time environment value in
-`packages/shelfscan_core/lib/src/exporters/exporters.dart`. Its single default
-is `false`; an internal test or developer build may opt in with
-`-DtonkatsuV45Export=true` (Flutter: `--dart-define=tonkatsuV45Export=true`).
-The opt-in changes only the `tonkatsu-cards` target. Under it, that target
-serializes every approved or edited row it can map, including rows with a
-ShelfScan catalogue match. The review gate and empty-file handling remain.
-Exporting both Tonkatsu targets under the opt-in can therefore duplicate a
-matched row; the v45 cards target is the intended single handoff for an opt-in
-smoke test.
+`packages/shelfscan_core/lib/src/exporters/exporters.dart`. Its default is
+`true`. A compatibility build can restore the legacy Custom Cards partition
+with `-DtonkatsuV45Export=false` (Flutter:
+`--dart-define=tonkatsuV45Export=false`). The separate `.xcoll` exporter keeps
+its `version: 2` contract. Export either Tonkatsu target as the intended
+handoff for a given batch; exporting both can duplicate matched rows.
 
-The author supplied the individual v45 card schema: required `title` and
-`type`, with optional `alt_title`, `description`, numeric `year`, `genres`,
+The released v0.45 importer accepts a bare JSON array. Each card requires
+`title` and `type`, with optional `alt_title`, `description`, numeric `year`, `genres`,
 `link`, `cover`, `platform`, `status`, `rating`, `comment`, `rewatch_count`,
 `started_at`, `completed_at`, `time_spent_minutes`, `favorite`, `tags`,
-`current_episode`, and `current_season`. Tonkatsu is expected to resolve on
-import using `title + type + year` and create a custom card if no source match
-is found. `custom` and `audio` do not undergo source lookup there. ShelfScan
+`current_episode`, and `current_season`. Tonkatsu resolves on
+import using identifying metadata and create a custom card if no unique source
+match is found. `custom` and `audio` do not undergo source lookup there. ShelfScan
 does no new resolution for this export, and an ordinary unmatched game remains
 `type: game` so Tonkatsu can attempt that resolution and fallback itself.
 
@@ -44,19 +43,9 @@ supports `custom`, `tv_show`, `visual_novel`, `manga`, `book`, and `audio`, but
 ShelfScan has no corresponding current `WorkKind` for them and does not
 fabricate one to populate the format.
 
-The author has not yet confirmed the final top-level multi-card container.
-The existing `tonkatsu-cards` flow writes a bare JSON array, which v45 retains;
-card mapping is separate from array rendering so a later container change is
-small. This assumption requires validation against the released importer.
-
-**Future cutover, after release:**
-
-1. Tonkatsu v45 is released.
-2. Run end-to-end ShelfScan → Tonkatsu import smoke tests.
-3. Verify resolved and unresolved/custom-card cases.
-4. Flip the feature flag default to the v45 exporter.
-5. Keep the legacy exporter for a compatibility period.
-6. Remove legacy only in a separate explicitly approved cleanup task.
+The current mapping and bare-array batch format were checked against the
+released v0.45.0 parser and source lookup. ShelfScan does not choose among
+ambiguous catalogue records; Tonkatsu intentionally keeps those rows custom.
 
 The rest of this note records the earlier `release/0.44` audit and design
 discussion. Its references to a proposed boundary describe that historical
@@ -82,15 +71,15 @@ document.
   no title field in a light item and no cover: the importer fetches everything
   else from the id.
 - **`TonkatsuCardsExporter`** (registry key `tonkatsu-cards`, extension `json`)
-  writes the rows the first one declines by default, as a bare array of Custom Cards. A
+  wrote the rows the first one declined in the legacy flow, as a bare array of Custom Cards. A
   card carries `title` and `type`, plus `alt_title` and `platform` where this
   pipeline holds them honestly. The legacy card has four possible keys.
 
 Both live in `packages/shelfscan_core/lib/src/exporters/exporters.dart`. In the
-default flow they partition the approved rows: a row the first can carry belongs
+legacy flow they partition the approved rows: a row the first can carry belongs
 in `.xcoll`, and the second asks the first rather than restating its rule.
 
-So the default boundary is **ids where there are ids, names where there are
+So the legacy boundary was **ids where there are ids, names where there are
 not**.
 
 ## 2. The dependency matrix
@@ -364,7 +353,7 @@ importer reads.
 
 The historical proposal below anticipated a mode for `.xcoll` leftovers.
 The actual v45 path instead includes approved matched rows as well, so it is a
-candidate replacement handoff after end-to-end validation, not a second file
+the default handoff after end-to-end validation, not a second file
 to import alongside `.xcoll` for the same reviewed document.
 
 ## 7. The compatibility abstraction, and why it is not being built

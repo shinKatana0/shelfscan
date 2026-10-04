@@ -55,10 +55,10 @@ List<Map<String, dynamic>> _cards(
 
 void main() {
   group('tonkatsuV45Export default and legacy path', () {
-    test('the compile-time flag defaults off and registry uses it', () {
-      expect(tonkatsuV45Export, isFalse);
+    test('the compile-time flag defaults on and registry uses it', () {
+      expect(tonkatsuV45Export, isTrue);
       expect((exporters['tonkatsu-cards']!() as TonkatsuCardsExporter).v45Export,
-          isFalse);
+          isTrue);
     });
 
     test('an explicit off flag keeps the four-key leftover contract', () {
@@ -77,7 +77,8 @@ void main() {
     "platform": "PS4"
   }
 ]'''.trim());
-      expect(legacy.export(document), TonkatsuCardsExporter().export(document));
+      expect(legacy.export(document),
+          TonkatsuCardsExporter(v45Export: false).export(document));
 
       final xcoll = jsonDecode(TonkatsuExporter().export(document)) as Map;
       expect(xcoll['version'], 2);

@@ -1,4 +1,4 @@
-/// The Custom Cards target: the partition it makes with `.xcoll`, and the
+/// The legacy Custom Cards target: the partition it makes with `.xcoll`, and the
 /// exact key set a card it writes can carry (T-0457).
 ///
 /// **Why a key SET and not a field-by-field list.** The import schema upstream
@@ -88,7 +88,8 @@ ReviewDocument _document(List<ResolvedGame> games) => ReviewDocument(
 
 List<Map<String, Object?>> _cards(ReviewDocument doc) => [
       for (final card
-          in jsonDecode(TonkatsuCardsExporter().export(doc)) as List<dynamic>)
+          in jsonDecode(TonkatsuCardsExporter(v45Export: false).export(doc))
+              as List<dynamic>)
         (card as Map<String, dynamic>).cast<String, Object?>()
     ];
 
@@ -176,7 +177,7 @@ void main() {
 
     test('the file is a bare array, so there is no envelope to hold a clock',
         () {
-      final text = TonkatsuCardsExporter()
+      final text = TonkatsuCardsExporter(v45Export: false)
           .export(_document([_row('MOSSGRAVE FERRY')]));
       expect(jsonDecode(text), isA<List<dynamic>>());
       expect(text, isNot(contains('created')));
@@ -186,7 +187,7 @@ void main() {
 
   group('the two Tonkatsu targets partition the approved rows', () {
     final xcoll = TonkatsuExporter();
-    final cards = TonkatsuCardsExporter();
+    final cards = TonkatsuCardsExporter(v45Export: false);
 
     /// One row of each shape the two targets have to divide between them.
     final mixed = <String, ResolvedGame>{
@@ -310,7 +311,8 @@ void main() {
       // not leave it whether or not the importer would have taken it.
       final doc = _document([_row('MOSSGRAVE FERRY')]);
       expect(doc.games.single.detection.sourcePhoto, 'shelf_c.jpg');
-      expect(TonkatsuCardsExporter().export(doc), isNot(contains('shelf_c')));
+      expect(TonkatsuCardsExporter(v45Export: false).export(doc),
+          isNot(contains('shelf_c')));
     });
   });
 
@@ -389,7 +391,7 @@ void main() {
         _row('MOSSGRAVE FERRY', platformHint: 'PS4'),
         _row('PELLUCID HOURS', kind: WorkKind.movie),
       ];
-      final text = TonkatsuCardsExporter().render(rows);
+      final text = TonkatsuCardsExporter(v45Export: false).render(rows);
       final written = (jsonDecode(text) as List<dynamic>)
           .map((card) => (card as Map<String, dynamic>)['title'])
           .toList();
@@ -397,8 +399,9 @@ void main() {
     });
 
     test('and throws on none of them', () {
-      expect(() => TonkatsuCardsExporter().render([_row('')]), returnsNormally);
-      expect(TonkatsuCardsExporter().render([_row('')]), '[]');
+      expect(() => TonkatsuCardsExporter(v45Export: false).render([_row('')]),
+          returnsNormally);
+      expect(TonkatsuCardsExporter(v45Export: false).render([_row('')]), '[]');
     });
   });
 
@@ -406,10 +409,11 @@ void main() {
     test('twice over, because there is no clock and no counter in the file',
         () {
       final doc = _document(_everyShape());
-      final exporter = TonkatsuCardsExporter();
+      final exporter = TonkatsuCardsExporter(v45Export: false);
       expect(exporter.export(doc), exporter.export(doc));
       // A second instance too: nothing accumulates on the exporter either.
-      expect(TonkatsuCardsExporter().export(doc), exporter.export(doc));
+      expect(TonkatsuCardsExporter(v45Export: false).export(doc),
+          exporter.export(doc));
     });
   });
 
@@ -437,24 +441,27 @@ void main() {
       ]).toJson()));
     });
 
-    test('tonkatsu-cards exports the unmatched row and explains the other',
+    test('default cards export includes matched and unmatched rows',
         () async {
       final result = await _runCli(
           ['export', reviewPath, '--target', 'tonkatsu-cards', '-o', outPath]);
 
       expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
-      expect(result.stdout, contains('Exported 1 of 2'));
-      expect(
-          result.stdout,
-          contains('1 left out: the tonkatsu-cards target carries only what '
-              '.xcoll cannot -- an item with a resolved match belongs in that '
-              'file instead.'));
+      expect(result.stdout, contains('Exported 2 of 2'));
       final written = jsonDecode(File(outPath).readAsStringSync()) as List;
-      expect(written.single, {
-        'title': 'QUARRY OF BELLS',
-        'type': 'game',
-        'platform': 'PS4',
-      });
+      expect(written, [
+        {
+          'title': 'Mossgrave Ferry',
+          'type': 'game',
+          'alt_title': 'MOSSGRAVE FERRY',
+          'platform': 'Fictional Console',
+        },
+        {
+          'title': 'QUARRY OF BELLS',
+          'type': 'game',
+          'platform': 'PS4',
+        },
+      ]);
     });
 
     test('and the sentence the other two targets print has not moved',
@@ -547,10 +554,9 @@ void main() {
       expect(File(outPath).existsSync(), isFalse);
     });
 
-    test('and equally when there are approved rows it carries none of',
+    test('a matched approved row is included by the default',
         () async {
-      // A shelf of matched rows: every one belongs in `.xcoll`, so this
-      // target carries none and still writes nothing.
+      // Both handoffs can carry the row; choose one for a given batch.
       File(reviewPath).writeAsStringSync(jsonEncode(_document([
         _row('MOSSGRAVE FERRY',
             best: _match(igdbCatalogue, _igdbId,
@@ -560,17 +566,8 @@ void main() {
       final result = await export('tonkatsu-cards', 'cards.json');
 
       expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
-      expect(
-          result.stdout,
-          contains('No file written: the tonkatsu-cards target carries 0 of '
-              '1 approved game(s)'));
-      expect(File(outPath).existsSync(), isFalse);
-      // The reason a row was left out is still the exporter's own sentence:
-      // the guard replaces the file, not the narration.
-      expect(
-          result.stdout,
-          contains('1 left out: the tonkatsu-cards target carries only what '
-              '.xcoll cannot'));
+      expect(result.stdout, contains('Exported 1 of 1 approved game(s)'));
+      expect(File(outPath).existsSync(), isTrue);
     });
 
     test('.xcoll writes its empty collection, byte for byte', () async {

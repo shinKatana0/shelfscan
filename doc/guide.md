@@ -42,15 +42,16 @@ There are three ways through, and the first step of the guide is really
 choosing between them:
 
 - **Keyless.** A local vision model, a CSV export, and a Custom Cards export
-  that Tonkatsu Box imports — on a keyless run that one carries **every** row,
-  because every row is unmatched, each as a title and a kind and nothing else.
+  that Tonkatsu Box imports. The cards file carries every approved row. With
+  source lookup enabled in Tonkatsu v0.45, unique matches gain catalogue data;
+  unresolved or ambiguous matches remain custom.
   No registration anywhere, nothing paid, no key. This is the default on
   Windows.
 - **Full.** The same scan plus a catalogue key, which is what makes `.xcoll`
   possible — that format carries a catalogue id and a platform id and nothing
   else, so an item with no id cannot be in the file at all. The Custom Cards
-  export is still there beside it and now carries only the leftovers, which on
-  a shelf that matched completely is none.
+  export is available as a separate, single-file handoff for every approved
+  row, including rows ShelfScan matched.
 - **The app.** The same pipeline behind a window: photos picked from a
   dialog, progress on a screen, each row approved or rejected on a review
   screen instead of by editing JSON, the export saved from a save dialog.
@@ -641,16 +642,14 @@ picked from, and an item you typed by hand while the resolver was unavailable.
 
 **Two exports carry all of them**, as long as the row has a non-blank title.
 CSV is one, and the other imports into the same app the `.xcoll` was for:
-`tonkatsu-cards` writes a Custom Cards file holding exactly the rows `.xcoll`
-declined — no overlap, so the two Tonkatsu files together are the whole of
-what you approved. That is the fallback, and it is why keyless use is a real
+`tonkatsu-cards` writes a Custom Cards file holding every approved row, so
+one import can cover the reviewed batch. This is why keyless use is a real
 path rather than a crippled one.
 
-**A card is a name, not an identity.** It carries the title and the kind, and
-the app stores it as a custom item: no catalogue entry behind it, no cover, no
-fetched metadata, nothing that later refetches. Do not expect the `.xcoll`
-experience from it — expect the row to be there, spelled the way you approved
-it, instead of dropped. It needs no credential of any sort.
+Each card carries the title and kind plus trusted optional identifiers.
+Tonkatsu owns source lookup. It creates a catalogue-backed card for a unique
+match and leaves an unmatched or ambiguous row custom. ShelfScan needs no
+catalogue credential to create this file.
 
 **On a keyless run every row is one of these**, so the app says it once above
 the list instead of on each row: a mark that is on everything locates nothing,
@@ -775,18 +774,14 @@ The count is asked of the exporter rather than re-derived, so a summary saying
 left rows out in its own words, so the sentence you get names that target's
 reason rather than one hardcoded for all of them.
 
-**The four the `tonkatsu` line left out are what the second Tonkatsu target is
-for.** `tonkatsu-cards` carries exactly the rows `.xcoll` declined and no
-others — the two partition what you approved — so the pair of files together
-is the whole of it. Run both and import both: the `.xcoll` first, the cards
-file after it, as a second pass.
-
-**What you get from the second pass is smaller, and it is worth knowing which
-half.** A Custom Card carries the title and the kind, plus the raw title as
-read where it differs and the platform on a game row. The app stores it as a
-custom item: no catalogue entry behind it, no cover, no metadata, and nothing
-that later refetches. What it needs is nothing — no credential of any kind —
-which is why a wholly keyless run now has a Tonkatsu import at all.
+The `.xcoll` output includes only rows with usable catalogue ids.
+`tonkatsu-cards` includes all approved rows by default, including those in
+`.xcoll`. **Choose one Tonkatsu target for the batch**, since importing both
+can duplicate matched rows. In Tonkatsu Box v0.45, enable source lookup for
+the cards file. Unique matches become catalogue-backed cards; zero or multiple
+matches remain custom. Tonkatsu owns this decision. A build made with
+`--dart-define=tonkatsuV45Export=false` restores the earlier cards behavior
+that includes only `.xcoll` leftovers.
 
 **A cards export that would carry nothing writes no file**, and says which
 target and why. An empty array is a whole-file error to the import, so handing
@@ -838,7 +833,7 @@ project never writes, so v3 would buy nothing here. What it would cost is
 readers: older builds reject a v3 file cleanly. A `version: 2` file is
 therefore read by strictly more installations and loses nothing.
 
-**And the second pass has no version at all.** The Custom Cards file is a bare
+**The cards file has no version field.** It is a bare
 JSON array of cards — no envelope, no version, no timestamp — so the same
 review document renders to the same bytes every time.
 

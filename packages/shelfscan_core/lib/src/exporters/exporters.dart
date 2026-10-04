@@ -13,10 +13,10 @@ import '../models.dart';
 
 const _exportable = {ReviewStatus.approved, ReviewStatus.edited};
 
-/// Internal compatibility switch; change this default only after the released
-/// Tonkatsu importer has been validated against the card batch.
+/// The v0.45 card handoff is the production default. An explicit false value
+/// retains the earlier Custom Cards partition for compatibility builds.
 const bool tonkatsuV45Export =
-    bool.fromEnvironment('tonkatsuV45Export', defaultValue: false);
+    bool.fromEnvironment('tonkatsuV45Export', defaultValue: true);
 
 /// A cell an export writes that a spreadsheet evaluates instead of showing,
 /// named by the column it sits under so a reader can find it.

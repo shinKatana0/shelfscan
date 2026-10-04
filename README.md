@@ -38,8 +38,8 @@ review files nobody can reconcile.
 Everything from one run lands in a single review file you confirm by
 hand, and out of that comes `.xcoll` for Tonkatsu Box — which fetches covers
 and metadata itself from the ids in it — a Custom Cards file for the same app
-carrying the rows that matched nothing, or generic CSV for CLZ Games and most
-other collection managers.
+carrying every approved row for Tonkatsu v0.45 source lookup, or generic CSV
+for CLZ Games and most other collection managers.
 
 It owns **no catalog UI and no database**: recognition and export, nothing
 else. Four sources go through one dedupe, so a game you own on a disc *and*
@@ -90,10 +90,10 @@ than as a report of a working app.
   set it at review.
 - **The Tonkatsu `.xcoll` export needs catalogue ids**, so it needs a
   credential for the catalogue a row belongs to. Without one the run still
-  works, and the rows it cannot carry leave through the Custom Cards export and
-  through CSV instead ([Path A](#path-a--keyless)). A Custom Card is a title and
-  a kind and no more: the receiving app stores it as a custom item and fetches
-  no cover and no metadata for it.
+  works, and approved rows can leave through the Custom Cards export and
+  through CSV instead ([Path A](#path-a--keyless)). With source lookup enabled,
+  Tonkatsu Box v0.45 resolves unique matches to catalogue-backed cards and
+  keeps unmatched or ambiguous rows as custom cards.
 - **The photo-to-Tonkatsu path has been exercised end to end.** The newer disk
   sources and generic CSV export are implemented and tested, but their imports
   into external catalogue apps are not claimed as live validated.
@@ -192,8 +192,9 @@ cartoons"* (`packages/core/lib/models/media_type.dart`, `release/0.44`).
 - **Anime** is a separate type upstream, keyed by AniList or Kitsu and carrying
   no `platform_id` at all. **Nothing here queries AniList or Kitsu**, so an
   anime row is never matched and never reaches `.xcoll`. It leaves through the
-  Custom Cards export and through CSV, carrying the title and the kind and
-  nothing else. Nothing infers the kind either: no name says *Japanese*, so
+  Custom Cards export and through CSV, carrying the title and the kind.
+  Tonkatsu may resolve it through an anime source during import. Nothing
+  infers the kind either: no name says *Japanese*, so
   `Anime` is a value a person sets at review.
 
 A video named the fansub way — `[Group] Title - 04 [1080p].mkv` — therefore
@@ -483,7 +484,7 @@ yourself. Which one you want:
 | IGDB ids (game rows) | no | yes |
 | TMDB ids (film and animation rows) | no | yes |
 | CSV export | yes | yes |
-| Custom Cards export (Tonkatsu) | yes — it carries **every** row, since every row is unmatched; each is a title and a kind and nothing else | yes, and it carries only what `.xcoll` left behind, which on a fully matched shelf is nothing |
+| Custom Cards export (Tonkatsu v0.45) | yes — it carries every approved row for lookup on import | yes — it carries every approved row, including those with ShelfScan catalogue matches |
 | `.xcoll` export | no (needs catalogue ids) | yes |
 | Registration | none | a Twitch application for IGDB, a TMDB account for films and animation — both free, and each one on its own is enough for its own rows |
 | Photos leave the machine | no further than your own Ollama server | only if you pick a cloud model — or a cloud `--fallback`, which uploads all of them |
@@ -570,9 +571,9 @@ Exported 0 of 18 approved game(s) -> shelf.xcoll
 
 CSV has no such requirement: it keeps the titles and platforms the
 vision model read, with an empty `external_id` column. Neither has
-`tonkatsu-cards`, which carries exactly the rows `.xcoll` cannot and imports
-into the same app as custom cards — a title and a kind, with no cover and no
-catalogue metadata behind them ([Supported targets](#supported-targets)).
+`tonkatsu-cards`, which carries all approved rows for Tonkatsu Box v0.45 to
+resolve during import. Unique source matches gain catalogue metadata;
+unmatched or ambiguous rows remain custom ([Supported targets](#supported-targets)).
 
 ### Path B — bring your own keys
 
@@ -858,30 +859,28 @@ resolved match has nothing to put in it, so `export --target tonkatsu`
 leaves such items out and reports how many. CSV carries the text, so it
 takes them either way.
 
-### The two Tonkatsu paths, and what the second one is not
+### The two Tonkatsu paths
 
-The two Tonkatsu targets **partition** one review file. A row with a match the
-light format can carry goes to `.xcoll`; every other approved row goes to
-Custom Cards, and no row goes to both. So a shelf that resolved unevenly is two
-files and two imports rather than one file and a list of losses:
+The default `tonkatsu-cards` target writes every approved row as a bare JSON
+array for Tonkatsu Box v0.45. Enable source lookup in Tonkatsu's Custom Cards
+import. A unique catalogue result becomes a real card; zero or multiple
+results remain custom. Tonkatsu owns this catalogue decision. The flow has
+been validated with real-world mixed game imports, including successful
+matches and intentional ambiguity fallback:
 
 ```
-dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu -o shelf.xcoll
 dart run shelfscan_core:shelfscan export collection.review.json --target tonkatsu-cards -o shelf-cards.json
 ```
 
-**A Custom Card is a name, not an identity, and that is the whole difference.**
-It carries the title and the kind, plus the raw title as read and the platform
-where this project holds one honestly. The receiving app stores it as a custom
-item: **no catalogue entry, no cover, no metadata, no description, no genres**.
-Nothing later refetches or updates it. Do not expect the `.xcoll` experience
-from it — expect the row to exist, spelled the way you approved it, instead of
-being dropped.
+The `.xcoll` target remains available for ID-based imports and retains its
+`version: 2` format. Choose one Tonkatsu target for a batch: exporting both
+can duplicate matched rows. A compatibility build with
+`--dart-define=tonkatsuV45Export=false` restores the earlier Custom Cards
+behavior, which exports only rows `.xcoll` cannot carry.
 
-**It needs no credential at all**, which is the part that matters for
-[Path A](#path-a--keyless): the rows it carries are exactly the ones nothing
-matched, so a wholly keyless run has a Tonkatsu import of its own for the first
-time. `.xcoll` still needs the ids and still gets none on such a run.
+**ShelfScan needs no catalogue credential to create a Custom Cards file.**
+Tonkatsu's source lookup uses the catalogues configured in Tonkatsu. Without
+lookup, the imported rows remain custom cards. `.xcoll` still requires ids.
 
 **`cover` is the one field this project refuses on principle.** The Custom
 Cards format accepts a cover, and only as an `http(s)` URL; the only image here

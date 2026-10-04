@@ -41,6 +41,7 @@ ResolvedGame _row(
   WorkKind kind = WorkKind.game,
   Candidate? best,
   String? platformHint,
+  ReviewStatus status = ReviewStatus.approved,
 }) =>
     ResolvedGame(
       detection: Detection(
@@ -52,7 +53,7 @@ ResolvedGame _row(
         workKind: kind,
       ),
       best: best,
-      status: ReviewStatus.approved,
+      status: status,
     );
 
 Candidate _match() => Candidate(
@@ -105,16 +106,13 @@ void main() {
     expect(_subtitleOf(tester, 'tonkatsu-cards'), startsWith('.json file'));
   });
 
-  testWidgets('a fully matched shelf is told this target carries none of it',
+  testWidgets('a fully matched shelf is offered to both Tonkatsu targets',
       (tester) async {
     await _pump(tester, _doc([_row('MOSSGRAVE FERRY', best: _match())]),
         _FakeSaver());
     await _openSheet(tester);
 
-    // The two Tonkatsu targets partition the rows, so the honest subtitle is
-    // on the opposite tile from the one it is on for an unresolved shelf --
-    // which is the pair of assertions, not either alone.
-    expect(_subtitleOf(tester, 'tonkatsu-cards'), contains(_carriesNone));
+    expect(_subtitleOf(tester, 'tonkatsu-cards'), isNot(contains(_carriesNone)));
     expect(_subtitleOf(tester, 'tonkatsu'), isNot(contains(_carriesNone)));
   });
 
@@ -129,7 +127,7 @@ void main() {
     expect(_subtitleOf(tester, 'csv'), isNot(contains(_carriesNone)));
   });
 
-  testWidgets('exporting it saves a .json array of the rows .xcoll declined',
+  testWidgets('default cards export saves matched and unmatched approved rows',
       (tester) async {
     final saver = _FakeSaver();
     await _pump(
@@ -144,20 +142,20 @@ void main() {
 
     await tester.tap(find.byKey(const Key('export-sheet-tonkatsu-cards')));
     await tester.pumpAndSettle();
-    // The matched row goes to `.xcoll` instead, so this target drops it and
-    // the screen says so before writing anything.
-    expect(find.text('Unresolved items will be dropped'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('export-drop-confirm')));
-    await tester.pumpAndSettle();
-
     expect(saver.saves, hasLength(1));
     expect(saver.saves.single.extension, 'json');
     final cards = jsonDecode(saver.saves.single.content) as List<dynamic>;
     expect(cards, [
+      {
+        'title': 'Mossgrave Ferry',
+        'type': 'game',
+        'alt_title': 'MOSSGRAVE FERRY',
+        'platform': 'Fictional Console',
+      },
       {'title': 'QUARRY OF BELLS', 'type': 'game', 'platform': 'PS4'},
       {'title': 'PELLUCID HOURS', 'type': 'movie'},
     ]);
-    expect(find.textContaining('Saved 2 items'), findsOneWidget);
+    expect(find.textContaining('Saved 3 items'), findsOneWidget);
   });
 
   /// The app's half of T-0460, and it needed no guard: the screen has always
@@ -166,17 +164,16 @@ void main() {
   /// `emptyFile` before it looks at a row -- so what is pinned here is that
   /// the two shells now agree, and that they agree by the app never having
   /// had the defect.
-  testWidgets('a shelf it carries nothing from is never saved at all',
+  testWidgets('a row with no exportable title is never saved',
       (tester) async {
     final saver = _FakeSaver();
-    await _pump(tester, _doc([_row('MOSSGRAVE FERRY', best: _match())]), saver);
+    await _pump(tester, _doc([_row('   ')]), saver);
     await _openSheet(tester);
 
     await tester.tap(find.byKey(const Key('export-sheet-tonkatsu-cards')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('export-drop-confirm')));
     await tester.pumpAndSettle();
-
     expect(saver.saves, isEmpty);
     expect(find.textContaining('Nothing to export'), findsOneWidget);
   });
