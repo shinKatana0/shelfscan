@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:shelfscan_core/shelfscan_core.dart';
 import 'package:test/test.dart';
 
+import '../tool/tonkatsu_v45_sample.dart' as sample;
+
 const _gameId = 611611;
 const _movieId = 477477;
 
@@ -89,6 +91,45 @@ void main() {
 
   group('v45 card mapping', () {
     final v45 = TonkatsuCardsExporter(v45Export: true);
+
+    test('released v0.45 batch contract stays byte-stable', () {
+      final output = v45.export(sample.tonkatsuV45SampleDocument());
+      expect(output, '''
+[
+  {
+    "title": "Chrono Trigger",
+    "type": "game",
+    "alt_title": "CHRONO TRIGGER",
+    "year": 1995,
+    "platform": "SNES"
+  },
+  {
+    "title": "Dune",
+    "type": "movie",
+    "alt_title": "DUNE",
+    "year": 2021
+  },
+  {
+    "title": "Fullmetal Alchemist: Brotherhood",
+    "type": "anime"
+  },
+  {
+    "title": "Spirited Away",
+    "type": "animation",
+    "alt_title": "SPIRITED AWAY",
+    "year": 2001
+  },
+  {
+    "title": "Quenlar Orbital Apricot Index Q7V4",
+    "type": "game"
+  }
+]'''.trim());
+      final cards = (jsonDecode(output) as List<dynamic>).cast<Map>();
+      expect(cards, hasLength(5));
+      expect(cards.first['year'], isA<int>());
+      expect(cards[2].keys, ['title', 'type']);
+      expect(cards.last.keys, ['title', 'type']);
+    });
 
     test('matched and unmatched approved rows are both included', () {
       final matched = _row('MOSSVALE PASSAGE',

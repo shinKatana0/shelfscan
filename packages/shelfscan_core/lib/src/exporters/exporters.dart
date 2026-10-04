@@ -708,8 +708,8 @@ class TonkatsuCardsExporter extends Exporter {
     };
   }
 
-  /// Tonkatsu's forthcoming card contract. The existing array rendering is
-  /// retained pending validation of the released multi-card importer.
+  /// Tonkatsu v0.45.0's custom-card contract. Its parser accepts this bare
+  /// array and the source lookup uses these optional identifying hints.
   static Map<String, Object?>? _v45Card(ResolvedGame game) {
     final best = TonkatsuExporter._externalId(game) == null ? null : game.best;
     final title = best?.title ?? game.detection.rawTitle.trim();
