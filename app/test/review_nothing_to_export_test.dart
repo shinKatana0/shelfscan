@@ -101,22 +101,16 @@ void main() {
         'match for csv to write.'), findsOneWidget);
   });
 
-  testWidgets('cards says the rows were carried, not that they were unmatched',
+  testWidgets('cards names the missing title on a row it cannot carry',
       (tester) async {
     final saver = _FakeSaver();
-    // The inverse case: a matched row is exactly what `.xcoll` takes, so the
-    // target whose subject is the leftovers has none.
-    await _pump(tester, _doc([_row('HARROWGATE MIRE', best: _match())]), saver);
+    await _pump(tester, _doc([_row('   ')]), saver);
 
     await _export(tester, 'tonkatsu-cards');
 
     expect(saver.saved, isEmpty);
-    expect(
-        find.text('Nothing to export: no approved item was left over for '
-            'cards -- export .xcoll instead.'),
-        findsOneWidget);
-    // The sentence it used to say, and the one it must not: on this document
-    // every row HAS a match.
+    expect(find.text('Nothing to export: no approved item has a title and '
+        'supported type.'), findsOneWidget);
     expect(find.textContaining('no approved item has a resolved match'),
         findsNothing);
   });
